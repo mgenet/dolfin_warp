@@ -25,12 +25,14 @@ def fedic(
         images_basename,
         mesh_folder,
         mesh_basename,
+        mesh_degree=1,
         images_dimension=3,
         k_ref=0,
         penalty=0.9,
         use_I0_tangent=0,
         relax_type="const",
         relax_init=0.9,
+        relax_n_iter=10,
         tol_disp=1e-3,
         n_iter_max=100,
         print_iterations=0,
@@ -46,7 +48,7 @@ def fedic(
     fs = dolfin.VectorFunctionSpace(
         mesh=mesh,
         family="Lagrange",
-        degree=1)
+        degree=mesh_degree)
     dX = dolfin.dx(mesh)
 
     print "Computing quadrature degree…"
@@ -95,6 +97,7 @@ def fedic(
     U = dolfin.Function(
         fs,
         name="displacement")
+    U_old = dolfin.Function(U)
     dU = dolfin.Function(
         fs,
         name="ddisplacement")
@@ -163,10 +166,11 @@ def fedic(
         assert (0), "images_dimension must be 2 or 3. Aborting."
 
     # linear system
-    A = None
-    B = None
     if (use_I0_tangent):
-        A = dolfin.assemble(a, tensor=A)
+        A = dolfin.assemble(a)
+    else:
+        A = None
+    B = None
 
     print "Checking number of frames…"
     n_frames = len(glob.glob(images_folder+"/"+images_basename+"_*.vti"))
@@ -218,32 +222,55 @@ def fedic(
                 print "k_iter = " + str(k_iter)
                 n_iter_tot += 1
 
-                # linear system
+                # linear system: matrix
                 if not (use_I0_tangent):
                     A = dolfin.assemble(a, tensor=A)
                 #print "A = " + str(A.array())
-                if (k_iter > 0):
-                    if (k_iter == 1):
-                        B_old = B.copy()
-                    elif (k_iter > 1):
-                        B_old[:] = B[:]
-                    #print "B_old = " + str(B_old[0])
+
+                # linear system: residual
+                if (k_iter == 1):
+                    B_old = B.copy()
+                elif (k_iter > 1):
+                    B_old[:] = B[:]
+                #print "B_old = " + str(B_old[0])
                 B = dolfin.assemble(b, tensor=B)
-                #print "B = " + str(B[0])
+                if (k_iter == 0):
+                    B_norm0 = numpy.linalg.norm(B, ord=2)
+                    print "B_norm0 = " + str(B_norm0)
+                B_norm = numpy.linalg.norm(B, ord=2)
+                print "B_norm = " + str(B_norm)
+                print "B_norm/B_norm0 = " + str(B_norm/B_norm0)
+                #print "B = " + str(B.array())
+
+                # linear system: solve
                 dolfin.solve(A, dU.vector(), B)
                 #print "dU = " + str(dU.vector().array())
 
                 # relaxation
+                U_old.vector()[:] = U.vector()[:]
                 if (relax_type == "aitken") and (k_iter > 0):
                     if (k_iter == 1):
                         dB = B - B_old
                     elif (k_iter > 1):
                         dB[:] = B[:] - B_old[:]
                     relax *= (-1.) * B_old.inner(dB) / dB.inner(dB)
-                print "relax = " + str(relax)
+                    print "relax = " + str(relax)
+                elif (relax_type == "manual"):
+                    B_relax = numpy.empty(relax_n_iter)
+                    for k_relax in xrange(relax_n_iter):
+                        #print "k_relax = " + str(k_relax)
+                        relax = float(k_relax+1)/relax_n_iter
+                        U.vector()[:] = U_old.vector()[:] + relax * dU.vector()[:]
+                        B = dolfin.assemble(b, tensor=B)
+                        B_relax[k_relax] = numpy.linalg.norm(B, ord=2)
+                        #print "B_relax = " + str(B_relax[k_relax])
+                    print "B_relax = " + str(B_relax)
+                    k_relax = numpy.argmin(B_relax)
+                    relax = float(k_relax+1)/relax_n_iter
+                    print "relax = " + str(relax)
 
                 # solution update
-                U.vector()[:] += relax * dU.vector()[:]
+                U.vector()[:] = U_old.vector()[:] + relax * dU.vector()[:]
                 #U.vector().axpy(relax, dU.vector())
 
                 if (print_iterations):
@@ -251,13 +278,12 @@ def fedic(
                     file_pvd_iter << (U, float(k_iter+1))
 
                 # displacement error
-                dU_max = numpy.linalg.norm(dU.vector().array(), ord=numpy.Inf)
-                U_max = numpy.linalg.norm(U.vector().array(), ord=numpy.Inf)
-                err_disp_abs = max(dU_max, U_max)
-                U_norm = numpy.linalg.norm(U.vector().array())
-                err_disp_rel = dU_max/U_norm
-                print "err_disp_abs = " + str(err_disp_abs)
-                print "err_disp_rel = " + str(err_disp_rel)
+                dU_norm = numpy.linalg.norm(dU.vector().array(), ord=2)
+                U_norm = numpy.linalg.norm(U.vector().array(), ord=2)
+                err_disp = dU_norm/U_norm
+                print "dU_norm = " + str(dU_norm)
+                print "U_norm = " + str(U_norm)
+                print "err_disp = " + str(err_disp)
 
                 # image error
                 I1I0_norm = dolfin.assemble((I1-I0)**2 * dX)**(1./2)
@@ -265,10 +291,10 @@ def fedic(
                 print "err_im = " + str(err_im)
 
                 if (print_iterations):
-                    file_dat_iter.write(" ".join([str(val) for val in [k_iter, err_disp_abs, err_disp_rel, err_im]])+"\n")
+                    file_dat_iter.write(" ".join([str(val) for val in [k_iter, dU_norm, U_norm, err_disp, err_im]])+"\n")
 
                 # exit test
-                if (err_disp_rel < tol_disp) or (err_disp_abs < tol_disp):
+                if (err_disp < tol_disp) or ((dU_norm < tol_disp) and (U_norm < tol_disp)):
                     print "Nonlinear solver converged…"
                     success = True
                     break
