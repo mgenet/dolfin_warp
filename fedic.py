@@ -55,41 +55,39 @@ def fedic(
     print "Computing quadrature degree…"
     degree = myFEniCS.compute_quadrature_degree(
         image_filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-        dX=dX,
+        mesh=mesh,
         image_dimension=images_dimension)
     print "degree = " + str(degree)
 
     fe = dolfin.FiniteElement(
         family="Quadrature",
-        degree=degree)
+        cell=mesh.ufl_cell(),
+        degree=degree,
+        quad_scheme="default")
+    ve = dolfin.VectorElement(
+        family="Quadrature",
+        cell=mesh.ufl_cell(),
+        degree=degree,
+        quad_scheme="default")
 
     print "Loading reference image…"
     if (images_dimension == 2):
         I0 = myFEniCS.ExprIm2(
             filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
             element=fe)
-        DXI0 = myFEniCS.ExprGradXIm2(
+        DI0 = myFEniCS.ExprGradIm2(
             filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-            element=fe)
-        DYI0 = myFEniCS.ExprGradYIm2(
-            filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-            element=fe)
+            element=ve)
     elif (images_dimension == 3):
         I0 = myFEniCS.ExprIm3(
             filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
             element=fe)
-        DXI0 = myFEniCS.ExprGradXIm3(
+        DI0 = myFEniCS.ExprGradIm3(
             filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-            element=fe)
-        DYI0 = myFEniCS.ExprGradYIm3(
-            filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-            element=fe)
-        DZI0 = myFEniCS.ExprGradZIm3(
-            filename=images_folder+"/"+images_basename+"_"+str(k_ref).zfill(2)+".vti",
-            element=fe)
+            element=ve)
     else:
         assert (0), "images_dimension must be 2 or 3. Aborting."
-    I0_norm = dolfin.assemble(I0**2 * dX)**(1./2)
+    I0_norm = dolfin.assemble(I0**2 * dX, form_compiler_parameters={'quadrature_degree':degree})**(1./2)
     assert (I0_norm > 0.), "I0_norm = " + str(I0_norm)
     print "I0_norm = " + str(I0_norm)
 
@@ -98,7 +96,9 @@ def fedic(
     U = dolfin.Function(
         fs,
         name="displacement")
-    U_old = dolfin.Function(U)
+    U_old = dolfin.Function(
+        fs,
+        name="old displacement")
     dU = dolfin.Function(
         fs,
         name="ddisplacement")
@@ -116,67 +116,58 @@ def fedic(
         I1 = myFEniCS.ExprDefIm2(
             U=U,
             element=fe)
-        DXI1 = myFEniCS.ExprGradXDefIm2(
+        DI1 = myFEniCS.ExprGradDefIm2(
             U=U,
-            element=fe)
-        DYI1 = myFEniCS.ExprGradYDefIm2(
-            U=U,
-            element=fe)
+            element=ve)
         if (use_I0_tangent):
-            a =     penalty  * dolfin.inner(dolfin.dot(dolfin.as_vector((DXI0, DYI0)), ddU),
-                                            dolfin.dot(dolfin.as_vector((DXI0, DYI0)),   V))*dX\
+            a =     penalty  * dolfin.inner(dolfin.dot(DI0, ddU),
+                                            dolfin.dot(DI0,   V))*dX\
               + (1.-penalty) * dolfin.inner(dolfin.grad(ddU),
                                             dolfin.grad(  V))*dX
         else:
-            a =     penalty  * dolfin.inner(dolfin.dot(dolfin.as_vector((DXI1, DYI1)), ddU),
-                                            dolfin.dot(dolfin.as_vector((DXI1, DYI1)),   V))*dX\
+            a =     penalty  * dolfin.inner(dolfin.dot(DI1, ddU),
+                                            dolfin.dot(DI1,   V))*dX\
               + (1.-penalty) * dolfin.inner(dolfin.grad(ddU),
                                             dolfin.grad(  V))*dX
         b =     penalty  * dolfin.inner(I0-I1,
-                                        dolfin.dot(dolfin.as_vector((DXI1, DYI1)), V))*dX\
+                                        dolfin.dot(DI1, V))*dX\
           - (1.-penalty) * dolfin.inner(dolfin.grad(U),
                                         dolfin.grad(V))*dX
         b0 =     penalty  * dolfin.inner(I0,
-                                         dolfin.dot(dolfin.as_vector((DXI0, DYI0)), V))*dX
+                                         dolfin.dot(DI0, V))*dX
     elif (images_dimension == 3):
         I1 = myFEniCS.ExprDefIm3(
             U=U,
             element=fe)
-        DXI1 = myFEniCS.ExprGradXDefIm3(
+        DI1 = myFEniCS.ExprGradDefIm3(
             U=U,
-            element=fe)
-        DYI1 = myFEniCS.ExprGradYDefIm3(
-            U=U,
-            element=fe)
-        DZI1 = myFEniCS.ExprGradZDefIm3(
-            U=U,
-            element=fe)
+            element=ve)
         if (use_I0_tangent):
-            a =     penalty  * dolfin.inner(dolfin.dot(dolfin.as_vector((DXI0, DYI0, DZI0)), ddU),
-                                            dolfin.dot(dolfin.as_vector((DXI0, DYI0, DZI0)),   V))*dX\
+            a =     penalty  * dolfin.inner(dolfin.dot(DI0, ddU),
+                                            dolfin.dot(DI0,   V))*dX\
               + (1.-penalty) * dolfin.inner(dolfin.grad(ddU),
                                             dolfin.grad(  V))*dX
         else:
-            a =     penalty  * dolfin.inner(dolfin.dot(dolfin.as_vector((DXI1, DYI1, DZI1)), ddU),
-                                            dolfin.dot(dolfin.as_vector((DXI1, DYI1, DZI1)),   V))*dX\
+            a =     penalty  * dolfin.inner(dolfin.dot(DI1, ddU),
+                                            dolfin.dot(DI1,   V))*dX\
               + (1.-penalty) * dolfin.inner(dolfin.grad(ddU),
                                             dolfin.grad(  V))*dX
         b =     penalty  * dolfin.inner(I0-I1,
-                                        dolfin.dot(dolfin.as_vector((DXI1, DYI1, DZI1)), V))*dX\
+                                        dolfin.dot(DI1, V))*dX\
           - (1.-penalty) * dolfin.inner(dolfin.grad(U),
                                         dolfin.grad(V))*dX
         b0 =     penalty  * dolfin.inner(I0,
-                                         dolfin.dot(dolfin.as_vector((DXI0, DYI0, DZI0)), V))*dX
+                                         dolfin.dot(DI0, V))*dX
     else:
         assert (0), "images_dimension must be 2 or 3. Aborting."
-    B0 = dolfin.assemble(b0)
+    B0 = dolfin.assemble(b0, form_compiler_parameters={'quadrature_degree':degree})
     B0_norm = numpy.linalg.norm(B0)
     assert (B0_norm > 0.), "B0_norm = " + str(B0_norm)
     print "B0_norm = " + str(B0_norm)
 
     # linear system
     if (use_I0_tangent):
-        A = dolfin.assemble(a)
+        A = dolfin.assemble(a, form_compiler_parameters={'quadrature_degree':degree})
     else:
         A = None
     B = None
@@ -218,14 +209,11 @@ def fedic(
 
             print "Loading image and image gradient…"
             if (images_dimension == 2):
-                I1.init_image(  filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
-                DXI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
-                DYI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
+                I1.init_image( filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
+                DI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
             elif (images_dimension == 3):
-                I1.init_image(  filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
-                DXI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
-                DYI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
-                DZI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
+                I1.init_image( filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
+                DI1.init_image(filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(2)+".vti")
             else:
                 assert (0), "images_dimension must be 2 or 3. Aborting."
 
@@ -238,7 +226,7 @@ def fedic(
 
                 # linear system: matrix
                 if not (use_I0_tangent):
-                    A = dolfin.assemble(a, tensor=A)
+                    A = dolfin.assemble(a, tensor=A, form_compiler_parameters={'quadrature_degree':degree})
                     #print "A = " + str(A.array())
                     #A_norm = numpy.linalg.norm(A.array())
                     #print "A_norm = " + str(A_norm)
@@ -250,7 +238,7 @@ def fedic(
                     elif (k_iter > 1):
                         B_old[:] = B[:]
                     #print "B_old = " + str(B_old[0])
-                B = dolfin.assemble(b, tensor=B)
+                B = dolfin.assemble(b, tensor=B, form_compiler_parameters={'quadrature_degree':degree})
                 #print "B = " + str(B.array())
                 B_norm = numpy.linalg.norm(B.array())
                 #print "B_norm = " + str(B_norm)
@@ -282,7 +270,7 @@ def fedic(
                         #print "k_relax = " + str(k_relax)
                         relax = float(k_relax+1)/relax_n_iter
                         U.vector()[:] = U_old.vector()[:] + relax * dU.vector()[:]
-                        B = dolfin.assemble(b, tensor=B)
+                        B = dolfin.assemble(b, tensor=B, form_compiler_parameters={'quadrature_degree':degree})
                         B_relax[k_relax] = numpy.linalg.norm(B)
                         #print "B_relax = " + str(B_relax[k_relax])
                     #print "B_relax = " + str(B_relax)
@@ -309,7 +297,7 @@ def fedic(
                 # image error
                 if (k_iter > 0):
                     I1I0_norm_old = I1I0_norm
-                I1I0_norm = dolfin.assemble((I1-I0)**2 * dX)**(1./2)
+                I1I0_norm = dolfin.assemble((I1-I0)**2 * dX, form_compiler_parameters={'quadrature_degree':degree})**(1./2)
                 #print "I1I0_norm = " + str(I1I0_norm)
                 err_im = I1I0_norm/I0_norm
                 print "err_im = " + str(err_im)

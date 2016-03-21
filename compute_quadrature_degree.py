@@ -16,7 +16,7 @@ import myFEniCSPythonLibrary as myFEniCS
 
 def compute_quadrature_degree(
         image_filename,
-        dX,
+        mesh,
         image_dimension=3,
         deg_min=1,
         deg_max=10,
@@ -24,13 +24,17 @@ def compute_quadrature_degree(
         n_under_tol=1,
         verbose=1):
 
+    dX = dolfin.dx(mesh)
+
     first_time = True
     k_under_tol = 0
     for degree in xrange(deg_min,deg_max+1):
         if (verbose): print "degree = " + str(degree)
         fe = dolfin.FiniteElement(
             family="Quadrature",
-            degree=degree)
+            cell=mesh.ufl_cell(),
+            degree=degree,
+            quad_scheme="default")
         if (image_dimension == 2):
             I0 = myFEniCS.ExprIm2(
                 filename=image_filename,
@@ -41,18 +45,19 @@ def compute_quadrature_degree(
                 element=fe)
         else:
             assert (0), "image_dimension must be 2 or 3. Aborting."
-        I0_norm = dolfin.assemble(I0**2 * dX)**(1./2)
+        if not (first_time):
+            I0_norm_old = I0_norm
+        I0_norm = dolfin.assemble(I0**2 * dX, form_compiler_parameters={'quadrature_degree':degree})**(1./2)
         if (verbose): print "I0_norm = " + str(I0_norm)
         if (first_time):
             first_time = False
+            continue
+        I0_norm_err = abs(I0_norm-I0_norm_old)/I0_norm_old
+        if (verbose): print "I0_norm_err = " + str(I0_norm_err)
+        if (I0_norm_err < tol):
+            k_under_tol += 1
         else:
-            I0_norm_err = abs(I0_norm-I0_norm_old)/I0_norm_old
-            if (verbose): print "I0_norm_err = " + str(I0_norm_err)
-            if (I0_norm_err < tol):
-                k_under_tol += 1
-            else:
-                k_under_tol = 0
-            if (k_under_tol >= n_under_tol):
-                break
-        I0_norm_old = I0_norm
+            k_under_tol = 0
+        if (k_under_tol >= n_under_tol):
+            break
     return degree
