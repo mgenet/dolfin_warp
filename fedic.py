@@ -133,8 +133,8 @@ def fedic(
                                         dolfin.dot(DI1, V))*dX\
           - (1.-penalty) * dolfin.inner(dolfin.grad(U),
                                         dolfin.grad(V))*dX
-        b0 =     penalty  * dolfin.inner(I0,
-                                         dolfin.dot(DI0, V))*dX
+        b0 =    penalty  * dolfin.inner(I0,
+                                        dolfin.dot(DI0, V))*dX
     elif (images_dimension == 3):
         I1 = myFEniCS.ExprDefIm3(
             U=U,
@@ -156,8 +156,8 @@ def fedic(
                                         dolfin.dot(DI1, V))*dX\
           - (1.-penalty) * dolfin.inner(dolfin.grad(U),
                                         dolfin.grad(V))*dX
-        b0 =     penalty  * dolfin.inner(I0,
-                                         dolfin.dot(DI0, V))*dX
+        b0 =               dolfin.inner(I0,
+                                        dolfin.dot(DI0, V))*dX
     else:
         assert (0), "images_dimension must be 2 or 3. Aborting."
     B0 = dolfin.assemble(b0, form_compiler_parameters={'quadrature_degree':degree})
@@ -165,7 +165,6 @@ def fedic(
     assert (B0_norm > 0.), "B0_norm = " + str(B0_norm)
     print "B0_norm = " + str(B0_norm)
 
-    # linear system
     if (use_I0_tangent):
         A = dolfin.assemble(a, form_compiler_parameters={'quadrature_degree':degree})
     else:
@@ -240,6 +239,8 @@ def fedic(
                     #print "B_old = " + str(B_old[0])
                 B = dolfin.assemble(b, tensor=B, form_compiler_parameters={'quadrature_degree':degree})
                 #print "B = " + str(B.array())
+
+                # residual error
                 B_norm = numpy.linalg.norm(B.array())
                 #print "B_norm = " + str(B_norm)
                 err_res = B_norm/B0_norm
@@ -266,16 +267,19 @@ def fedic(
                     print "relax = " + str(relax)
                 elif (relax_type == "automatic"):
                     B_relax = numpy.empty(relax_n_iter)
-                    for k_relax in xrange(relax_n_iter):
-                        #print "k_relax = " + str(k_relax)
-                        relax = float(k_relax+1)/relax_n_iter
+                    for relax_k in xrange(relax_n_iter):
+                        #print "relax_k = " + str(relax_k)
+                        relax = float(relax_k+1)/relax_n_iter
                         U.vector()[:] = U_old.vector()[:] + relax * dU.vector()[:]
                         B = dolfin.assemble(b, tensor=B, form_compiler_parameters={'quadrature_degree':degree})
-                        B_relax[k_relax] = numpy.linalg.norm(B)
-                        #print "B_relax = " + str(B_relax[k_relax])
+                        B_relax[relax_k] = numpy.linalg.norm(B)
+                        #print "B_relax = " + str(B_relax[relax_k])
                     #print "B_relax = " + str(B_relax)
-                    k_relax = numpy.argmin(B_relax)
-                    relax = float(k_relax+1)/relax_n_iter
+                    if (print_iterations):
+                        open(working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(2)+"-iter="+str(k_iter).zfill(3)+".dat", "w").write("\n".join([" ".join([str(val) for val in [float(relax_k+1)/relax_n_iter, B_relax[relax_k]]]) for relax_k in xrange(relax_n_iter)]))
+                        os.system("gnuplot -e \"set terminal pdf; set output '"+working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(2)+"-iter="+str(k_iter).zfill(3)+".pdf'; plot '"+working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(2)+"-iter="+str(k_iter).zfill(3)+".dat' u 1:2 w l notitle\"")
+                    relax_k = numpy.argmin(B_relax)
+                    relax = float(relax_k+1)/relax_n_iter
                     print "relax = " + str(relax)
 
                 # solution update
