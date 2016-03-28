@@ -29,7 +29,6 @@ class ExprIm2(dolfin.Expression):
         if filename is not None:
             self.init_image(filename=filename)
         self.X = numpy.array([float()]*2+[Z])
-        #self.evalcount = 0
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -49,13 +48,11 @@ class ExprIm2(dolfin.Expression):
         #print "    Im = " + str(Im)
         Im /= self.s
         #print "    Im = " + str(Im)
-        #self.evalcount += 1
 
 class ExprIm3(dolfin.Expression):
     def __init__(self, filename, **kwargs):
         if filename is not None:
             self.init_image(filename=filename)
-        #self.evalcount = 0
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -74,7 +71,6 @@ class ExprIm3(dolfin.Expression):
         #print "    Im = " + str(Im)
         Im /= self.s
         #print "    Im = " + str(Im)
-        #self.evalcount += 1
 
 class ExprGradIm2(dolfin.Expression):
     def __init__(self, filename=None, Z=0., **kwargs):
