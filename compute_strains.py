@@ -127,5 +127,8 @@ def compute_strains(
             strain_vs_radius_file.write("\n")
             strain_vs_radius_file.write("\n")
 
-    strain_file.close()
-    strain_vs_radius_file.close()
+    if (write_strains):
+        strain_file.close()
+
+    if (write_strain_vs_radius):
+        strain_vs_radius_file.close()
