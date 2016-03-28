@@ -35,7 +35,7 @@ def compute_displacement_error(
     if (verbose): print "ref_zfill = " + str(ref_zfill)
     if (verbose): print "sol_zfill = " + str(sol_zfill)
 
-    error_file = open(sol_folder+"/"+sol_basename+"-error.dat", "w")
+    error_file = open(sol_folder+"/"+sol_basename+"-displacement_error.dat", "w")
     error_file.write("#t e\n")
 
     err_int = numpy.empty(n_frames)
