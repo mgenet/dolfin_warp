@@ -11,18 +11,23 @@
 import dolfin
 
 import myFEniCSPythonLibrary as myFEniCS
+import myVTKPythonLibrary    as myVTK
 
 ########################################################################
 
 def compute_quadrature_degree(
         image_filename,
         mesh,
-        image_dimension=3,
         deg_min=1,
         deg_max=10,
         tol=1e-2,
         n_under_tol=1,
         verbose=1):
+
+    image_dimension = myVTK.computeImageDimensionality(
+        filename=image_filename,
+        verbose=0)
+    if (verbose): print "image_dimension = " + str(image_dimension)
 
     dX = dolfin.dx(mesh)
 
