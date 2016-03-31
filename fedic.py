@@ -25,13 +25,14 @@ def fedic(
         images_basename,
         mesh_folder,
         mesh_basename,
-        images_dimension=3, # 2 or 3
-        images_zfill=2,
         images_k_ref=0,
+        images_zfill=2,
         mesh_degree=1,
-        penalty=0.9,
-        tangent_type="I1", # I0, I1old or I1
-        relax_type="const", # const, aitken or manual
+        penalty_type="const", # const, optim
+        penalty_init=0.9,
+        penalty_n_iter_max=10,
+        tangent_type="Idef", # Idef, Iref, Idef_old
+        relax_type="const", # const, aitken, manual
         relax_init=1.0,
         relax_n_iter=10,
         tol_res=None,
@@ -41,30 +42,26 @@ def fedic(
         continue_after_fail=0,
         verbose=1):
 
-    if not os.path.exists(working_folder):
-        os.mkdir(working_folder)
-
     print "Loading mesh…"
     mesh_filename = mesh_folder+"/"+mesh_basename+".xml"
-    assert os.path.exists(mesh_filename)
+    assert os.path.exists(mesh_filename), "No mesh in "+mesh_filename+". Aborting."
     mesh = dolfin.Mesh(mesh_filename)
     dX = dolfin.dx(mesh)
-    mesh_V = dolfin.assemble(dolfin.Constant(1)*dX)
-
-    vfs = dolfin.VectorFunctionSpace(
-        mesh=mesh,
-        family="Lagrange",
-        degree=mesh_degree)
+    mesh_volume = dolfin.assemble(dolfin.Constant(1)*dX)
 
     print "Computing quadrature degree for images…"
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_k_ref).zfill(images_zfill)+".vti"
     images_quadrature = myFEniCS.compute_quadrature_degree(
         image_filename=ref_image_filename,
-        mesh=mesh,
-        image_dimension=images_dimension)
+        mesh=mesh)
     #images_quadrature = 1
     print "images_quadrature = " + str(images_quadrature)
 
+    print "Loading reference image…"
+    images_dimension = myVTK.computeImageDimensionality(
+        filename=ref_image_filename,
+        verbose=0)
+    assert (images_dimension in (2,3)), "images_dimension must be 2 or 3. Aborting."
     fe = dolfin.FiniteElement(
         family="Quadrature",
         cell=mesh.ufl_cell(),
@@ -75,30 +72,29 @@ def fedic(
         cell=mesh.ufl_cell(),
         degree=images_quadrature,
         quad_scheme="default")
-
-    print "Loading reference image…"
     if (images_dimension == 2):
-        I0 = myFEniCS.ExprIm2(
+        Iref = myFEniCS.ExprIm2(
             filename=ref_image_filename,
             element=fe)
-        DI0 = myFEniCS.ExprGradIm2(
+        DIref = myFEniCS.ExprGradIm2(
             filename=ref_image_filename,
             element=ve)
     elif (images_dimension == 3):
-        I0 = myFEniCS.ExprIm3(
+        Iref = myFEniCS.ExprIm3(
             filename=ref_image_filename,
             element=fe)
-        DI0 = myFEniCS.ExprGradIm3(
+        DIref = myFEniCS.ExprGradIm3(
             filename=ref_image_filename,
             element=ve)
-    else:
-        assert (0), "images_dimension must be 2 or 3. Aborting."
-    I0_norm = (dolfin.assemble(I0**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V)**(1./2)
-    assert (I0_norm > 0.), "I0_norm = " + str(I0_norm)
-    print "I0_norm = " + str(I0_norm)
+    Iref_norm = (dolfin.assemble(Iref**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_volume)**(1./2)
+    assert (Iref_norm > 0.), "Iref_norm = "+str(Iref_norm)+" <= 0. Aborting."
+    print "Iref_norm = " + str(Iref_norm)
 
     print "Defining functions…"
-    penalty = dolfin.Constant(penalty)
+    vfs = dolfin.VectorFunctionSpace(
+        mesh=mesh,
+        family="Lagrange",
+        degree=mesh_degree)
     U = dolfin.Function(
         vfs,
         name="displacement")
@@ -108,71 +104,72 @@ def fedic(
     dU = dolfin.Function(
         vfs,
         name="displacement correction")
-    ddU = dolfin.TrialFunction(vfs)
-    V = dolfin.TestFunction(vfs)
-
-    print "Printing initial solution…"
-    pvd_basename = working_folder+"/"+working_basename+"_"
-    file_pvd = dolfin.File(pvd_basename+".pvd")
-    for vtu_filename in glob.glob(pvd_basename+"*.vtu"):
-        os.remove(vtu_filename)
-    file_pvd << (U, float(images_k_ref))
+    dU_ = dolfin.TrialFunction(vfs)
+    dV_ = dolfin.TestFunction(vfs)
 
     print "Defining variational forms…"
+    penalty = dolfin.Constant(penalty)
     if (images_dimension == 2):
-        I1 = myFEniCS.ExprDefIm2(
+        Idef = myFEniCS.ExprDefIm2(
             U=U,
             filename=ref_image_filename,
             element=fe)
-        DI1 = myFEniCS.ExprGradDefIm2(
+        DIdef = myFEniCS.ExprGradDefIm2(
             U=U,
             filename=ref_image_filename,
             element=ve)
     elif (images_dimension == 3):
-        I1 = myFEniCS.ExprDefIm3(
+        Idef = myFEniCS.ExprDefIm3(
             U=U,
             filename=ref_image_filename,
             element=fe)
-        DI1 = myFEniCS.ExprGradDefIm3(
+        DIdef = myFEniCS.ExprGradDefIm3(
             U=U,
             filename=ref_image_filename,
             element=ve)
-    else:
-        assert (0), "images_dimension must be 2 or 3. Aborting."
-    if (tangent_type == "I0"):
-        a =     penalty  * dolfin.inner(dolfin.dot(DI0, ddU),
-                                        dolfin.dot(DI0,   V))*dX
-    elif (tangent_type == "I1") or (tangent_type == "I1old"):
-        a =     penalty  * dolfin.inner(dolfin.dot(DI1, ddU),
-                                        dolfin.dot(DI1,   V))*dX
-    a +=    (1.-penalty) * dolfin.inner(dolfin.grad(ddU),
-                                        dolfin.grad(  V))*dX
-    b =         penalty  * dolfin.inner(I0-I1,
-                                        dolfin.dot(DI1, V))*dX\
+    if (tangent_type == "Iref"):
+        a =     penalty  * dolfin.inner(dolfin.dot(DIref, dU_),
+                                        dolfin.dot(DIref, dV_))*dX
+    elif (tangent_type == "Idef") or (tangent_type == "Idef_old"):
+        a =     penalty  * dolfin.inner(dolfin.dot(DIdef, dU_),
+                                        dolfin.dot(DIdef, dV_))*dX
+    a +=    (1.-penalty) * dolfin.inner(dolfin.grad(dU_),
+                                        dolfin.grad(dV_))*dX
+    b =         penalty  * dolfin.inner(Iref-Idef,
+                                        dolfin.dot(DIdef, dV_))*dX\
           - (1.-penalty) * dolfin.inner(dolfin.grad(U),
-                                        dolfin.grad(V))*dX
-    b0 =                   dolfin.inner(I0,
-                                        dolfin.dot(DI0, V))*dX
+                                        dolfin.grad(dV_))*dX
+    b0 =                   dolfin.inner(Iref,
+                                        dolfin.dot(DIref, dV_))*dX
     B0 = dolfin.assemble(b0, form_compiler_parameters={'quadrature_degree':images_quadrature})
     B0_norm = numpy.linalg.norm(B0)
-    assert (B0_norm > 0.), "B0_norm = " + str(B0_norm)
+    assert (B0_norm > 0.), "B0_norm = "+str(B0_norm)+" <= 0. Aborting."
     print "B0_norm = " + str(B0_norm)
 
     # linear system
     A = None
-    if (tangent_type == "I0"):
+    if (tangent_type == "Iref"):
         A = dolfin.assemble(a, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
     B = None
 
     print "Checking number of frames…"
     n_frames = len(glob.glob(images_folder+"/"+images_basename+"_*.vti"))
-    n_frames = 2
-    assert (n_frames > 1), "n_frames = " + str(n_frames) + " <= 1. Aborting."
+    #n_frames = 2
+    assert (n_frames > 1), "n_frames = "+str(n_frames)+" <= 1. Aborting."
     print "n_frames = " + str(n_frames)
 
-    assert (abs(images_k_ref) < n_frames), "abs(images_k_ref) = " + str(images_k_ref) + " >= n_frames. Aborting."
+    assert (abs(images_k_ref) < n_frames), "abs(images_k_ref) = "+str(images_k_ref)+" >= n_frames. Aborting."
     images_k_ref = images_k_ref%n_frames
     print "images_k_ref = " + str(images_k_ref)
+
+    print "Printing initial solution…"
+    if not os.path.exists(working_folder):
+        os.mkdir(working_folder)
+    pvd_basename = working_folder+"/"+working_basename+"_"
+    file_pvd = dolfin.File(pvd_basename+".pvd")
+    for vtu_filename in glob.glob(pvd_basename+"*.vtu"):
+        os.remove(vtu_filename)
+    file_pvd << (U, float(images_k_ref))
 
     n_iter_tot = 0
     global_success = True
@@ -187,8 +184,8 @@ def fedic(
 
         if (forward_or_backward == "backward"):
             U.vector()[:] = 0.
-            I1.init_image( filename=ref_image_filename)
-            DI1.init_image(filename=ref_image_filename)
+            Idef.init_image( filename=ref_image_filename)
+            DIdef.init_image(filename=ref_image_filename)
 
         for k_frame in k_frames:
             print "k_frame = " + str(k_frame)
@@ -198,7 +195,7 @@ def fedic(
                 if (os.path.exists(frame_basename+".pdf")):
                     os.remove(frame_basename+".pdf")
                 file_dat_frame = open(frame_basename+".dat", "w")
-                file_dat_frame.write("#k_iter B_norm err_res relax dU_norm U_norm err_disp I1I0_norm err_im err_im_rel\n")
+                file_dat_frame.write("#k_iter B_norm err_res relax dU_norm U_norm err_disp dI_norm err_im err_im_rel\n")
 
                 file_pvd_frame = dolfin.File(frame_basename+"_.pvd")
                 for vtu_filename in glob.glob(frame_basename+"_*.vtu"):
@@ -206,7 +203,7 @@ def fedic(
                 file_pvd_frame << (U, 0.)
 
             # linear system: matrix
-            if (tangent_type == "I1old"):
+            if (tangent_type == "Idef_old"):
                 A = dolfin.assemble(a, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 #print "A = " + str(A.array())
                 #A_norm = numpy.linalg.norm(A.array())
@@ -214,19 +211,19 @@ def fedic(
 
             print "Loading image and image gradient…"
             image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+".vti"
-            I1.init_image( filename=image_filename)
-            DI1.init_image(filename=image_filename)
+            Idef.init_image( filename=image_filename)
+            DIdef.init_image(filename=image_filename)
 
             if (print_iterations):
                 U_old.vector()[:] = U.vector()[:]
                 U.vector()[:] = 0.
-                I1I0_norm = (dolfin.assemble((I1-I0)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V)**(1./2)
-                err_im = I1I0_norm/I0_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, I1I0_norm, err_im, None]])+"\n")
+                dI_norm = (dolfin.assemble((Idef-Iref)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_volume)**(1./2)
+                err_im = dI_norm/Iref_norm
+                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, dI_norm, err_im, None]])+"\n")
                 U.vector()[:] = U_old.vector()[:]
-                I1I0_norm = (dolfin.assemble((I1-I0)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V)**(1./2)
-                err_im = I1I0_norm/I0_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, I1I0_norm, err_im, None]])+"\n")
+                dI_norm = (dolfin.assemble((Idef-Iref)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_volume)**(1./2)
+                err_im = dI_norm/Iref_norm
+                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, dI_norm, err_im, None]])+"\n")
 
             print "Running registration…"
             k_iter = 0
@@ -236,7 +233,7 @@ def fedic(
                 n_iter_tot += 1
 
                 # linear system: matrix
-                if (tangent_type == "I1"):
+                if (tangent_type == "Idef"):
                     A = dolfin.assemble(a, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
                     #print "A = " + str(A.array())
                     #A_norm = numpy.linalg.norm(A.array())
@@ -308,26 +305,26 @@ def fedic(
                 dU_norm = numpy.linalg.norm(dU.vector().array())
                 print "dU_norm = " + str(dU_norm)
                 U_norm = numpy.linalg.norm(U.vector().array())
-                assert (U_norm > 0.), "U_norm = " + str(U_norm)
+                assert (U_norm > 0.), "U_norm = "+str(U_norm)+" <= 0. Aborting."
                 print "U_norm = " + str(U_norm)
                 err_disp = dU_norm/U_norm
                 print "err_disp = " + str(err_disp)
 
                 # image error
                 if (k_iter > 0):
-                    I1I0_norm_old = I1I0_norm
-                I1I0_norm = (dolfin.assemble((I1-I0)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V)**(1./2)
-                #print "I1I0_norm = " + str(I1I0_norm)
-                err_im = I1I0_norm/I0_norm
+                    dI_norm_old = dI_norm
+                dI_norm = (dolfin.assemble((Idef-Iref)**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_volume)**(1./2)
+                #print "dI_norm = " + str(dI_norm)
+                err_im = dI_norm/Iref_norm
                 print "err_im = " + str(err_im)
                 if (k_iter == 0):
                     err_im_rel = 1.
                 else:
-                    err_im_rel = abs(I1I0_norm-I1I0_norm_old)/I1I0_norm_old
+                    err_im_rel = abs(dI_norm-dI_norm_old)/dI_norm_old
                     print "err_im_rel = " + str(err_im_rel)
 
                 if (print_iterations):
-                    file_dat_frame.write(" ".join([str(val) for val in [k_iter, B_norm, err_res, relax, dU_norm, U_norm, err_disp, I1I0_norm, err_im, err_im_rel]])+"\n")
+                    file_dat_frame.write(" ".join([str(val) for val in [k_iter, B_norm, err_res, relax, dU_norm, U_norm, err_disp, dI_norm, err_im, err_im_rel]])+"\n")
 
                 # exit test
                 if (tol_disp is not None) and (tol_res is not None):
