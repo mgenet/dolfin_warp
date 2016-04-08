@@ -34,20 +34,21 @@ class ExprIm2(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
             verbose=0)
 
-    def eval(self, Im, X):
-        #print "Im"
+    def eval(self, Expr, X):
+        #print "Expr"
         self.X[0:2] = X[0:2]
         #print "    X = " + str(X)
-        self.interpolator.Interpolate(self.X, Im)
-        #print "    Im = " + str(Im)
-        Im /= self.s
-        #print "    Im = " + str(Im)
+        self.interpolator.Interpolate(self.X, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
 
 class ExprIm3(dolfin.Expression):
     def __init__(self, filename, **kwargs):
@@ -58,19 +59,20 @@ class ExprIm3(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
             verbose=0)
 
-    def eval(self, Im, X):
-        #print "Im"
+    def eval(self, Expr, X):
+        #print "Expr"
         #print "    X = " + str(X)
-        self.interpolator.Interpolate(X, Im)
-        #print "    Im = " + str(Im)
-        Im /= self.s
-        #print "    Im = " + str(Im)
+        self.interpolator.Interpolate(X, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
 
 class ExprGradIm2(dolfin.Expression):
     def __init__(self, filename=None, Z=0., **kwargs):
@@ -82,7 +84,8 @@ class ExprGradIm2(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         self.image = myVTK.computeImageGradient(
             image=self.image,
             verbose=0)
@@ -93,10 +96,10 @@ class ExprGradIm2(dolfin.Expression):
     def value_shape(self):
         return (2,)
 
-    def eval(self, GradIm, X):
+    def eval(self, Expr, X):
         self.X[0:2] = X[0:2]
-        self.interpolator.Interpolate(self.X, GradIm)
-        GradIm /= self.s
+        self.interpolator.Interpolate(self.X, Expr)
+        Expr /= self.s
 
 class ExprGradIm3(dolfin.Expression):
     def __init__(self, filename=None, **kwargs):
@@ -107,7 +110,8 @@ class ExprGradIm3(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         self.image = myVTK.computeImageGradient(
             image=self.image,
             verbose=0)
@@ -118,9 +122,65 @@ class ExprGradIm3(dolfin.Expression):
     def value_shape(self):
         return (3,)
 
-    def eval(self, GradIm, X):
-        self.interpolator.Interpolate(X, GradIm)
-        GradIm /= self.s
+    def eval(self, Expr, X):
+        self.interpolator.Interpolate(X, Expr)
+        Expr /= self.s
+
+class ExprHessIm2(dolfin.Expression):
+    def __init__(self, filename=None, Z=0., **kwargs):
+        if filename is not None:
+            self.init_image(filename=filename)
+        self.X = numpy.array([float()]*2+[Z])
+        self.H_vec = numpy.empty(4)
+
+    def init_image(self, filename):
+        self.image = myVTK.readImage(
+            filename=filename,
+            verbose=0)
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
+        self.image = myVTK.computeImageHessian(
+            image=self.image,
+            verbose=0)
+        self.interpolator = myVTK.createImageInterpolator(
+            image=self.image,
+            verbose=0)
+
+    def value_shape(self):
+        return (2,2)
+
+    def eval(self, Expr, X):
+        self.X[0:2] = X[0:2]
+        self.interpolator.Interpolate(self.X, self.H_vec)
+        cvec4_to_mat22(self.H_vec, Expr)
+        Expr /= self.s
+
+class ExprHessIm3(dolfin.Expression):
+    def __init__(self, filename=None, **kwargs):
+        if filename is not None:
+            self.init_image(filename=filename)
+        self.H_vec = numpy.empty(9)
+
+    def init_image(self, filename):
+        self.image = myVTK.readImage(
+            filename=filename,
+            verbose=0)
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
+        self.image = myVTK.computeImageHessian(
+            image=self.image,
+            verbose=0)
+        self.interpolator = myVTK.createImageInterpolator(
+            image=self.image,
+            verbose=0)
+
+    def value_shape(self):
+        return (3,3)
+
+    def eval(self, Expr, X):
+        self.interpolator.Interpolate(X, self.H_vec)
+        cvec9_to_mat33(self.H_vec, Expr)
+        Expr /= self.s
 
 class ExprDefIm2(dolfin.Expression):
     def __init__(self, U, filename=None, Z=0., **kwargs):
@@ -134,13 +194,14 @@ class ExprDefIm2(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
             verbose=0)
 
-    def eval(self, DefIm, X):
-        #print "DefIm"
+    def eval(self, Expr, X):
+        #print "Expr"
         #print "    U = " + str(U.vector().array())
         #print "    X = " + str(X)
         #print "    UX = " + str(self.UX)
@@ -148,11 +209,11 @@ class ExprDefIm2(dolfin.Expression):
         #print "    UX = " + str(self.UX)
         self.x[0:2] = X[0:2] + self.UX[0:2]
         #print "    x = " + str(self.x)
-        #print "    DefIm = " + str(DefIm)
-        self.interpolator.Interpolate(self.x, DefIm)
-        #print "    DefIm = " + str(DefIm)
-        DefIm /= self.s
-        #print "    DefIm = " + str(DefIm)
+        #print "    Expr = " + str(Expr)
+        self.interpolator.Interpolate(self.x, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
 
 class ExprDefIm3(dolfin.Expression):
     def __init__(self, U, filename=None, **kwargs):
@@ -166,14 +227,15 @@ class ExprDefIm3(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
             verbose=0)
 
-    def eval(self, DefIm, X):
-        #print "DefIm"
+    def eval(self, Expr, X):
+        #print "Expr"
         #print "    U = " + str(U.vector().array())
         #print "    X = " + str(X)
         #print "    UX = " + str(self.UX)
@@ -181,11 +243,11 @@ class ExprDefIm3(dolfin.Expression):
         #print "    UX = " + str(self.UX)
         self.x[:] = X + self.UX
         #print "    x = " + str(self.x)
-        #print "    DefIm = " + str(DefIm)
-        self.interpolator.Interpolate(self.x, DefIm)
-        #print "    DefIm = " + str(DefIm)
-        DefIm /= self.s
-        #print "    DefIm = " + str(DefIm)
+        #print "    Expr = " + str(Expr)
+        self.interpolator.Interpolate(self.x, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
 
 class ExprGradDefIm2(dolfin.Expression):
     def __init__(self, U, filename=None, Z=0., **kwargs):
@@ -199,7 +261,8 @@ class ExprGradDefIm2(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         self.image = myVTK.computeImageGradient(
             image=self.image,
             verbose=0)
@@ -210,8 +273,8 @@ class ExprGradDefIm2(dolfin.Expression):
     def value_shape(self):
         return (2,)
 
-    def eval(self, GradDefIm, X):
-        #print "GradDefIm"
+    def eval(self, Expr, X):
+        #print "Expr"
         #print "    U = " + str(U.vector().array())
         #print "    X = " + str(X)
         #print "    UX = " + str(self.UX)
@@ -219,11 +282,11 @@ class ExprGradDefIm2(dolfin.Expression):
         #print "    UX = " + str(self.UX)
         self.x[0:2] = X[0:2] + self.UX[0:2]
         #print "    x = " + str(self.x)
-        #print "    GradDefIm = " + str(GradDefIm)
-        self.interpolator.Interpolate(self.x, GradDefIm)
-        #print "    GradDefIm = " + str(GradDefIm)
-        GradDefIm /= self.s
-        #print "    GradDefIm = " + str(GradDefIm)
+        #print "    Expr = " + str(Expr)
+        self.interpolator.Interpolate(self.x, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
 
 class ExprGradDefIm3(dolfin.Expression):
     def __init__(self, U, filename=None, **kwargs):
@@ -237,8 +300,8 @@ class ExprGradDefIm3(dolfin.Expression):
         self.image = myVTK.readImage(
             filename=filename,
             verbose=0)
-        self.s = getScalingFactor(self.image.GetScalarTypeAsString())
-        #print self.s
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
         self.image = myVTK.computeImageGradient(
             image=self.image,
             verbose=0)
@@ -249,8 +312,8 @@ class ExprGradDefIm3(dolfin.Expression):
     def value_shape(self):
         return (3,)
 
-    def eval(self, GradDefIm, X):
-        #print "GradDefIm"
+    def eval(self, Expr, X):
+        #print "Expr"
         #print "    U = " + str(U.vector().array())
         #print "    X = " + str(X)
         #print "    UX = " + str(self.UX)
@@ -258,11 +321,75 @@ class ExprGradDefIm3(dolfin.Expression):
         #print "    UX = " + str(self.UX)
         self.x[:] = X + self.UX
         #print "    x = " + str(self.x)
-        #print "    GradDefIm = " + str(GradDefIm)
-        self.interpolator.Interpolate(self.x, GradDefIm)
-        #print "    GradDefIm = " + str(GradDefIm)
-        GradDefIm /= self.s
-        #print "    GradDefIm = " + str(GradDefIm)
+        #print "    Expr = " + str(Expr)
+        self.interpolator.Interpolate(self.x, Expr)
+        #print "    Expr = " + str(Expr)
+        Expr /= self.s
+        #print "    Expr = " + str(Expr)
+
+class ExprHessDefIm2(dolfin.Expression):
+    def __init__(self, U, filename=None, Z=0., **kwargs):
+        if filename is not None:
+            self.init_image(filename=filename)
+        self.U = U
+        self.UX = numpy.empty(2)
+        self.x = numpy.array([float()]*2+[Z])
+        self.H_vec = numpy.empty(4)
+
+    def init_image(self, filename):
+        self.image = myVTK.readImage(
+            filename=filename,
+            verbose=0)
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
+        self.image = myVTK.computeImageHessian(
+            image=self.image,
+            verbose=0)
+        self.interpolator = myVTK.createImageInterpolator(
+            image=self.image,
+            verbose=0)
+
+    def value_shape(self):
+        return (2,2)
+
+    def eval(self, Expr, X):
+        self.U.eval(self.UX, X)
+        self.x[0:2] = X[0:2] + self.UX[0:2]
+        self.interpolator.Interpolate(self.x, self.H_vec)
+        cvec4_to_mat22(self.H_vec, Expr)
+        Expr /= self.s
+
+class ExprHessDefIm3(dolfin.Expression):
+    def __init__(self, U, filename=None, **kwargs):
+        if filename is not None:
+            self.init_image(filename=filename)
+        self.U = U
+        self.UX = numpy.empty(3)
+        self.x = numpy.empty(3)
+        self.H_vec = numpy.empty(9)
+
+    def init_image(self, filename):
+        self.image = myVTK.readImage(
+            filename=filename,
+            verbose=0)
+        self.s = getScalingFactor(
+            self.image.GetScalarTypeAsString())
+        self.image = myVTK.computeImageHessian(
+            image=self.image,
+            verbose=0)
+        self.interpolator = myVTK.createImageInterpolator(
+            image=self.image,
+            verbose=0)
+
+    def value_shape(self):
+        return (3,3)
+
+    def eval(self, Expr, X):
+        self.U.eval(self.UX, X)
+        self.x[:] = X + self.UX
+        self.interpolator.Interpolate(self.x, self.H_vec)
+        cvec9_to_mat33(self.H_vec, Expr)
+        Expr /= self.s
 
 cppcode_ExprIm='''
 #include <vtkSmartPointer.h>

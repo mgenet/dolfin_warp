@@ -25,7 +25,7 @@ def compute_quadrature_degree(
         verbose=1):
 
     image_dimension = myVTK.computeImageDimensionality(
-        filename=image_filename,
+        image_filename=image_filename,
         verbose=0)
     if (verbose): print "image_dimension = " + str(image_dimension)
 
