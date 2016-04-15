@@ -12,6 +12,7 @@ import dolfin
 import numpy
 
 import myVTKPythonLibrary as myVTK
+from myVTKPythonLibrary.mat_vec_tools import *
 
 ########################################################################
 
@@ -39,7 +40,10 @@ class ExprIm2(dolfin.Expression):
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=0.,
             verbose=0)
+        #print "ExprIm2.interpolator.GetNumberOfComponents() = " + str(self.interpolator.GetNumberOfComponents())
+        #print "ExprIm2.interpolator.GetOutValue() = " + str(self.interpolator.GetOutValue())
 
     def eval(self, Expr, X):
         #print "Expr"
@@ -64,6 +68,7 @@ class ExprIm3(dolfin.Expression):
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=0.,
             verbose=0)
 
     def eval(self, Expr, X):
@@ -91,7 +96,10 @@ class ExprGradIm2(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
+        #print "ExprGradIm2.interpolator.GetNumberOfComponents() = " + str(self.interpolator.GetNumberOfComponents())
+        #print "ExprGradIm2.interpolator.GetOutValue() = " + str(self.interpolator.GetOutValue())
 
     def value_shape(self):
         return (2,)
@@ -117,6 +125,7 @@ class ExprGradIm3(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -131,7 +140,6 @@ class ExprHessIm2(dolfin.Expression):
         if filename is not None:
             self.init_image(filename=filename)
         self.X = numpy.array([float()]*2+[Z])
-        self.H_vec = numpy.empty(4)
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -144,6 +152,7 @@ class ExprHessIm2(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -151,15 +160,13 @@ class ExprHessIm2(dolfin.Expression):
 
     def eval(self, Expr, X):
         self.X[0:2] = X[0:2]
-        self.interpolator.Interpolate(self.X, self.H_vec)
-        cvec4_to_mat22(self.H_vec, Expr)
+        self.interpolator.Interpolate(self.X, Expr)
         Expr /= self.s
 
 class ExprHessIm3(dolfin.Expression):
     def __init__(self, filename=None, **kwargs):
         if filename is not None:
             self.init_image(filename=filename)
-        self.H_vec = numpy.empty(9)
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -172,14 +179,14 @@ class ExprHessIm3(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
         return (3,3)
 
     def eval(self, Expr, X):
-        self.interpolator.Interpolate(X, self.H_vec)
-        cvec9_to_mat33(self.H_vec, Expr)
+        self.interpolator.Interpolate(X, Expr)
         Expr /= self.s
 
 class ExprDefIm2(dolfin.Expression):
@@ -198,6 +205,7 @@ class ExprDefIm2(dolfin.Expression):
             self.image.GetScalarTypeAsString())
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=0.,
             verbose=0)
 
     def eval(self, Expr, X):
@@ -232,6 +240,7 @@ class ExprDefIm3(dolfin.Expression):
         #print self.s
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=0.,
             verbose=0)
 
     def eval(self, Expr, X):
@@ -268,6 +277,7 @@ class ExprGradDefIm2(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -307,6 +317,7 @@ class ExprGradDefIm3(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -334,7 +345,6 @@ class ExprHessDefIm2(dolfin.Expression):
         self.U = U
         self.UX = numpy.empty(2)
         self.x = numpy.array([float()]*2+[Z])
-        self.H_vec = numpy.empty(4)
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -347,6 +357,7 @@ class ExprHessDefIm2(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -355,8 +366,7 @@ class ExprHessDefIm2(dolfin.Expression):
     def eval(self, Expr, X):
         self.U.eval(self.UX, X)
         self.x[0:2] = X[0:2] + self.UX[0:2]
-        self.interpolator.Interpolate(self.x, self.H_vec)
-        cvec4_to_mat22(self.H_vec, Expr)
+        self.interpolator.Interpolate(self.x, Expr)
         Expr /= self.s
 
 class ExprHessDefIm3(dolfin.Expression):
@@ -366,7 +376,6 @@ class ExprHessDefIm3(dolfin.Expression):
         self.U = U
         self.UX = numpy.empty(3)
         self.x = numpy.empty(3)
-        self.H_vec = numpy.empty(9)
 
     def init_image(self, filename):
         self.image = myVTK.readImage(
@@ -379,6 +388,7 @@ class ExprHessDefIm3(dolfin.Expression):
             verbose=0)
         self.interpolator = myVTK.createImageInterpolator(
             image=self.image,
+            out_value=1.,
             verbose=0)
 
     def value_shape(self):
@@ -387,8 +397,7 @@ class ExprHessDefIm3(dolfin.Expression):
     def eval(self, Expr, X):
         self.U.eval(self.UX, X)
         self.x[:] = X + self.UX
-        self.interpolator.Interpolate(self.x, self.H_vec)
-        cvec9_to_mat33(self.H_vec, Expr)
+        self.interpolator.Interpolate(self.x, Expr)
         Expr /= self.s
 
 cppcode_ExprIm='''
