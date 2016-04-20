@@ -52,7 +52,7 @@ set linestyle 7 pointtype 1
 set linestyle 8 pointtype 1
 set linestyle 9 pointtype 1
 
-set key box textcolor variable width +0
+set key box textcolor variable width +1
 
 set grid
 
