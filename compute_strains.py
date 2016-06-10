@@ -18,6 +18,7 @@ import myVTKPythonLibrary as myVTK
 def compute_strains(
         sol_folder,
         sol_basename,
+        sol_zfill=6,
         sol_ext="vtu",
         disp_array_name="displacement",
         ref_folder=None,
@@ -48,11 +49,11 @@ def compute_strains(
         ref_mesh = None
         n_sector_ids = 0
 
-    n_frames = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext))
-    if (verbose): print "n_frames = " + str(n_frames)
-
     n_zfill = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)[0].rsplit("_")[-1].split(".")[0])
     if (verbose): print "n_zfill = " + str(n_zfill)
+
+    n_frames = len(glob.glob(sol_folder+"/"+sol_basename+"_"+"[0-9]"*sol_zfill+"."+sol_ext))
+    if (verbose): print "n_frames = " + str(n_frames)
 
     if (write_strains):
         strain_file = open(sol_folder+"/"+sol_basename+"-strains.dat", "w")
