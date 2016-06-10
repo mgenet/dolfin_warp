@@ -14,22 +14,13 @@ import numpy
 import os
 
 import myFEniCSPythonLibrary as myFEniCS
-import myVTKPythonLibrary    as myVTK
+from print_tools import *
 
 ########################################################################
 
 dolfin.parameters['form_compiler']['cpp_optimize_flags'] = '-O3'
 dolfin.parameters["form_compiler"]["cpp_optimize"] = True
-dolfin.parameters["form_compiler"]["optimize"] = True
-
-def print_str(tab, string):
-    print  " | "*tab + string
-
-def print_var(tab, name, val):
-    print " | "*tab + name + " = " + str(val)
-
-def print_sci(tab, name, val):
-    print " | "*tab + name.ljust(13) + " = " + format(val,".4e")
+dolfin.parameters["form_compiler"]["optimize"] = False # can't use that for "complex" mechanical models…
 
 ########################################################################
 
