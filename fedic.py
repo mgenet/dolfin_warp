@@ -44,7 +44,8 @@ def fedic(
         mesh_basename=None,
         mesh_degree=1,
         regul_type="neo-hookean",
-        regul=0.1,
+        regul_level=0.1,
+        regul_poisson=0.0,
         tangent_type="Idef", # Idef, Idef-wHess, Iold, Iref
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
         relax_type="constant", # constant, aitken, gss
@@ -186,7 +187,7 @@ def fedic(
 
     print_str(tab,"Defining mechanical energy…")
     E     = dolfin.Constant(1.0)
-    nu    = dolfin.Constant(0.0)
+    nu    = dolfin.Constant(regul_poisson)
     kappa = E/3/(1-2*nu)         # = E/3 if nu = 0
     lmbda = E*nu/(1+nu)/(1-2*nu) # = 0   if nu = 0
     mu    = E/2/(1+nu)           # = E/2 if nu = 0
@@ -330,6 +331,9 @@ def fedic(
     res_norm0 = B0.norm("l2")
     assert (res_norm0 > 0.), "res_norm0 = "+str(res_norm0)+" <= 0. Aborting."
     print_var(tab+1,"res_norm0",res_norm0)
+
+    #regul_level = dolfin.Constant(regul_level) * 5*(1+nu)*(1-2*nu)/(5-4*nu)
+    regul_level = dolfin.Constant(regul_level)
 
     A = None
     if (tangent_type == "Iref"):
