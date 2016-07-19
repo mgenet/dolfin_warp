@@ -46,7 +46,7 @@ def fedic(
         regul=0.1,
         tangent_type="Idef", # Idef, Idef-wHess, Iold, Iref
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
-        relax_type="constant", # constant, aitken, manual
+        relax_type="constant", # constant, aitken, gss
         relax_init=1.0,
         tol_res=None,
         tol_dU=None,
@@ -404,9 +404,11 @@ def fedic(
                 print_var(tab-1,"k_iter",k_iter)
                 n_iter_tot += 1
 
-                # linear system: matrix
+                # linear system: matrix assembly
                 if (tangent_type.startswith("Idef")):
-                    A = dolfin.assemble(a, tensor=A)
+                    print_str(tab,"Matrix assembly…")
+                    A = dolfin.assemble((1.-regul_level) * DDpsi_c * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                    A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, add_values=True)
                     #print_var(tab,"A",A.array())
                     #A_norm = A.norm("l2")
                     #print_sci(tab,"A_norm",A_norm)
@@ -418,9 +420,11 @@ def fedic(
                     elif (k_iter > 1):
                         B_old[:] = B[:]
                 if (using_Iold_residual):
-                    B = dolfin.assemble(b_old, tensor=B)
+                    B = dolfin.assemble(- (1.-regul_level) * Dpsi_c_old * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                    B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, add_values=True)
                 else:
-                    B = dolfin.assemble(b, tensor=B)
+                    B = dolfin.assemble(- (1.-regul_level) * Dpsi_c * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                    B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, add_values=True)
                 #print_var(tab,"B",B.array())
 
                 # residual error
@@ -430,6 +434,7 @@ def fedic(
                 print_sci(tab,"res_err",res_err)
 
                 # linear system: solve
+                print_str(tab,"Solve…")
                 dolfin.solve(A, dU.vector(), B)
                 #print_var(tab,"dU",dU.vector().array())
 
@@ -447,53 +452,86 @@ def fedic(
                             dB[:] = B[:] - B_old[:]
                         relax *= (-1.) * B_old.inner(dB) / dB.inner(dB)
                     print_sci(tab,"relax",relax)
-                elif (relax_type == "manual"):
-                    if (print_iterations):
-                        iter_basename = frame_basename+"-iter="+str(k_iter).zfill(3)
-                        file_dat_iter = open(iter_basename+".dat", "w")
-
-                    relax_list = numpy.arange(-1.0, 2.1, 0.1)
-                    #relax_list = numpy.arange(0.1, 1.1, 0.1)
-                    relax_vals = numpy.empty(len(relax_list))
+                elif (relax_type == "gss"):
+                    phi = (1 + math.sqrt(5)) / 2
+                    relax_a = (1-phi)/(2-phi)
+                    relax_b = 1/(2-phi)
+                    need_update_c = True
+                    need_update_d = True
+                    relax_cur = 0.
+                    relax_list = []
+                    relax_vals = []
                     tab += 1
-                    for relax_k in xrange(len(relax_list)):
-                        #print_var(tab-1,"relax_k",relax_k)
-                        #print_sci(tab,"relax",relax_list[relax_k])
-
-                        U.vector().axpy(+relax_list[relax_k], dU.vector())
-                        B = dolfin.assemble(b, tensor=B)
-                        relax_res_norm = B.norm("l2")
-                        relax_res_dU = B.inner(dU.vector())
-                        relax_res_dU = abs(relax_res_dU)
-
-                        psi_c_int = dolfin.assemble(psi_c * dX)
-                        psi_m_int = dolfin.assemble(psi_m * dX)
-                        psi_int   = dolfin.assemble(psi   * dX)
-                        #print_sci(tab,"psi_c_int",psi_c_int)
-                        #print_sci(tab,"psi_m_int",psi_m_int)
-                        #print_sci(tab,"psi_int"  ,psi_int  )
-
-                        if (print_iterations):
-                            file_dat_iter.write(" ".join([str(val) for val in [relax_list[relax_k],
-                                                                               psi_c_int,
-                                                                               psi_m_int,
-                                                                               psi_int,
-                                                                               relax_res_norm,
-                                                                               relax_res_dU]])+"\n")
-
-                        relax_vals[relax_k] = psi_int
-                        U.vector().axpy(-relax_list[relax_k], dU.vector())
+                    relax_k = 0
+                    while (True):
+                        print_var(tab-1,"relax_k",relax_k)
+                        print_sci(tab,"relax_a",relax_a)
+                        print_sci(tab,"relax_b",relax_b)
+                        if (need_update_c):
+                            relax_c = relax_b - (relax_b - relax_a) / phi
+                            relax_list.append(relax_c)
+                            print_sci(tab,"relax_c",relax_c)
+                            U.vector().axpy(relax_c-relax_cur, dU.vector())
+                            relax_cur = relax_c
+                            relax_fc  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                            print_sci(tab,"relax_fc",relax_fc)
+                            relax_fc += dolfin.assemble((   regul_level) * psi_m * dX)
+                            print_sci(tab,"relax_fc",relax_fc)
+                            #print_sci(tab,"relax_fc",relax_fc)
+                            if (numpy.isnan(relax_fc)):
+                                relax_fc = float('+inf')
+                                print_sci(tab,"relax_fc",relax_fc)
+                            relax_vals.append(relax_fc)
+                            #print_var(tab,"relax_list",relax_list)
+                            #print_var(tab,"relax_vals",relax_vals)
+                        if (need_update_d):
+                            relax_d = relax_a + (relax_b - relax_a) / phi
+                            relax_list.append(relax_d)
+                            print_sci(tab,"relax_d",relax_d)
+                            U.vector().axpy(relax_d-relax_cur, dU.vector())
+                            relax_cur = relax_d
+                            relax_fd  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                            print_sci(tab,"relax_fd",relax_fd)
+                            relax_fd += dolfin.assemble((   regul_level) * psi_m * dX)
+                            print_sci(tab,"relax_fd",relax_fd)
+                            #print_sci(tab,"relax_fd",relax_fd)
+                            if (numpy.isnan(relax_fd)):
+                                relax_fd = float('+inf')
+                                print_sci(tab,"relax_fd",relax_fd)
+                            relax_vals.append(relax_fd)
+                            #print_var(tab,"relax_list",relax_list)
+                            #print_var(tab,"relax_vals",relax_vals)
+                        if (relax_fc < relax_fd):
+                            relax_b = relax_d
+                            relax_d = relax_c
+                            relax_fd = relax_fc
+                            need_update_c = True
+                            need_update_d = False
+                        elif (relax_fc > relax_fd):
+                            relax_a = relax_c
+                            relax_c = relax_d
+                            relax_fc = relax_fd
+                            need_update_c = False
+                            need_update_d = True
+                        else: assert(0)
+                        if (relax_k >= 5) and (numpy.argmin(relax_vals) > 0):
+                            break
+                        relax_k += 1
                     tab -= 1
+                    U.vector().axpy(-relax_cur, dU.vector())
                     #print_var(tab,"relax_vals",relax_vals)
 
                     if (print_iterations):
+                        iter_basename = frame_basename+"-iter="+str(k_iter).zfill(3)
+                        file_dat_iter = open(iter_basename+".dat","w")
+                        file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], relax_vals[relax_k]]]) for relax_k in xrange(len(relax_list))]))
                         file_dat_iter.close()
-                        os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' u 1:2 w l title 'psi_c_int'; plot '' u 1:3 w l title 'psi_m_int'; plot '' u 1:4 w l title 'psi_int'; plot '' u 1:5 w l title 'relax_res_norm'; plot '' u 1:6 w l title 'relax_res_dU'\"")
+                        os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' u 1:2 w p title 'psi_int'\"")
 
                     relax = relax_list[numpy.argmin(relax_vals)]
                     print_sci(tab,"relax",relax)
                 else:
-                    assert (0), "relax_type must be \"constant\", \"aitken\" or \"manual\". Aborting."
+                    assert (0), "relax_type must be \"constant\", \"aitken\" or \"gss\". Aborting."
 
                 # solution update
                 U.vector().axpy(relax, dU.vector())
@@ -504,7 +542,7 @@ def fedic(
                     file_pvd_frame << (U, float(k_iter+1))
 
                 # displacement error
-                dU_norm = dU.vector().norm("l2")
+                dU_norm = abs(relax) * dU.vector().norm("l2")
                 if (dU_norm == 0.) and (Uold_norm == 0.) and (U_norm == 0.):
                     dU_err = 0.
                 elif (Uold_norm == 0.):
