@@ -13,6 +13,7 @@ import glob
 import math
 import numpy
 import os
+import shutil
 import time
 
 import myVTKPythonLibrary as myVTK
@@ -178,10 +179,12 @@ def fedic(
     if not os.path.exists(working_folder):
         os.mkdir(working_folder)
     pvd_basename = working_folder+"/"+working_basename+"_"
-    file_pvd = dolfin.File(pvd_basename+".pvd")
     for vtu_filename in glob.glob(pvd_basename+"*.vtu"):
         os.remove(vtu_filename)
+    file_pvd = dolfin.File(pvd_basename+".pvd")
     file_pvd << (U, float(images_ref_frame))
+    os.remove(pvd_basename+".pvd")
+    shutil.move(pvd_basename+"".zfill(6)+".vtu", pvd_basename+str(images_ref_frame).zfill(6)+".vtu")
 
     if (print_iterations):
         for filename in glob.glob(working_folder+"/"+working_basename+"-frame=*.*"):
@@ -638,7 +641,10 @@ def fedic(
             file_volume.write(" ".join([str(val) for val in [k_frame, mesh_V]])+"\n")
 
             print_str(tab,"Printing solution…")
+            file_pvd = dolfin.File(pvd_basename+".pvd")
             file_pvd << (U, float(k_frame))
+            os.remove(pvd_basename+".pvd")
+            shutil.move(pvd_basename+"".zfill(6)+".vtu", pvd_basename+str(k_frame).zfill(6)+".vtu")
 
             if (images_dynamic_scaling):
                 p = numpy.empty((2,2))

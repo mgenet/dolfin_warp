@@ -31,8 +31,9 @@ def compute_strains(
     if (ref_folder is not None) and (ref_basename is not None):
         ref_mesh = myVTK.readUGrid(
             filename=ref_folder+"/"+ref_basename+"-WithLocalBasis.vtk",
-            verbose=0)
+            verbose=verbose)
         ref_n_cells = ref_mesh.GetNumberOfCells()
+        if (verbose): print "ref_n_cells = " + str(ref_n_cells)
 
         if (ref_mesh.GetCellData().HasArray("sector_id")):
             iarray_sector_id = ref_mesh.GetCellData().GetArray("sector_id")
@@ -66,7 +67,7 @@ def compute_strains(
     for k_frame in xrange(n_frames):
         mesh = myVTK.readUGrid(
             filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(n_zfill)+"."+sol_ext,
-            verbose=0)
+            verbose=verbose)
         n_cells = mesh.GetNumberOfCells()
         if (ref_mesh is not None):
             assert (n_cells == ref_n_cells)
@@ -76,11 +77,11 @@ def compute_strains(
             mesh=mesh,
             disp_array_name=disp_array_name,
             ref_mesh=ref_mesh,
-            verbose=0)
+            verbose=verbose)
         myVTK.writeUGrid(
             ugrid=mesh,
             filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(n_zfill)+"."+sol_ext,
-            verbose=0)
+            verbose=verbose)
 
         if (write_strains) or (write_strain_vs_radius):
             if (ref_mesh is not None):

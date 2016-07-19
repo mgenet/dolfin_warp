@@ -53,7 +53,7 @@ class ExprIm2(dolfin.Expression):
         #print "    Expr = " + str(Expr)
 
 class ExprIm3(dolfin.Expression):
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename=None, **kwargs):
         if filename is not None:
             self.init_image(filename=filename)
 
