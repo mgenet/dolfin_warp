@@ -78,7 +78,9 @@ def fedic(
         assert os.path.exists(mesh_filename), "No mesh in "+mesh_filename+". Aborting."
         mesh = dolfin.Mesh(mesh_filename)
     dX = dolfin.dx(mesh)
-    mesh_volume = dolfin.assemble(dolfin.Constant(1)*dX)
+    mesh_V0 = dolfin.assemble(dolfin.Constant(1)*dX)
+    print_var(tab+1,"mesh_n_cells",len(mesh.cells()))
+    print_sci(tab+1,"mesh_V0",mesh_V0)
 
     print_str(tab,"Computing quadrature degree for images…")
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+".vti"
@@ -195,27 +197,22 @@ def fedic(
     C2    = mu/2
     D1    = kappa/2
 
+    I = dolfin.Identity(images_dimension)
+    F = I + dolfin.grad(U)
+    J = dolfin.det(F)
     if   (regul_type == "laplacian"): # <- super bad
         e     = dolfin.sym(dolfin.grad(U))
         psi_m = (lmbda * dolfin.tr(e)**2 + 2*mu * dolfin.tr(e*e))/2
     elif (regul_type == "kirchhoff"): # <- pretty bad too
-        I     = dolfin.Identity(images_dimension)
-        F     = I + dolfin.grad(U)
         C     = F.T * F
         E     = (C - I)/2
         psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
     elif (regul_type == "neo-hookean"):
-        I     = dolfin.Identity(images_dimension)
-        F     = I + dolfin.grad(U)
-        J     = dolfin.det(F)
         C     = F.T * F
         Ic    = dolfin.tr(C)
         Ic0   = dolfin.tr(I)
         psi_m = C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + D1 * (J**2 - 1 - 2*dolfin.ln(J))
     elif (regul_type == "mooney-rivlin"):
-        I     = dolfin.Identity(images_dimension)
-        F     = I + dolfin.grad(U)
-        J     = dolfin.det(F)
         C     = F.T * F
         Ic    = dolfin.tr(C)
         Ic0   = dolfin.tr(I)
@@ -227,6 +224,14 @@ def fedic(
 
     Dpsi_m  = dolfin.derivative( psi_m, U, dV_)
     DDpsi_m = dolfin.derivative(Dpsi_m, U, dU_)
+
+    mesh_V = dolfin.assemble(J*dX)
+    print_sci(tab+1,"mesh_V",mesh_V)
+
+    volume_basename = working_folder+"/"+working_basename+"-volume"
+    file_volume = open(volume_basename+".dat","w")
+    file_volume.write("#k_frame mesh_V"+"\n")
+    file_volume.write(" ".join([str(val) for val in [images_ref_frame, mesh_V]])+"\n")
 
     print_str(tab,"Defining deformed image…")
     scaling = numpy.array([1.,0.])
@@ -628,6 +633,10 @@ def fedic(
             Uold.vector()[:] = U.vector()[:]
             Uold_norm = U_norm
 
+            mesh_V = dolfin.assemble(J*dX)
+            print_sci(tab+1,"mesh_V",mesh_V)
+            file_volume.write(" ".join([str(val) for val in [k_frame, mesh_V]])+"\n")
+
             print_str(tab,"Printing solution…")
             file_pvd << (U, float(k_frame))
 
@@ -654,6 +663,7 @@ def fedic(
 
     print_var(tab,"n_iter_tot",n_iter_tot)
 
+    file_volume.close()
     #os.remove(pvd_basename+".pvd")
 
     return global_success
