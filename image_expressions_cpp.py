@@ -8,24 +8,29 @@
 ###                                                                  ###
 ########################################################################
 
-import dolfin
-import numpy
-
-import myVTKPythonLibrary as myVTK
-from myVTKPythonLibrary.mat_vec_tools import *
-
 ########################################################################
 
 def get_ExprIm_cpp(
         im_dim,
         im_type="im",
-        im_is_def=False,
-        verbose=False):
+        im_is_def=0,
+        verbose=0):
 
     assert (im_dim in (2,3))
     assert (im_type in ("im","grad"))
 
     ExprIm_cpp = '''\
+double getStaticScalingFactor(const char* scalar_type_as_string)
+{
+    if (strcmp(scalar_type_as_string, "unsigned char" ) == 0) return pow(2,  8)-1;
+    if (strcmp(scalar_type_as_string, "unsigned short") == 0) return pow(2, 16)-1;
+    if (strcmp(scalar_type_as_string, "unsigned int"  ) == 0) return pow(2, 32)-1;
+    if (strcmp(scalar_type_as_string, "unsigned long" ) == 0) return pow(2, 64)-1;
+    if (strcmp(scalar_type_as_string, "float"         ) == 0) return 1.;
+    if (strcmp(scalar_type_as_string, "double"        ) == 0) return 1.;
+    assert (0);
+}
+
 #include <string.h>
 
 #include <vtkSmartPointer.h>
@@ -39,41 +44,48 @@ namespace dolfin
 
 class MyExpr : public Expression
 {
-    vtkSmartPointer<vtkImageInterpolator> interpolator;'''+('''
-    const Function* U;
+    vtkSmartPointer<vtkImageInterpolator> interpolator;
+    double static_scaling;'''+('''
+    Array<double>* dynamic_scaling;
+    Function* U;
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
-    mutable Array<double> X;''')*(not im_is_def)*(im_dim==2)+'''
+    mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
 
 public:
 
     MyExpr():
-        Expression('''+('''2''')*(im_type=="grad")+''')'''+(''',
+        Expression('''+str(im_dim)*(im_type=="grad")+''')'''+(''',
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
-        X(3)''')*(not im_is_def)*(im_dim==2)+'''
+        X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
     {
+    }'''+('''
+
+    void init_dynamic_scaling(
+        const Array<double> &scaling)
+    {
+        //dynamic_scaling = scaling;
+        //std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
     }
 
-    void init('''+('''
-        const Function &UU,''')*(im_is_def)+('''
-        const double &Z=0.''')*(im_dim==2)+''')
-    {'''+('''
-        U = &UU;''')*(im_is_def)+('''
-
-        x[2] = Z;''')*(im_is_def)*(im_dim==2)+('''
-
-        X[2] = Z;''')*(not im_is_def)*(im_dim==2)+'''
-    }
+    void init_disp(
+        Function* UU)
+    {
+        U = UU;
+    }''')*(im_is_def)+'''
 
     void init_image(
         const char* filename,
-        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''nearest''')*(im_type=="grad")+'''",
-        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''1.''')*(im_type=="grad")+''')
+        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type=="grad")+'''",
+        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''1.''')*(im_type=="grad")+(''',
+        const double &Z=0.''')*(im_dim==2)+''')
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
         reader->SetFileName(filename);
-        reader->Update();'''+('''
+        reader->Update();
+
+        static_scaling = getStaticScalingFactor(reader->GetOutput()->GetScalarTypeAsString());'''+('''
 
         vtkSmartPointer<vtkImageGradient> gradient = vtkSmartPointer<vtkImageGradient>::New();
 #if VTK_MAJOR_VERSION >= 6
@@ -104,36 +116,68 @@ public:
         }
         interpolator->SetOutValue(interpol_out_value);
         interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type=="im")+('''gradient->GetOutput()''')*(im_type=="grad")+''');
-        interpolator->Update();
+        interpolator->Update();'''+('''
+
+        x[2] = Z;''')*(im_is_def)*(im_dim==2)+('''
+
+        X3D[2] = Z;''')*(not im_is_def)*(im_dim==2)+'''
     }
 
-    void eval(Array<double>& values, const Array<double>& position) const
+    void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
-        std::cout << "position = " << position.str(1) << std::endl;''')*(verbose)+('''
+        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
 
-        U->eval(UX, position);'''+('''
-        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+'''
-        x[0] = position[0] + UX[0];
-        x[1] = position[1] + UX[1];'''+('''
+        U->eval(UX, X);'''+('''
+        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];
+        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
         std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+'''
-        interpolator->Interpolate(x.data(), values.data());''')*(im_is_def)*(im_dim==2)+('''
+        interpolator->Interpolate(x.data(), expr.data());''')*(im_is_def)+('''
 
-        U->eval(UX, position);'''+('''
-        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+'''
-        x = position + UX;'''+('''
-        std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+'''
-        interpolator->Interpolate(x.data(), values.data());''')*(im_is_def)*(im_dim==3)+('''
+        X3D[0] = X[0];
+        X3D[1] = X[1];'''+('''
+        std::cout << "X3D = " << X3D.str(1) << std::endl;''')*(verbose)+'''
+        interpolator->Interpolate(X3D.data(), expr.data());''')*(not im_is_def)*(im_dim==2)+('''
 
-        X[0] = position[0];
-        X[1] = position[1];'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+'''
-        interpolator->Interpolate(X.data(), values.data());''')*(not im_is_def)*(im_dim==2)+('''
+        interpolator->Interpolate(X.data(), expr.data());''')*(not im_is_def)*(im_dim==3)+('''
 
-        interpolator->Interpolate(position.data(), values.data());''')*(not im_is_def)*(im_dim==3)+('''
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+('''
 
-        std::cout << "values = " << values.str(1) << std::endl;''')*(verbose)+'''
+        expr[0] = expr[0]/static_scaling;''')*(im_type=="im")+('''
+
+        expr[0] = expr[0]/static_scaling;
+        expr[1] = expr[1]/static_scaling;''')*(im_type=="grad")*(im_dim==2)+('''
+
+        expr[0] = expr[0]/static_scaling;
+        expr[1] = expr[1]/static_scaling;
+        expr[2] = expr[2]/static_scaling;''')*(im_type=="grad")*(im_dim==3)+('''
+
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+(('''
+
+        std::cout << "in (im)" << std::endl;
+        std::cout << "expr = " << expr.str(1) << std::endl;
+        std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
+        expr[0] = expr[0] * (*dynamic_scaling)[0] + (*dynamic_scaling)[1];
+        std::cout << "out (im)" << std::endl;''')*(im_type=="im")+('''
+
+        expr[0] = expr[0] * (*dynamic_scaling)[0];
+        expr[1] = expr[1] * (*dynamic_scaling)[0];''')*(im_type=="grad")*(im_dim==2)+('''
+
+        std::cout << "in (grad)" << std::endl;
+        std::cout << "expr = " << expr.str(1) << std::endl;
+        std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
+        expr[0] = expr[0] * (*dynamic_scaling)[0];
+        expr[1] = expr[1] * (*dynamic_scaling)[0];
+        expr[2] = expr[2] * (*dynamic_scaling)[0];
+        std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==3)+('''
+
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose))*(im_is_def)*0+'''
     }
 };
 
 }'''
+    #print ExprIm_cpp
     return ExprIm_cpp

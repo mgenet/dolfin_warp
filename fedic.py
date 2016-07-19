@@ -72,7 +72,8 @@ def fedic(
     print_str(tab,"Loading mesh…")
     assert (mesh is not None or ((mesh_folder is not None) and (mesh_basename is not None))), "Must provide a mesh (mesh = "+str(mesh)+") or a mesh file (mesh_folder = "+str(mesh_folder)+", mesh_basename = "+str(mesh_basename)+"). Aborting."
     if (mesh is None):
-        mesh_filename = mesh_folder+"/"+mesh_basename+".xml"
+        mesh_filebasename = mesh_folder+"/"+mesh_basename
+        mesh_filename = mesh_filebasename+"."+"xml"
         assert os.path.exists(mesh_filename), "No mesh in "+mesh_filename+". Aborting."
         mesh = dolfin.Mesh(mesh_filename)
     dX = dolfin.dx(mesh)
@@ -91,6 +92,7 @@ def fedic(
     images_dimension = myVTK.computeImageDimensionality(
         image_filename=ref_image_filename,
         verbose=0)
+    print_var(tab+1,"images_dimension",images_dimension)
     assert (images_dimension in (2,3)), "images_dimension must be 2 or 3. Aborting."
     fe = dolfin.FiniteElement(
         family="Quadrature",
@@ -117,7 +119,6 @@ def fedic(
                 im_type="im",
                 im_is_def=0),
             element=fe)
-        Iref.init()
         Iref.init_image(ref_image_filename)
         DIref = dolfin.Expression(
             cppcode=myFEniCS.get_ExprIm_cpp(
@@ -125,7 +126,6 @@ def fedic(
                 im_type="grad",
                 im_is_def=0),
             element=ve)
-        DIref.init()
         DIref.init_image(ref_image_filename)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
@@ -228,7 +228,8 @@ def fedic(
     DDpsi_m = dolfin.derivative(Dpsi_m, U, dU_)
 
     print_str(tab,"Defining deformed image…")
-    scaling = [1.,0.]
+    scaling = numpy.array([1.,0.])
+    #scaling = dolfin.Constant([1.,0.])
     if (images_expressions_type == "cpp"):
         Idef = dolfin.Expression(
             cppcode=myFEniCS.get_ExprIm_cpp(
@@ -236,14 +237,16 @@ def fedic(
                 im_type="im",
                 im_is_def=1),
             element=fe)
-        Idef.init(U)
+        Idef.init_disp(U)
+        Idef.init_dynamic_scaling(scaling)
         DIdef = dolfin.Expression(
             cppcode=myFEniCS.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad",
                 im_is_def=1),
             element=ve)
-        DIdef.init(U)
+        DIdef.init_disp(U)
+        DIdef.init_dynamic_scaling(scaling)
         if ("-wHess" in tangent_type):
             assert (0), "ToDo"
         Iold = dolfin.Expression(
@@ -252,14 +255,16 @@ def fedic(
                 im_type="im",
                 im_is_def=1),
             element=fe)
-        Iold.init(Uold)
+        Iold.init_disp(Uold)
+        Iold.init_dynamic_scaling(scaling)
         DIold = dolfin.Expression(
             cppcode=myFEniCS.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad",
                 im_is_def=1),
             element=ve)
-        DIold.init(Uold)
+        DIold.init_disp(Uold)
+        DIold.init_dynamic_scaling(scaling)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
             Idef = myFEniCS.ExprDefIm2(
