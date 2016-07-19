@@ -10,9 +10,10 @@
 
 import dolfin
 import glob
-import time
+import math
 import numpy
 import os
+import time
 
 import myVTKPythonLibrary as myVTK
 
@@ -21,9 +22,9 @@ from print_tools import *
 
 ########################################################################
 
-dolfin.parameters['form_compiler']['cpp_optimize_flags'] = '-O3'
-dolfin.parameters["form_compiler"]["cpp_optimize"] = True
 dolfin.parameters["form_compiler"]["optimize"] = False # can't use that for "complex" mechanical models…
+dolfin.parameters["form_compiler"]["cpp_optimize"] = True
+# dolfin.parameters["num_threads"] = 8 # 2016-07-07: doesn't seem to work…
 
 ########################################################################
 
@@ -49,6 +50,7 @@ def fedic(
         relax_type="constant", # constant, aitken, gss
         relax_init=1.0,
         tol_res=None,
+        tol_res_rel=None,
         tol_dU=None,
         tol_im=None,
         n_iter_max=100,
@@ -359,7 +361,7 @@ def fedic(
             if (print_iterations):
                 frame_basename = working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(images_zfill)
                 file_dat_frame = open(frame_basename+".dat", "w")
-                file_dat_frame.write("#k_iter res_norm res_err relax dU_norm U_norm dU_err im_diff im_err\n")
+                file_dat_frame.write("#k_iter res_norm err_res err_res_rel relax dU_norm U_norm err_dU im_diff err_im\n")
 
                 file_pvd_frame = dolfin.File(frame_basename+"_.pvd")
                 file_pvd_frame << (U, 0.)
@@ -413,12 +415,14 @@ def fedic(
                     #A_norm = A.norm("l2")
                     #print_sci(tab,"A_norm",A_norm)
 
-                # linear system: residual
-                if (relax_type == "aitken"):
+                # linear system: residual assembly
+                if (k_iter > 0):
                     if (k_iter == 1):
                         B_old = B.copy()
                     elif (k_iter > 1):
                         B_old[:] = B[:]
+                    res_old_norm = res_norm
+                print_str(tab,"Residual assembly…")
                 if (using_Iold_residual):
                     B = dolfin.assemble(- (1.-regul_level) * Dpsi_c_old * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
                     B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, add_values=True)
@@ -430,8 +434,19 @@ def fedic(
                 # residual error
                 res_norm = B.norm("l2")
                 #print_sci(tab,"res_norm",res_norm)
-                res_err = res_norm/res_norm0
-                print_sci(tab,"res_err",res_err)
+                err_res = res_norm/res_norm0
+                print_sci(tab,"err_res",err_res)
+
+                if (k_iter == 0):
+                    err_res_rel = 1.
+                else:
+                    if (k_iter == 1):
+                        dB = B - B_old
+                    elif (k_iter > 1):
+                        dB[:] = B[:] - B_old[:]
+                    dres_norm = dB.norm("l2")
+                    err_res_rel = dres_norm / res_old_norm
+                    print_sci(tab,"err_res_rel",err_res_rel)
 
                 # linear system: solve
                 print_str(tab,"Solve…")
@@ -446,11 +461,7 @@ def fedic(
                     if (k_iter == 0):
                         relax = relax_init
                     else:
-                        if (k_iter == 1):
-                            dB = B - B_old
-                        elif (k_iter > 1):
-                            dB[:] = B[:] - B_old[:]
-                        relax *= (-1.) * B_old.inner(dB) / dB.inner(dB)
+                        relax *= (-1.) * B_old.inner(dB) / dres_norm**2
                     print_sci(tab,"relax",relax)
                 elif (relax_type == "gss"):
                     phi = (1 + math.sqrt(5)) / 2
@@ -544,39 +555,33 @@ def fedic(
                 # displacement error
                 dU_norm = abs(relax) * dU.vector().norm("l2")
                 if (dU_norm == 0.) and (Uold_norm == 0.) and (U_norm == 0.):
-                    dU_err = 0.
+                    err_dU = 0.
                 elif (Uold_norm == 0.):
-                    dU_err = dU_norm/U_norm
+                    err_dU = dU_norm/U_norm
                 else:
-                    dU_err = dU_norm/Uold_norm
-                print_sci(tab,"dU_err",dU_err)
+                    err_dU = dU_norm/Uold_norm
+                print_sci(tab,"err_dU",err_dU)
 
                 # image error
                 if (k_iter > 0):
                     im_diff_old = im_diff
                 im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
                 #print_sci(tab,"im_diff",im_diff)
-                im_err = im_diff/Iref_norm
-                print_sci(tab,"im_err",im_err)
+                err_im = im_diff/Iref_norm
+                print_sci(tab,"err_im",err_im)
 
                 if (print_iterations):
-                    file_dat_frame.write(" ".join([str(val) for val in [k_iter,
-                                                                        res_norm,
-                                                                        res_err,
-                                                                        relax,
-                                                                        dU_norm,
-                                                                        U_norm,
-                                                                        dU_err,
-                                                                        im_diff,
-                                                                        im_err]])+"\n")
+                    file_dat_frame.write(" ".join([str(val) for val in [k_iter, res_norm, err_res, err_res_rel, relax, dU_norm, U_norm, err_dU, im_diff, err_im]])+"\n")
 
                 # exit test
                 success = True
-                if (tol_res is not None) and (res_err > tol_res):
+                if (tol_res is not None) and (err_res > tol_res):
                     success = False
-                if (tol_dU is not None) and (dU_err > tol_dU):
+                if (tol_res_rel is not None) and (err_res_rel > tol_res_rel):
                     success = False
-                if (tol_im is not None) and (im_err > tol_im):
+                if (tol_dU is not None) and (err_dU > tol_dU):
+                    success = False
+                if (tol_im is not None) and (err_im > tol_im):
                     success = False
 
                 # exit
@@ -605,7 +610,7 @@ def fedic(
             if (print_iterations):
                 #os.remove(frame_basename+"_.pvd")
                 file_dat_frame.close()
-                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-4:1e1]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'res_err', '' u 1:7 pt 1 lw 3 title 'dU_err', '' using 1:9 pt 1 lw 3 title 'im_err', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
+                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'err_res', '' u 1:7 pt 1 lw 3 title 'err_dU', '' using 1:9 pt 1 lw 3 title 'err_im', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
 
             if not (success) and not (continue_after_fail):
                 break
