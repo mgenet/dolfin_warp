@@ -9,13 +9,77 @@
 ########################################################################
 
 import dolfin
+import numpy
 
-import myFEniCSPythonLibrary as myFEniCS
 import myVTKPythonLibrary    as myVTK
+import myFEniCSPythonLibrary as myFEniCS
 
 ########################################################################
 
-def compute_quadrature_degree(
+def compute_quadrature_degree_from_points_count(
+        image_filename,
+        mesh_filebasename,
+        mesh_ext="vtk",
+        deg_min=1,
+        deg_max=20,
+        verbose=1):
+
+    image = myVTK.readImage(
+        filename=image_filename,
+        verbose=verbose)
+    n_points = image.GetNumberOfPoints()
+
+    mesh = myVTK.readUGrid(
+        filename=mesh_filebasename+"."+mesh_ext,
+        verbose=verbose)
+    n_cells = mesh.GetNumberOfCells()
+
+    (cell_locator,
+     closest_point,
+     generic_cell,
+     k_cell,
+     subId,
+     dist) = myVTK.getCellLocator(
+        mesh=mesh,
+        verbose=verbose)
+
+    point = numpy.empty(3)
+    n_pixels = numpy.zeros(n_cells)
+    for k_point in xrange(n_points):
+        image.GetPoint(k_point, point)
+
+        k_cell = cell_locator.FindCell(point)
+        if (k_cell == -1): continue
+        else: n_pixels[k_cell] += 1
+    n_pixels_max = int(max(n_pixels))
+    n_pixels_avg = int(sum(n_pixels)/n_cells)
+
+    if (verbose):
+        #print "n_pixels = "+str(n_pixels)
+        #print "sum(n_pixels) = "+str(sum(n_pixels))
+        print "n_pixels_max = "+str(n_pixels_max)
+        print "n_pixels_avg = "+str(n_pixels_avg)
+
+    mesh = dolfin.Mesh(mesh_filebasename+"."+"xml")
+
+    for degree in xrange(deg_min,deg_max+1):
+        if (verbose): print "degree = "+str(degree)
+        n_quad = len(dolfin.FunctionSpace(
+            mesh,
+            dolfin.FiniteElement(
+                family="Quadrature",
+                cell=mesh.ufl_cell(),
+                degree=degree,
+                quad_scheme="default")).dofmap().dofs())/len(mesh.cells())
+        if (verbose): print "n_quad = "+str(n_quad)
+        #if (n_quad > n_pixels_max): break
+        if (n_quad > n_pixels_avg): break
+
+    return degree
+
+########################################################################
+
+def compute_quadrature_degree_from_integral(
         image_filename,
         mesh,
         deg_min=1,
@@ -26,7 +90,7 @@ def compute_quadrature_degree(
 
     image_dimension = myVTK.computeImageDimensionality(
         image_filename=image_filename,
-        verbose=0)
+        verbose=verbose)
     if (verbose): print "image_dimension = " + str(image_dimension)
 
     dX = dolfin.dx(mesh)
@@ -65,4 +129,5 @@ def compute_quadrature_degree(
             k_under_tol = 0
         if (k_under_tol >= n_under_tol):
             break
+
     return degree

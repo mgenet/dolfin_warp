@@ -79,10 +79,10 @@ def fedic(
     print_str(tab,"Computing quadrature degree for images…")
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+".vti"
     if (images_quadrature is None):
-        images_quadrature = myFEniCS.compute_quadrature_degree(
+        images_quadrature = myFEniCS.compute_quadrature_degree_from_points_count(
             image_filename=ref_image_filename,
-            mesh=mesh,
-            verbose=0)
+            mesh_filebasename=mesh_filebasename,
+            verbose=1)
     print_var(tab+1,"images_quadrature",images_quadrature)
     dolfin.parameters["form_compiler"]["quadrature_degree"] = images_quadrature
 
