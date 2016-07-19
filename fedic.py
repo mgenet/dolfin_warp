@@ -84,7 +84,6 @@ def fedic(
             mesh_filebasename=mesh_filebasename,
             verbose=1)
     print_var(tab+1,"images_quadrature",images_quadrature)
-    dolfin.parameters["form_compiler"]["quadrature_degree"] = images_quadrature
 
     print_str(tab,"Loading reference image…")
     images_dimension = myVTK.computeImageDimensionality(
@@ -143,8 +142,8 @@ def fedic(
                 element=ve)
     else:
         assert (0), "\"images_expressions_type\" (="+str(images_expressions_type)+") must be \"cpp\" or \"py\". Aborting."
-    Iref_int = dolfin.assemble(Iref * dX)/mesh_volume
-    Iref_norm = (dolfin.assemble(Iref**2 * dX)/mesh_volume)**(1./2)
+    Iref_int = dolfin.assemble(Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0
+    Iref_norm = (dolfin.assemble(Iref**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
     assert (Iref_norm > 0.), "Iref_norm = "+str(Iref_norm)+" <= 0. Aborting."
     print_var(tab+1,"Iref_int",Iref_int)
     print_var(tab+1,"Iref_norm",Iref_norm)
@@ -308,30 +307,19 @@ def fedic(
         assert (0), "\"images_expressions_type\" (="+str(images_expressions_type)+") must be \"cpp\" or \"py\". Aborting."
 
     print_str(tab,"Defining correlation energy…")
-    psi_c  = (Idef - Iref)**2/2
-    Dpsi_c = (Idef - Iref) * dolfin.dot(DIdef, dV_)
-    if (tangent_type.startswith("Idef")):
-        DDpsi_c = dolfin.dot(DIdef, dU_) * dolfin.dot(DIdef, dV_)
-        if ("-wHess" in tangent_type):
-            DDpsi_c += (Idef - Iref) * dolfin.inner(dolfin.dot(DDIdef, dU_), dV_)
-    elif (tangent_type == "Iold"):
-        DDpsi_c = dolfin.dot(DIold, dU_) * dolfin.dot(DIold, dV_)
-    elif (tangent_type == "Iref"):
-        DDpsi_c = dolfin.dot(DIref, dU_) * dolfin.dot(DIref, dV_)
+    psi_c   = (Idef - Iref)**2/2
+    Dpsi_c  = (Idef - Iref) * dolfin.dot(DIdef, dV_)
+    DDpsi_c = dolfin.dot(DIdef, dU_) * dolfin.dot(DIdef, dV_)
+    if ("-wHess" in tangent_type):
+        DDpsi_c += (Idef - Iref) * dolfin.inner(dolfin.dot(DDIdef, dU_), dV_)
 
-    print_str(tab,"Defining variational forms…")
-    regul = dolfin.Constant(regul)
-    psi =   (1.-regul) *   psi_c      + (regul) * psi_m
+    Dpsi_c_old  = (Idef - Iold) * dolfin.dot(DIdef, dV_)
 
-    a   =   (1.-regul) * DDpsi_c * dX + (regul) * DDpsi_m * dX
-    b   = - (1.-regul) *  Dpsi_c * dX - (regul) *  Dpsi_m * dX
-
-    psi_c_old  = (Idef - Iold)**2/2
-    Dpsi_c_old = (Idef - Iold) * dolfin.dot(DIdef, dV_)
-    b_old = - (1.-regul) *  Dpsi_c_old * dX + (regul) *  Dpsi_m * dX
+    DDpsi_c_old = dolfin.dot(DIold, dU_) * dolfin.dot(DIold, dV_)
+    DDpsi_c_ref = dolfin.dot(DIref, dU_) * dolfin.dot(DIref, dV_)
 
     b0 = Iref * dolfin.dot(DIref, dV_) * dX
-    B0 = dolfin.assemble(b0)
+    B0 = dolfin.assemble(b0, form_compiler_parameters={'quadrature_degree':images_quadrature})
     res_norm0 = B0.norm("l2")
     assert (res_norm0 > 0.), "res_norm0 = "+str(res_norm0)+" <= 0. Aborting."
     print_var(tab+1,"res_norm0",res_norm0)
@@ -339,7 +327,8 @@ def fedic(
     A = None
     if (tangent_type == "Iref"):
         print_str(tab,"Assembly…")
-        A = dolfin.assemble(a, tensor=A)
+        A = dolfin.assemble((1.-regul_level) * DDpsi_c_ref * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
+        A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
     B = None
 
     print_str(tab,"Looping over frames…")
@@ -387,20 +376,22 @@ def fedic(
 
             # linear system: matrix
             if (tangent_type == "Iold"):
-                A = dolfin.assemble(a, tensor=A)
+                print_str(tab,"Assembly…")
+                A = dolfin.assemble((1.-regul_level) * DDpsi_c_old * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
                 #print_var(tab,"A",A.array())
                 #A_norm = A.norm("l2")
                 #print_var(tab,"A_norm",A_norm)
 
             if (print_iterations):
                 U.vector().zero()
-                im_diff = (dolfin.assemble(psi_c * dX)/mesh_volume)**(1./2)
-                im_err = im_diff/Iref_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, im_diff, im_err, None]])+"\n")
+                im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
+                err_im = im_diff/Iref_norm
+                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, im_diff, err_im, None]])+"\n")
                 U.vector()[:] = Uold.vector()[:]
-                im_diff = (dolfin.assemble(psi_c * dX)/mesh_volume)**(1./2)
-                im_err = im_diff/Iref_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff, im_err, None]])+"\n")
+                im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
+                err_im = im_diff/Iref_norm
+                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff, err_im, None]])+"\n")
 
             print_str(tab,"Running registration…")
             tab += 1
@@ -525,7 +516,7 @@ def fedic(
                 # image error
                 if (k_iter > 0):
                     im_diff_old = im_diff
-                im_diff = (dolfin.assemble(psi_c * dX)/mesh_volume)**(1./2)
+                im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
                 #print_sci(tab,"im_diff",im_diff)
                 im_err = im_diff/Iref_norm
                 print_sci(tab,"im_err",im_err)
@@ -591,18 +582,18 @@ def fedic(
             if (images_dynamic_scaling):
                 p = numpy.empty((2,2))
                 q = numpy.empty(2)
-                p[0,0] = dolfin.assemble(Idef**2 * dX)
-                p[0,1] = dolfin.assemble(Idef * dX)
+                p[0,0] = dolfin.assemble(Idef**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                p[0,1] = dolfin.assemble(Idef * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 p[1,0] = p[0,1]
                 p[1,1] = 1.
-                q[0] = dolfin.assemble(Idef*Iref * dX)
-                q[1] = dolfin.assemble(Iref * dX)
+                q[0] = dolfin.assemble(Idef*Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
+                q[1] = dolfin.assemble(Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 scaling[:] = numpy.linalg.solve(p,q)
                 print_var(tab,"scaling", scaling)
 
-                im_diff = (dolfin.assemble(psi_c * dX)/mesh_volume)**(1./2)
-                im_err = im_diff/Iref_norm
-                print_sci(tab,"im_err",im_err)
+                im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
+                err_im = im_diff/Iref_norm
+                print_sci(tab,"err_im",err_im)
 
         tab -= 1
 
