@@ -15,13 +15,18 @@ import os
 def plot_strains(
         working_folder,
         working_basenames,
+        working_scalings=None,
         ref_folder=None,
         ref_basename=None,
-        components="all",
+        components="all", # all, circ-long, or rad-circ
         suffix="",
         verbose=1):
 
-    assert (components in ("all", "circ-long", "rad-circ"))
+
+    if (working_scalings is None):
+        working_scalings = [1.] * len(working_basenames)
+    else:
+        assert (len(working_scalings) == len(working_basenames))
 
     if (ref_folder is not None) and (ref_basename is not None):
         lines = open(ref_folder+"/"+ref_basename+"-strains.dat").readlines()
@@ -32,11 +37,17 @@ def plot_strains(
     #print "n_frames = " + str(n_frames)
     #print "n_sectors = " + str(n_sectors)
 
-    plotfile = open("plot_strains"+("-"+suffix)*(suffix!="")+".plt", "w")
+    assert (components in ("all", "circ-long", "rad-circ"))
+
+    if (suffix is None):
+        plotfile_basename = working_folder+"/"+working_basenames[0]+"-strains"
+    else:
+        plotfile_basename = "plot_strains"+("-"+suffix)*(suffix!="")
+    plotfile = open(plotfile_basename+".plt", "w")
     plotfile.write('''\
 set terminal pdf enhanced size 15,'''+('''6''')*(components=="all")+('''3''')*(components in ("circ-long", "rad-circ"))+'''
 
-set output "plot_strains'''+('''-'''+suffix)*(suffix!="")+'''.pdf"
+set output "'''+plotfile_basename+'''.pdf"
 
 load "Set1.plt"
 set linestyle 1 pointtype 1
@@ -92,13 +103,14 @@ plot 0 linecolor rgb "black" notitle,\\
 '''))
             for k_basename in range(len(working_basenames)):
                 working_basename = working_basenames[k_basename]
+                working_scaling = working_scalings[k_basename]
                 plotfile.write('''\
-     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ($1+'''+str(k_basename)+'''./100):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linestyle '''+str(k_basename+1)+''' linewidth 5 title "'''+working_basename+'''",\
-     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ($1+'''+str(k_basename)+'''./100):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
+     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./100):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linestyle '''+str(k_basename+1)+''' linewidth 5 title "'''+working_basename+'''",\
+     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./100):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
 ''')+(k_basename==len(working_basenames)-1)*('''
 
 '''))
 
     plotfile.close()
 
-    os.system("gnuplot plot_strains"+("-"+suffix)*(suffix!="")+".plt")
+    os.system("gnuplot "+plotfile_basename+".plt")

@@ -8,10 +8,14 @@
 ###                                                                  ###
 ########################################################################
 
+import dolfin
 import glob
 import numpy
 
-import myVTKPythonLibrary as myVTK
+import myPythonLibrary as mypy
+import myVTKPythonLibrary as myvtk
+
+import dolfin_dic as ddic
 
 ########################################################################
 
@@ -26,14 +30,17 @@ def compute_displacement_error(
         ref_disp_array_name="displacement",
         verbose=1):
 
-    n_frames = len(glob.glob(ref_folder+"/"+ref_basename+"_*."+ref_ext))
-    assert (len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)) == n_frames)
-    if (verbose): print "n_frames = " + str(n_frames)
+    sol_filenames = glob.glob(sol_folder+"/"+sol_basename+"_[0-9]*."+sol_ext)
+    ref_filenames = glob.glob(ref_folder+"/"+ref_basename+"_[0-9]*."+ref_ext)
 
-    ref_zfill = len(glob.glob(ref_folder+"/"+ref_basename+"_*."+ref_ext)[0].rsplit("_")[-1].split(".")[0])
-    sol_zfill = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)[0].rsplit("_")[-1].split(".")[0])
+    sol_zfill = len(sol_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+    ref_zfill = len(ref_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     if (verbose): print "ref_zfill = " + str(ref_zfill)
     if (verbose): print "sol_zfill = " + str(sol_zfill)
+
+    n_frames = len(sol_filenames)
+    assert (len(ref_filenames) == n_frames)
+    if (verbose): print "n_frames = " + str(n_frames)
 
     error_file = open(sol_folder+"/"+sol_basename+"-displacement_error.dat", "w")
     error_file.write("#t e\n")
@@ -41,12 +48,12 @@ def compute_displacement_error(
     err_int = numpy.empty(n_frames)
     ref_int = numpy.empty(n_frames)
     for k_frame in xrange(n_frames):
-        ref = myVTK.readUGrid(
+        ref = myvtk.readUGrid(
             filename=ref_folder+"/"+ref_basename+"_"+str(k_frame).zfill(ref_zfill)+"."+ref_ext,
             verbose=0)
         n_points = ref.GetNumberOfPoints()
         n_cells = ref.GetNumberOfCells()
-        sol = myVTK.readUGrid(
+        sol = myvtk.readUGrid(
             filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
             verbose=0)
         assert (sol.GetNumberOfPoints() == n_points)

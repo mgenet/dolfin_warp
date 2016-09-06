@@ -11,8 +11,10 @@
 import dolfin
 import numpy
 
-import myVTKPythonLibrary    as myVTK
-import myFEniCSPythonLibrary as myFEniCS
+import myPythonLibrary as mypy
+import myVTKPythonLibrary as myvtk
+
+import dolfin_dic as ddic
 
 ########################################################################
 
@@ -24,12 +26,12 @@ def compute_quadrature_degree_from_points_count(
         deg_max=20,
         verbose=1):
 
-    image = myVTK.readImage(
+    image = myvtk.readImage(
         filename=image_filename,
         verbose=verbose)
     n_points = image.GetNumberOfPoints()
 
-    mesh = myVTK.readUGrid(
+    mesh = myvtk.readUGrid(
         filename=mesh_filebasename+"."+mesh_ext,
         verbose=verbose)
     n_cells = mesh.GetNumberOfCells()
@@ -39,26 +41,26 @@ def compute_quadrature_degree_from_points_count(
      generic_cell,
      k_cell,
      subId,
-     dist) = myVTK.getCellLocator(
+     dist) = myvtk.getCellLocator(
         mesh=mesh,
         verbose=verbose)
 
     point = numpy.empty(3)
-    n_pixels = numpy.zeros(n_cells)
+    n_pixels_per_cell = numpy.zeros(n_cells)
     for k_point in xrange(n_points):
         image.GetPoint(k_point, point)
 
         k_cell = cell_locator.FindCell(point)
         if (k_cell == -1): continue
-        else: n_pixels[k_cell] += 1
-    n_pixels_max = int(max(n_pixels))
-    n_pixels_avg = int(sum(n_pixels)/n_cells)
+        else: n_pixels_per_cell[k_cell] += 1
+    n_pixels_per_cell_max = int(max(n_pixels_per_cell))
+    n_pixels_per_cell_avg = int(sum(n_pixels_per_cell)/n_cells)
 
     if (verbose):
-        #print "n_pixels = "+str(n_pixels)
-        #print "sum(n_pixels) = "+str(sum(n_pixels))
-        print "n_pixels_max = "+str(n_pixels_max)
-        print "n_pixels_avg = "+str(n_pixels_avg)
+        #print "n_pixels_per_cell = "+str(n_pixels_per_cell)
+        #print "sum(n_pixels_per_cell) = "+str(sum(n_pixels_per_cell))
+        print "n_pixels_per_cell_max = "+str(n_pixels_per_cell_max)
+        print "n_pixels_per_cell_avg = "+str(n_pixels_per_cell_avg)
 
     mesh = dolfin.Mesh(mesh_filebasename+"."+"xml")
 
@@ -72,8 +74,8 @@ def compute_quadrature_degree_from_points_count(
                 degree=degree,
                 quad_scheme="default")).dofmap().dofs())/len(mesh.cells())
         if (verbose): print "n_quad = "+str(n_quad)
-        #if (n_quad > n_pixels_max): break
-        if (n_quad > n_pixels_avg): break
+        #if (n_quad > n_pixels_per_cell_max): break
+        if (n_quad > n_pixels_per_cell_avg): break
 
     return degree
 
@@ -88,8 +90,11 @@ def compute_quadrature_degree_from_integral(
         n_under_tol=1,
         verbose=1):
 
-    image_dimension = myVTK.computeImageDimensionality(
-        image_filename=image_filename,
+    image = myvtk.readImage(
+        filename=image_filename,
+        verbose=verbose)
+    image_dimension = myvtk.getImageDimensionality(
+        image=image,
         verbose=verbose)
     if (verbose): print "image_dimension = " + str(image_dimension)
 
@@ -105,11 +110,11 @@ def compute_quadrature_degree_from_integral(
             degree=degree,
             quad_scheme="default")
         if (image_dimension == 2):
-            I0 = myFEniCS.ExprIm2(
+            I0 = ddic.ExprIm2(
                 filename=image_filename,
                 element=fe)
         elif (image_dimension == 3):
-            I0 = myFEniCS.ExprIm3(
+            I0 = ddic.ExprIm3(
                 filename=image_filename,
                 element=fe)
         else:

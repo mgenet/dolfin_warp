@@ -8,37 +8,45 @@
 ###                                                                  ###
 ########################################################################
 
+import dolfin
 import glob
 import numpy
 
-import myVTKPythonLibrary as myVTK
+import myPythonLibrary as mypy
+import myVTKPythonLibrary as myvtk
+
+import dolfin_dic as ddic
 
 ########################################################################
 
 def compute_strains(
         sol_folder,
         sol_basename,
-        sol_zfill=6,
         sol_ext="vtu",
+        ref_frame=None,
         disp_array_name="displacement",
-        ref_folder=None,
-        ref_basename=None,
+        defo_grad_array_name="DeformationGradient",
+        strain_array_name="Strain",
+        mesh_w_local_basis_folder=None,
+        mesh_w_local_basis_basename=None,
         CYL_or_PPS="PPS",
         write_strains=1,
+        plot_strains=1,
         write_strain_vs_radius=0,
         verbose=1):
 
-    if (ref_folder is not None) and (ref_basename is not None):
-        ref_mesh = myVTK.readUGrid(
-            filename=ref_folder+"/"+ref_basename+"-WithLocalBasis.vtk",
+    if (mesh_w_local_basis_folder is not None) and (mesh_w_local_basis_basename is not None):
+        mesh_w_local_basis_filename = mesh_w_local_basis_folder+"/"+mesh_w_local_basis_basename+"-WithLocalBasis.vtk"
+        mesh_w_local_basis = myvtk.readUGrid(
+            filename=mesh_w_local_basis_filename,
             verbose=verbose)
-        ref_n_cells = ref_mesh.GetNumberOfCells()
-        if (verbose): print "ref_n_cells = " + str(ref_n_cells)
+        mesh_w_local_basis_n_cells = mesh_w_local_basis.GetNumberOfCells()
+        if (verbose): print "mesh_w_local_basis_n_cells = " + str(mesh_w_local_basis_n_cells)
 
-        if (ref_mesh.GetCellData().HasArray("sector_id")):
-            iarray_sector_id = ref_mesh.GetCellData().GetArray("sector_id")
+        if (mesh_w_local_basis.GetCellData().HasArray("sector_id")):
+            iarray_sector_id = mesh_w_local_basis.GetCellData().GetArray("sector_id")
             n_sector_ids = 0
-            for k_cell in xrange(ref_n_cells):
+            for k_cell in xrange(mesh_w_local_basis_n_cells):
                 sector_id = int(iarray_sector_id.GetTuple1(k_cell))
                 if (sector_id < 0): continue
                 if (sector_id > n_sector_ids-1):
@@ -47,13 +55,15 @@ def compute_strains(
         else:
             n_sector_ids = 0
     else:
-        ref_mesh = None
+        mesh_w_local_basis = None
         n_sector_ids = 0
 
-    n_zfill = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)[0].rsplit("_")[-1].split(".")[0])
-    if (verbose): print "n_zfill = " + str(n_zfill)
+    sol_filenames = glob.glob(sol_folder+"/"+sol_basename+"_[0-9]*."+sol_ext)
 
-    n_frames = len(glob.glob(sol_folder+"/"+sol_basename+"_"+"[0-9]"*sol_zfill+"."+sol_ext))
+    sol_zfill = len(sol_filenames[0].rsplit("_",1)[-1].split(".")[0])
+    if (verbose): print "sol_zfill = " + str(sol_zfill)
+
+    n_frames = len(sol_filenames)
     if (verbose): print "n_frames = " + str(n_frames)
 
     if (write_strains):
@@ -64,31 +74,56 @@ def compute_strains(
         strain_vs_radius_file = open(sol_folder+"/"+sol_basename+"-strains_vs_radius.dat", "w")
         strain_vs_radius_file.write("#t r Err Ecc Ell Erc Erl Ecl\n")
 
+    if (ref_frame is not None):
+        ref_mesh_filename = sol_folder+"/"+sol_basename+"_"+str(ref_frame).zfill(sol_zfill)+"."+sol_ext
+        ref_mesh = myvtk.readUGrid(
+            filename=ref_mesh_filename,
+            verbose=verbose)
+        myvtk.addDeformationGradients(
+            mesh=ref_mesh,
+            disp_array_name=disp_array_name,
+            verbose=verbose)
+        farray_F0 = ref_mesh.GetCellData().GetArray(defo_grad_array_name)
+
     for k_frame in xrange(n_frames):
-        mesh = myVTK.readUGrid(
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(n_zfill)+"."+sol_ext,
+        mesh_filename = sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext
+        mesh = myvtk.readUGrid(
+            filename=mesh_filename,
             verbose=verbose)
         n_cells = mesh.GetNumberOfCells()
-        if (ref_mesh is not None):
-            assert (n_cells == ref_n_cells)
-            mesh.GetCellData().AddArray(ref_mesh.GetCellData().GetArray("part_id"))
-            mesh.GetCellData().AddArray(ref_mesh.GetCellData().GetArray("sector_id"))
-        myVTK.computeStrainsFromDisplacements(
+        if (mesh_w_local_basis is not None):
+            assert (n_cells == mesh_w_local_basis_n_cells)
+            mesh.GetCellData().AddArray(mesh_w_local_basis.GetCellData().GetArray("part_id"))
+            mesh.GetCellData().AddArray(mesh_w_local_basis.GetCellData().GetArray("sector_id"))
+        myvtk.addDeformationGradients(
             mesh=mesh,
             disp_array_name=disp_array_name,
-            ref_mesh=ref_mesh,
+            defo_grad_array_name=defo_grad_array_name,
             verbose=verbose)
-        myVTK.writeUGrid(
+        if (ref_frame is not None):
+            farray_F = mesh.GetCellData().GetArray(defo_grad_array_name)
+            for k_cell in xrange(n_cells):
+                F  = numpy.reshape(farray_F.GetTuple(k_cell) , (3,3), order='C')
+                F0 = numpy.reshape(farray_F0.GetTuple(k_cell), (3,3), order='C')
+                F  = numpy.dot(F, numpy.linalg.inv(F0))
+                farray_F.SetTuple(k_cell, numpy.reshape(F, 9, order='C'))
+        myvtk.addStrainsFromDeformationGradients(
+            mesh=mesh,
+            defo_grad_array_name=defo_grad_array_name,
+            strain_array_name=strain_array_name,
+            mesh_w_local_basis=mesh_w_local_basis,
+            verbose=verbose)
+        myvtk.writeUGrid(
             ugrid=mesh,
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(n_zfill)+"."+sol_ext,
+            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
             verbose=verbose)
 
         if (write_strains) or (write_strain_vs_radius):
-            if (ref_mesh is not None):
-                assert (mesh.GetCellData().HasArray("Strain_"+CYL_or_PPS))
-                farray_strain = mesh.GetCellData().GetArray("Strain_"+CYL_or_PPS)
+            if (mesh_w_local_basis is not None):
+                assert (mesh.GetCellData().HasArray(strain_array_name+"_"+CYL_or_PPS))
+                farray_strain = mesh.GetCellData().GetArray(strain_array_name+"_"+CYL_or_PPS)
             else:
-                farray_strain = mesh.GetCellData().GetArray("Strain")
+                farray_strain = mesh.GetCellData().GetArray(strain_array_name)
 
         if (write_strains):
             if (n_sector_ids == 0):
@@ -122,8 +157,8 @@ def compute_strains(
             strain_file.write("\n")
 
         if (write_strain_vs_radius):
-            assert (ref_mesh.GetCellData().HasArray("r"))
-            farray_r = ref_mesh.GetCellData().GetArray("r")
+            assert (mesh_w_local_basis.GetCellData().HasArray("r"))
+            farray_r = mesh_w_local_basis.GetCellData().GetArray("r")
             for k_cell in xrange(n_cells):
                 strain_vs_radius_file.write(" ".join([str(val) for val in [k_frame, farray_r.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
             strain_vs_radius_file.write("\n")
@@ -131,6 +166,13 @@ def compute_strains(
 
     if (write_strains):
         strain_file.close()
+
+        if (plot_strains):
+            ddic.plot_strains(
+                working_folder=sol_folder,
+                working_basenames=[sol_basename],
+                suffix=None,
+                verbose=verbose)
 
     if (write_strain_vs_radius):
         strain_vs_radius_file.close()

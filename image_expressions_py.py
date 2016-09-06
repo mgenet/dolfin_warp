@@ -11,8 +11,10 @@
 import dolfin
 import numpy
 
-import myVTKPythonLibrary as myVTK
-from myVTKPythonLibrary.mat_vec_tools import *
+import myPythonLibrary as mypy
+import myVTKPythonLibrary as myvtk
+
+import dolfin_dic as ddic
 
 ########################################################################
 
@@ -32,12 +34,12 @@ class ExprIm2(dolfin.Expression):
         self.X = numpy.array([float()]*2+[Z])
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="linear",
             out_value=0.,
@@ -58,12 +60,12 @@ class ExprIm3(dolfin.Expression):
             self.init_image(filename=filename)
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="linear",
             out_value=0.,
@@ -83,15 +85,15 @@ class ExprGradIm2(dolfin.Expression):
         self.X = numpy.array([float()]*2+[Z])
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageGradient(
+        self.image = myvtk.addImageGradient(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -114,15 +116,15 @@ class ExprGradIm3(dolfin.Expression):
             self.init_image(filename=filename)
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageGradient(
+        self.image = myvtk.addImageGradient(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -144,15 +146,15 @@ class ExprHessIm2(dolfin.Expression):
         self.X = numpy.array([float()]*2+[Z])
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageHessian(
+        self.image = myvtk.addImageHessian(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -172,15 +174,15 @@ class ExprHessIm3(dolfin.Expression):
             self.init_image(filename=filename)
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageHessian(
+        self.image = myvtk.addImageHessian(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -203,12 +205,12 @@ class ExprDefIm2(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="linear",
             out_value=0.,
@@ -238,12 +240,12 @@ class ExprDefIm3(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="linear",
             out_value=0.,
@@ -273,15 +275,15 @@ class ExprGradDefIm2(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageGradient(
+        self.image = myvtk.addImageGradient(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -313,15 +315,15 @@ class ExprGradDefIm3(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageGradient(
+        self.image = myvtk.addImageGradient(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -353,15 +355,15 @@ class ExprHessDefIm2(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageHessian(
+        self.image = myvtk.addImageHessian(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,
@@ -387,15 +389,15 @@ class ExprHessDefIm3(dolfin.Expression):
         self.scaling = scaling
 
     def init_image(self, filename):
-        self.image = myVTK.readImage(
+        self.image = myvtk.readImage(
             filename=filename,
             verbose=0)
         self.s = getScalingFactor(
             scalar_type_as_string=self.image.GetScalarTypeAsString())
-        self.image = myVTK.computeImageHessian(
+        self.image = myvtk.addImageHessian(
             image=self.image,
             verbose=0)
-        self.interpolator = myVTK.createImageInterpolator(
+        self.interpolator = myvtk.getImageInterpolator(
             image=self.image,
             mode="nearest",
             out_value=self.s,

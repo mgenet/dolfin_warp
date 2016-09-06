@@ -16,10 +16,10 @@ import os
 import shutil
 import time
 
-import myVTKPythonLibrary as myVTK
+import myPythonLibrary as mypy
+import myVTKPythonLibrary as myvtk
 
-import myFEniCSPythonLibrary as myFEniCS
-from print_tools import *
+import dolfin_dic as ddic
 
 ########################################################################
 
@@ -34,7 +34,6 @@ def fedic(
         working_basename,
         images_folder,
         images_basename,
-        images_zfill=2,
         images_n_frames=None,
         images_ref_frame=0,
         images_quadrature=None,
@@ -51,6 +50,7 @@ def fedic(
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
         relax_type="constant", # constant, aitken, gss
         relax_init=1.0,
+        initialize_DU_with_DUold=0,
         tol_res=None,
         tol_res_rel=None,
         tol_dU=None,
@@ -61,17 +61,20 @@ def fedic(
 
     tab = 0
 
-    print_str(tab,"Checking number of frames…")
+    mypy.print_str(tab,"Checking number of frames…")
+    image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*.vti")
+    images_zfill = len(image_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+    #mypy.print_var(tab+1,"images_zfill",images_zfill)
     if (images_n_frames is None):
-        images_n_frames = len(glob.glob(images_folder+"/"+images_basename+"_"+"[0-9]"*images_zfill+".vti"))
+        images_n_frames = len(image_filenames)
     assert (images_n_frames > 1), "images_n_frames = "+str(images_n_frames)+" <= 1. Aborting."
-    print_var(tab+1,"images_n_frames",images_n_frames)
+    mypy.print_var(tab+1,"images_n_frames",images_n_frames)
 
     assert (abs(images_ref_frame) < images_n_frames), "abs(images_ref_frame) = "+str(images_ref_frame)+" >= images_n_frames. Aborting."
     images_ref_frame = images_ref_frame%images_n_frames
-    print_var(tab+1,"images_ref_frame",images_ref_frame)
+    mypy.print_var(tab+1,"images_ref_frame",images_ref_frame)
 
-    print_str(tab,"Loading mesh…")
+    mypy.print_str(tab,"Loading mesh…")
     assert (mesh is not None or ((mesh_folder is not None) and (mesh_basename is not None))), "Must provide a mesh (mesh = "+str(mesh)+") or a mesh file (mesh_folder = "+str(mesh_folder)+", mesh_basename = "+str(mesh_basename)+"). Aborting."
     if (mesh is None):
         mesh_filebasename = mesh_folder+"/"+mesh_basename
@@ -80,23 +83,26 @@ def fedic(
         mesh = dolfin.Mesh(mesh_filename)
     dX = dolfin.dx(mesh)
     mesh_V0 = dolfin.assemble(dolfin.Constant(1)*dX)
-    print_var(tab+1,"mesh_n_cells",len(mesh.cells()))
-    print_sci(tab+1,"mesh_V0",mesh_V0)
+    mypy.print_var(tab+1,"mesh_n_cells",len(mesh.cells()))
+    mypy.print_sci(tab+1,"mesh_V0",mesh_V0)
 
-    print_str(tab,"Computing quadrature degree for images…")
+    mypy.print_str(tab,"Computing quadrature degree for images…")
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+".vti"
     if (images_quadrature is None):
-        images_quadrature = myFEniCS.compute_quadrature_degree_from_points_count(
+        images_quadrature = ddic.compute_quadrature_degree_from_points_count(
             image_filename=ref_image_filename,
             mesh_filebasename=mesh_filebasename,
             verbose=1)
-    print_var(tab+1,"images_quadrature",images_quadrature)
+    mypy.print_var(tab+1,"images_quadrature",images_quadrature)
 
-    print_str(tab,"Loading reference image…")
-    images_dimension = myVTK.computeImageDimensionality(
-        image_filename=ref_image_filename,
+    mypy.print_str(tab,"Loading reference image…")
+    ref_image = myvtk.readImage(
+        filename=ref_image_filename,
+        verbose=verbose)
+    images_dimension = myvtk.getImageDimensionality(
+        image=ref_image,
         verbose=0)
-    print_var(tab+1,"images_dimension",images_dimension)
+    mypy.print_var(tab+1,"images_dimension",images_dimension)
     assert (images_dimension in (2,3)), "images_dimension must be 2 or 3. Aborting."
     fe = dolfin.FiniteElement(
         family="Quadrature",
@@ -113,19 +119,19 @@ def fedic(
         cell=mesh.ufl_cell(),
         degree=images_quadrature,
         quad_scheme="default")
-    te._quad_scheme = "default"                       # shouldn't be needed
-    for k in xrange(images_dimension**2):             # shouldn't be needed
-        te.sub_elements()[k]._quad_scheme = "default" # shouldn't be needed
+    te._quad_scheme = "default"                       # should not be needed
+    for k in xrange(images_dimension**2):             # should not be needed
+        te.sub_elements()[k]._quad_scheme = "default" # should not be needed
     if (images_expressions_type == "cpp"):
         Iref = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=0),
             element=fe)
         Iref.init_image(ref_image_filename)
         DIref = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad",
                 im_is_def=0),
@@ -133,17 +139,17 @@ def fedic(
         DIref.init_image(ref_image_filename)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
-            Iref = myFEniCS.ExprIm2(
+            Iref = ddic.ExprIm2(
                 filename=ref_image_filename,
                 element=fe)
-            DIref = myFEniCS.ExprGradIm2(
+            DIref = ddic.ExprGradIm2(
                 filename=ref_image_filename,
                 element=ve)
         elif (images_dimension == 3):
-            Iref = myFEniCS.ExprIm3(
+            Iref = ddic.ExprIm3(
                 filename=ref_image_filename,
                 element=fe)
-            DIref = myFEniCS.ExprGradIm3(
+            DIref = ddic.ExprGradIm3(
                 filename=ref_image_filename,
                 element=ve)
     else:
@@ -151,10 +157,15 @@ def fedic(
     Iref_int = dolfin.assemble(Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0
     Iref_norm = (dolfin.assemble(Iref**2 * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
     assert (Iref_norm > 0.), "Iref_norm = "+str(Iref_norm)+" <= 0. Aborting."
-    print_var(tab+1,"Iref_int",Iref_int)
-    print_var(tab+1,"Iref_norm",Iref_norm)
+    mypy.print_var(tab+1,"Iref_int",Iref_int)
+    mypy.print_var(tab+1,"Iref_norm",Iref_norm)
 
-    print_str(tab,"Defining functions…")
+    file_error_basename = working_folder+"/"+working_basename+"-error"
+    file_error = open(file_error_basename+".dat", "w")
+    file_error.write("#k_frame err_im"+"\n")
+    file_error.write(" ".join([str(val) for val in [images_ref_frame, 0.]])+"\n")
+
+    mypy.print_str(tab,"Defining functions…")
     vfs = dolfin.VectorFunctionSpace(
         mesh=mesh,
         family="Lagrange",
@@ -169,28 +180,31 @@ def fedic(
         name="previous displacement")
     Uold.vector().zero()
     Uold_norm = 0.
+    DUold = dolfin.Function(
+        vfs,
+        name="previous displacement increment")
     dU = dolfin.Function(
         vfs,
         name="displacement correction")
     dU_ = dolfin.TrialFunction(vfs)
     dV_ = dolfin.TestFunction(vfs)
 
-    print_str(tab,"Printing initial solution…")
+    mypy.print_str(tab,"Printing initial solution…")
     if not os.path.exists(working_folder):
         os.mkdir(working_folder)
-    pvd_basename = working_folder+"/"+working_basename+"_"
-    for vtu_filename in glob.glob(pvd_basename+"*.vtu"):
+    pvd_basename = working_folder+"/"+working_basename
+    for vtu_filename in glob.glob(pvd_basename+"_[0-9]*.vtu"):
         os.remove(vtu_filename)
-    file_pvd = dolfin.File(pvd_basename+".pvd")
+    file_pvd = dolfin.File(pvd_basename+"__.pvd")
     file_pvd << (U, float(images_ref_frame))
-    os.remove(pvd_basename+".pvd")
-    shutil.move(pvd_basename+"".zfill(6)+".vtu", pvd_basename+str(images_ref_frame).zfill(6)+".vtu")
+    os.remove(pvd_basename+"__.pvd")
+    shutil.move(pvd_basename+"__"+"".zfill(6)+".vtu", pvd_basename+"_"+str(images_ref_frame).zfill(6)+".vtu")
 
     if (print_iterations):
-        for filename in glob.glob(working_folder+"/"+working_basename+"-frame=*.*"):
+        for filename in glob.glob(working_folder+"/"+working_basename+"-frame=[0-9]*.*"):
             os.remove(filename)
 
-    print_str(tab,"Defining mechanical energy…")
+    mypy.print_str(tab,"Defining mechanical energy…")
     E     = dolfin.Constant(1.0)
     nu    = dolfin.Constant(regul_poisson)
     kappa = E/3/(1-2*nu)         # = E/3 if nu = 0
@@ -229,100 +243,99 @@ def fedic(
     DDpsi_m = dolfin.derivative(Dpsi_m, U, dU_)
 
     mesh_V = dolfin.assemble(J*dX)
-    print_sci(tab+1,"mesh_V",mesh_V)
+    mypy.print_sci(tab+1,"mesh_V",mesh_V)
 
-    volume_basename = working_folder+"/"+working_basename+"-volume"
-    file_volume = open(volume_basename+".dat","w")
+    file_volume_basename = working_folder+"/"+working_basename+"-volume"
+    file_volume = open(file_volume_basename+".dat","w")
     file_volume.write("#k_frame mesh_V"+"\n")
     file_volume.write(" ".join([str(val) for val in [images_ref_frame, mesh_V]])+"\n")
 
-    print_str(tab,"Defining deformed image…")
+    mypy.print_str(tab,"Defining deformed image…")
     scaling = numpy.array([1.,0.])
-    #scaling = dolfin.Constant([1.,0.])
     if (images_expressions_type == "cpp"):
         Idef = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=1),
             element=fe)
-        Idef.init_disp(U)
         Idef.init_dynamic_scaling(scaling)
+        Idef.init_disp(U)
         DIdef = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad",
                 im_is_def=1),
             element=ve)
+        Idef.init_dynamic_scaling(scaling)
         DIdef.init_disp(U)
-        DIdef.init_dynamic_scaling(scaling)
         if ("-wHess" in tangent_type):
             assert (0), "ToDo"
         Iold = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=1),
             element=fe)
+        Iold.init_dynamic_scaling(scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
         Iold.init_disp(Uold)
-        Iold.init_dynamic_scaling(scaling)
         DIold = dolfin.Expression(
-            cppcode=myFEniCS.get_ExprIm_cpp(
+            cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad",
                 im_is_def=1),
             element=ve)
+        DIold.init_dynamic_scaling(scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
         DIold.init_disp(Uold)
-        DIold.init_dynamic_scaling(scaling)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
-            Idef = myFEniCS.ExprDefIm2(
+            Idef = ddic.ExprDefIm2(
                 U=U,
                 scaling=scaling,
                 element=fe)
-            DIdef = myFEniCS.ExprGradDefIm2(
+            DIdef = ddic.ExprGradDefIm2(
                 U=U,
                 scaling=scaling,
                 element=ve)
             if ("-wHess" in tangent_type):
-                DDIdef = myFEniCS.ExprHessDefIm2(
+                DDIdef = ddic.ExprHessDefIm2(
                     U=U,
                     scaling=scaling,
                     element=te)
-            Iold = myFEniCS.ExprDefIm2(
+            Iold = ddic.ExprDefIm2(
                 U=Uold,
-                scaling=scaling,
+                scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=fe)
-            DIold = myFEniCS.ExprGradDefIm2(
+            DIold = ddic.ExprGradDefIm2(
                 U=Uold,
-                scaling=scaling,
+                scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=ve)
         elif (images_dimension == 3):
-            Idef = myFEniCS.ExprDefIm3(
+            Idef = ddic.ExprDefIm3(
                 U=U,
                 scaling=scaling,
                 element=fe)
-            DIdef = myFEniCS.ExprGradDefIm3(
+            DIdef = ddic.ExprGradDefIm3(
                 U=U,
                 scaling=scaling,
                 element=ve)
             if ("-wHess" in tangent_type):
-                DDIdef = myFEniCS.ExprHessDefIm3(
+                DDIdef = ddic.ExprHessDefIm3(
                     U=U,
-                    scaling=scaling,
+                    scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                     element=te)
-            Iold = myFEniCS.ExprDefIm3(
+            Iold = ddic.ExprDefIm3(
                 U=Uold,
                 scaling=scaling,
                 element=fe)
-            DIold = myFEniCS.ExprGradDefIm3(
+            DIold = ddic.ExprGradDefIm3(
                 U=Uold,
-                scaling=scaling,
+                scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=ve)
     else:
         assert (0), "\"images_expressions_type\" (="+str(images_expressions_type)+") must be \"cpp\" or \"py\". Aborting."
 
-    print_str(tab,"Defining correlation energy…")
+    mypy.print_str(tab,"Defining correlation energy…")
     psi_c   = (Idef - Iref)**2/2
     Dpsi_c  = (Idef - Iref) * dolfin.dot(DIdef, dV_)
     DDpsi_c = dolfin.dot(DIdef, dU_) * dolfin.dot(DIdef, dV_)
@@ -338,23 +351,24 @@ def fedic(
     B0 = dolfin.assemble(b0, form_compiler_parameters={'quadrature_degree':images_quadrature})
     res_norm0 = B0.norm("l2")
     assert (res_norm0 > 0.), "res_norm0 = "+str(res_norm0)+" <= 0. Aborting."
-    print_var(tab+1,"res_norm0",res_norm0)
+    mypy.print_var(tab+1,"res_norm0",res_norm0)
 
     #regul_level = dolfin.Constant(regul_level) * 5*(1+nu)*(1-2*nu)/(5-4*nu)
     regul_level = dolfin.Constant(regul_level)
 
     A = None
     if (tangent_type == "Iref"):
-        print_str(tab,"Assembly…")
+        mypy.print_str(tab,"Matrix assembly… (image term)")
         A = dolfin.assemble((1.-regul_level) * DDpsi_c_ref * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
-        A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
+        mypy.print_str(tab,"Matrix assembly… (regularization term)")
+        A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
     B = None
 
-    print_str(tab,"Looping over frames…")
+    mypy.print_str(tab,"Looping over frames…")
     n_iter_tot = 0
     global_success = True
     for forward_or_backward in ["forward", "backward"]:
-        print_var(tab,"forward_or_backward",forward_or_backward)
+        mypy.print_var(tab,"forward_or_backward",forward_or_backward)
 
         if (forward_or_backward == "forward"):
             k_frames_old = range(images_ref_frame  , images_n_frames-1, +1)
@@ -362,18 +376,20 @@ def fedic(
         elif (forward_or_backward == "backward"):
             k_frames_old = range(images_ref_frame  ,  0, -1)
             k_frames     = range(images_ref_frame-1, -1, -1)
-        print_var(tab,"k_frames",k_frames)
+        mypy.print_var(tab,"k_frames",k_frames)
 
         if (forward_or_backward == "backward"):
             U.vector().zero()
             U_norm = 0.
             Uold.vector().zero()
             Uold_norm = 0.
+            DUold.vector().zero()
+            scaling[:] = [1.,0.]
 
         tab += 1
         success = True
         for (k_frame,k_frame_old) in zip(k_frames,k_frames_old):
-            print_var(tab-1,"k_frame",k_frame)
+            mypy.print_var(tab-1,"k_frame",k_frame)
 
             if (print_iterations):
                 frame_basename = working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(images_zfill)
@@ -383,7 +399,7 @@ def fedic(
                 file_pvd_frame = dolfin.File(frame_basename+"_.pvd")
                 file_pvd_frame << (U, 0.)
 
-            print_str(tab,"Loading image, image gradient and image hessian…")
+            mypy.print_str(tab,"Loading image, image gradient and image hessian…")
             image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+".vti"
             Idef.init_image(image_filename)
             DIdef.init_image(image_filename)
@@ -395,12 +411,13 @@ def fedic(
 
             # linear system: matrix
             if (tangent_type == "Iold"):
-                print_str(tab,"Assembly…")
+                mypy.print_str(tab,"Matrix assembly… (image term)")
                 A = dolfin.assemble((1.-regul_level) * DDpsi_c_old * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
-                #print_var(tab,"A",A.array())
+                mypy.print_str(tab,"Matrix assembly… (regularization term)")
+                A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                #mypy.print_var(tab,"A",A.array())
                 #A_norm = A.norm("l2")
-                #print_var(tab,"A_norm",A_norm)
+                #mypy.print_var(tab,"A_norm",A_norm)
 
             if (print_iterations):
                 U.vector().zero()
@@ -412,7 +429,10 @@ def fedic(
                 err_im = im_diff/Iref_norm
                 file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff, err_im, None]])+"\n")
 
-            print_str(tab,"Running registration…")
+            if (initialize_DU_with_DUold):
+                U.vector().axpy(1., DUold.vector())
+
+            mypy.print_str(tab,"Running registration…")
             tab += 1
             k_iter = 0
             if   (residual_type.startswith("Iref")):
@@ -420,17 +440,18 @@ def fedic(
             elif (residual_type.startswith("Iold")):
                 using_Iold_residual = True
             while (True):
-                print_var(tab-1,"k_iter",k_iter)
+                mypy.print_var(tab-1,"k_iter",k_iter)
                 n_iter_tot += 1
 
                 # linear system: matrix assembly
                 if (tangent_type.startswith("Idef")):
-                    print_str(tab,"Matrix assembly…")
+                    mypy.print_str(tab,"Matrix assembly… (image term)")
                     A = dolfin.assemble((1.-regul_level) * DDpsi_c * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                    A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, add_values=True)
-                    #print_var(tab,"A",A.array())
+                    mypy.print_str(tab,"Matrix assembly… (regularization term)")
+                    A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                    #mypy.print_var(tab,"A",A.array())
                     #A_norm = A.norm("l2")
-                    #print_sci(tab,"A_norm",A_norm)
+                    #mypy.print_sci(tab,"A_norm",A_norm)
 
                 # linear system: residual assembly
                 if (k_iter > 0):
@@ -439,20 +460,23 @@ def fedic(
                     elif (k_iter > 1):
                         B_old[:] = B[:]
                     res_old_norm = res_norm
-                print_str(tab,"Residual assembly…")
                 if (using_Iold_residual):
+                    mypy.print_str(tab,"Residual assembly… (image term)")
                     B = dolfin.assemble(- (1.-regul_level) * Dpsi_c_old * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                    B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, add_values=True)
+                    mypy.print_str(tab,"Residual assembly… (regularization term)")
+                    B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
                 else:
+                    mypy.print_str(tab,"Residual assembly… (image term)")
                     B = dolfin.assemble(- (1.-regul_level) * Dpsi_c * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                    B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, add_values=True)
-                #print_var(tab,"B",B.array())
+                    mypy.print_str(tab,"Residual assembly… (regularization term)")
+                    B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                #mypy.print_var(tab,"B",B.array())
 
                 # residual error
                 res_norm = B.norm("l2")
-                #print_sci(tab,"res_norm",res_norm)
+                #mypy.print_sci(tab,"res_norm",res_norm)
                 err_res = res_norm/res_norm0
-                print_sci(tab,"err_res",err_res)
+                mypy.print_sci(tab,"err_res",err_res)
 
                 if (k_iter == 0):
                     err_res_rel = 1.
@@ -463,12 +487,12 @@ def fedic(
                         dB[:] = B[:] - B_old[:]
                     dres_norm = dB.norm("l2")
                     err_res_rel = dres_norm / res_old_norm
-                    print_sci(tab,"err_res_rel",err_res_rel)
+                    mypy.print_sci(tab,"err_res_rel",err_res_rel)
 
                 # linear system: solve
-                print_str(tab,"Solve…")
+                mypy.print_str(tab,"Solve…")
                 dolfin.solve(A, dU.vector(), B)
-                #print_var(tab,"dU",dU.vector().array())
+                #mypy.print_var(tab,"dU",dU.vector().array())
 
                 # relaxation
                 if (relax_type == "constant"):
@@ -479,7 +503,7 @@ def fedic(
                         relax = relax_init
                     else:
                         relax *= (-1.) * B_old.inner(dB) / dres_norm**2
-                    print_sci(tab,"relax",relax)
+                    mypy.print_sci(tab,"relax",relax)
                 elif (relax_type == "gss"):
                     phi = (1 + math.sqrt(5)) / 2
                     relax_a = (1-phi)/(2-phi)
@@ -492,43 +516,43 @@ def fedic(
                     tab += 1
                     relax_k = 0
                     while (True):
-                        print_var(tab-1,"relax_k",relax_k)
-                        print_sci(tab,"relax_a",relax_a)
-                        print_sci(tab,"relax_b",relax_b)
+                        mypy.print_var(tab-1,"relax_k",relax_k)
+                        mypy.print_sci(tab,"relax_a",relax_a)
+                        mypy.print_sci(tab,"relax_b",relax_b)
                         if (need_update_c):
                             relax_c = relax_b - (relax_b - relax_a) / phi
                             relax_list.append(relax_c)
-                            print_sci(tab,"relax_c",relax_c)
+                            mypy.print_sci(tab,"relax_c",relax_c)
                             U.vector().axpy(relax_c-relax_cur, dU.vector())
                             relax_cur = relax_c
                             relax_fc  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                            print_sci(tab,"relax_fc",relax_fc)
-                            relax_fc += dolfin.assemble((   regul_level) * psi_m * dX)
-                            print_sci(tab,"relax_fc",relax_fc)
-                            #print_sci(tab,"relax_fc",relax_fc)
+                            #mypy.print_sci(tab,"relax_fc",relax_fc)
+                            relax_fc += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':mesh_degree})
+                            #mypy.print_sci(tab,"relax_fc",relax_fc)
                             if (numpy.isnan(relax_fc)):
                                 relax_fc = float('+inf')
-                                print_sci(tab,"relax_fc",relax_fc)
+                                #mypy.print_sci(tab,"relax_fc",relax_fc)
+                            mypy.print_sci(tab,"relax_fc",relax_fc)
                             relax_vals.append(relax_fc)
-                            #print_var(tab,"relax_list",relax_list)
-                            #print_var(tab,"relax_vals",relax_vals)
+                            #mypy.print_var(tab,"relax_list",relax_list)
+                            #mypy.print_var(tab,"relax_vals",relax_vals)
                         if (need_update_d):
                             relax_d = relax_a + (relax_b - relax_a) / phi
                             relax_list.append(relax_d)
-                            print_sci(tab,"relax_d",relax_d)
+                            mypy.print_sci(tab,"relax_d",relax_d)
                             U.vector().axpy(relax_d-relax_cur, dU.vector())
                             relax_cur = relax_d
                             relax_fd  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
-                            print_sci(tab,"relax_fd",relax_fd)
-                            relax_fd += dolfin.assemble((   regul_level) * psi_m * dX)
-                            print_sci(tab,"relax_fd",relax_fd)
-                            #print_sci(tab,"relax_fd",relax_fd)
+                            #mypy.print_sci(tab,"relax_fd",relax_fd)
+                            relax_fd += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':mesh_degree})
+                            #mypy.print_sci(tab,"relax_fd",relax_fd)
                             if (numpy.isnan(relax_fd)):
                                 relax_fd = float('+inf')
-                                print_sci(tab,"relax_fd",relax_fd)
+                                #mypy.print_sci(tab,"relax_fd",relax_fd)
+                            mypy.print_sci(tab,"relax_fd",relax_fd)
                             relax_vals.append(relax_fd)
-                            #print_var(tab,"relax_list",relax_list)
-                            #print_var(tab,"relax_vals",relax_vals)
+                            #mypy.print_var(tab,"relax_list",relax_list)
+                            #mypy.print_var(tab,"relax_vals",relax_vals)
                         if (relax_fc < relax_fd):
                             relax_b = relax_d
                             relax_d = relax_c
@@ -547,7 +571,7 @@ def fedic(
                         relax_k += 1
                     tab -= 1
                     U.vector().axpy(-relax_cur, dU.vector())
-                    #print_var(tab,"relax_vals",relax_vals)
+                    #mypy.print_var(tab,"relax_vals",relax_vals)
 
                     if (print_iterations):
                         iter_basename = frame_basename+"-iter="+str(k_iter).zfill(3)
@@ -557,7 +581,7 @@ def fedic(
                         os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' u 1:2 w p title 'psi_int'\"")
 
                     relax = relax_list[numpy.argmin(relax_vals)]
-                    print_sci(tab,"relax",relax)
+                    mypy.print_sci(tab,"relax",relax)
                 else:
                     assert (0), "relax_type must be \"constant\", \"aitken\" or \"gss\". Aborting."
 
@@ -566,7 +590,7 @@ def fedic(
                 U_norm = U.vector().norm("l2")
 
                 if (print_iterations):
-                    #print_var(tab,"U",U.vector().array())
+                    #mypy.print_var(tab,"U",U.vector().array())
                     file_pvd_frame << (U, float(k_iter+1))
 
                 # displacement error
@@ -577,15 +601,15 @@ def fedic(
                     err_dU = dU_norm/U_norm
                 else:
                     err_dU = dU_norm/Uold_norm
-                print_sci(tab,"err_dU",err_dU)
+                mypy.print_sci(tab,"err_dU",err_dU)
 
                 # image error
                 if (k_iter > 0):
                     im_diff_old = im_diff
                 im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
-                #print_sci(tab,"im_diff",im_diff)
+                #mypy.print_sci(tab,"im_diff",im_diff)
                 err_im = im_diff/Iref_norm
-                print_sci(tab,"err_im",err_im)
+                mypy.print_sci(tab,"err_im",err_im)
 
                 if (print_iterations):
                     file_dat_frame.write(" ".join([str(val) for val in [k_iter, res_norm, err_res, err_res_rel, relax, dU_norm, U_norm, err_dU, im_diff, err_im]])+"\n")
@@ -603,19 +627,19 @@ def fedic(
 
                 # exit
                 if (success):
-                    print_str(tab,"Nonlinear solver converged…")
+                    mypy.print_str(tab,"Nonlinear solver converged…")
                     break
 
                 if (k_iter == n_iter_max-1):
                     if (residual_type=="Iref-then-Iold") and not (using_Iold_residual):
-                        print_str(tab,"Warning! Nonlinear solver failed to converge…using Iold instead of Iref. (k_frame = "+str(k_frame)+")")
+                        mypy.print_str(tab,"Warning! Nonlinear solver failed to converge…using Iold instead of Iref. (k_frame = "+str(k_frame)+")")
                         using_Iold_residual = True
                         U.vector()[:] = Uold.vector()[:]
                         U_norm = Uold_norm
                         k_iter = 0
                         continue
                     else:
-                        print_str(tab,"Warning! Nonlinear solver failed to converge… (k_frame = "+str(k_frame)+")")
+                        mypy.print_str(tab,"Warning! Nonlinear solver failed to converge… (k_frame = "+str(k_frame)+")")
                         global_success = False
                         break
 
@@ -633,18 +657,22 @@ def fedic(
                 break
 
             # solution update
+            DUold.vector()[:] = U.vector()[:] - Uold.vector()[:]
             Uold.vector()[:] = U.vector()[:]
             Uold_norm = U_norm
 
             mesh_V = dolfin.assemble(J*dX)
-            print_sci(tab+1,"mesh_V",mesh_V)
+            mypy.print_sci(tab+1,"mesh_V",mesh_V)
             file_volume.write(" ".join([str(val) for val in [k_frame, mesh_V]])+"\n")
 
-            print_str(tab,"Printing solution…")
-            file_pvd = dolfin.File(pvd_basename+".pvd")
+            mypy.print_str(tab,"Printing solution…")
+            file_pvd = dolfin.File(pvd_basename+"__.pvd")
             file_pvd << (U, float(k_frame))
-            os.remove(pvd_basename+".pvd")
-            shutil.move(pvd_basename+"".zfill(6)+".vtu", pvd_basename+str(k_frame).zfill(6)+".vtu")
+            os.remove(
+                pvd_basename+"__.pvd")
+            shutil.move(
+                pvd_basename+"__"+"".zfill(6)+".vtu",
+                pvd_basename+"_"+str(k_frame).zfill(6)+".vtu")
 
             if (images_dynamic_scaling):
                 p = numpy.empty((2,2))
@@ -656,20 +684,33 @@ def fedic(
                 q[0] = dolfin.assemble(Idef*Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 q[1] = dolfin.assemble(Iref * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 scaling[:] = numpy.linalg.solve(p,q)
-                print_var(tab,"scaling", scaling)
+                mypy.print_var(tab,"scaling", scaling)
+
+                if (images_expressions_type == "cpp"):         # should not be needed
+                    Idef.update_dynamic_scaling(scaling)       # should not be needed
+                    DIdef.update_dynamic_scaling(scaling)      # should not be needed
+                    if ("-wHess" in tangent_type):             # should not be needed
+                        DDIdef.update_dynamic_scaling(scaling) # should not be needed
+                    Iold.update_dynamic_scaling(scaling)       # should not be needed
+                    DIold.update_dynamic_scaling(scaling)      # should not be needed
 
                 im_diff = (dolfin.assemble(psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})/mesh_V0)**(1./2)
                 err_im = im_diff/Iref_norm
-                print_sci(tab,"err_im",err_im)
+                mypy.print_sci(tab,"err_im",err_im)
+
+            file_error.write(" ".join([str(val) for val in [k_frame, err_im]])+"\n")
 
         tab -= 1
 
         if not (success) and not (continue_after_fail):
             break
 
-    print_var(tab,"n_iter_tot",n_iter_tot)
+    mypy.print_var(tab,"n_iter_tot",n_iter_tot)
+
+    file_error.close()
+    os.system("gnuplot -e \"set terminal pdf; set output '"+file_error_basename+".pdf'; set grid; set yrange [0:1]; plot '"+file_error_basename+".dat' u 1:2 lw 3 notitle\"")
 
     file_volume.close()
-    #os.remove(pvd_basename+".pvd")
+    os.system("gnuplot -e \"set terminal pdf; set output '"+file_volume_basename+".pdf'; set grid; set yrange [0:*]; plot '"+file_volume_basename+".dat' u 1:2 lw 3 notitle\"")
 
     return global_success

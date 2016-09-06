@@ -46,7 +46,9 @@ class MyExpr : public Expression
 {
     vtkSmartPointer<vtkImageInterpolator> interpolator;
     double static_scaling;'''+('''
-    Array<double>* dynamic_scaling;
+    Array<double>* dynamic_scaling; // does not work
+    double dynamic_scaling_a;       // should not be needed
+    double dynamic_scaling_b;       // should not be needed
     Function* U;
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
@@ -56,6 +58,8 @@ public:
 
     MyExpr():
         Expression('''+str(im_dim)*(im_type=="grad")+''')'''+(''',
+        dynamic_scaling_a(1.),
+        dynamic_scaling_b(0.),
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
         X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
@@ -65,9 +69,18 @@ public:
     void init_dynamic_scaling(
         const Array<double> &scaling)
     {
-        //dynamic_scaling = scaling;
-        //std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
+        //dynamic_scaling = scaling;                                                  // does not work
+        // std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl; // does not work
+        dynamic_scaling_a = scaling[0];                                               // should not be needed
+        dynamic_scaling_b = scaling[1];                                               // should not be needed
     }
+
+    void update_dynamic_scaling(        // should not be needed
+        const Array<double> &scaling)   // should not be needed
+    {                                   // should not be needed
+        dynamic_scaling_a = scaling[0]; // should not be needed
+        dynamic_scaling_b = scaling[1]; // should not be needed
+    }                                   // should not be needed
 
     void init_disp(
         Function* UU)
@@ -146,35 +159,47 @@ public:
 
         std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+('''
 
-        expr[0] = expr[0]/static_scaling;''')*(im_type=="im")+('''
+        expr[0] /= static_scaling;''')*(im_type=="im")+('''
 
-        expr[0] = expr[0]/static_scaling;
-        expr[1] = expr[1]/static_scaling;''')*(im_type=="grad")*(im_dim==2)+('''
+        expr[0] /= static_scaling;
+        expr[1] /= static_scaling;''')*(im_type=="grad")*(im_dim==2)+('''
 
-        expr[0] = expr[0]/static_scaling;
-        expr[1] = expr[1]/static_scaling;
-        expr[2] = expr[2]/static_scaling;''')*(im_type=="grad")*(im_dim==3)+('''
+        expr[0] /= static_scaling;
+        expr[1] /= static_scaling;
+        expr[2] /= static_scaling;''')*(im_type=="grad")*(im_dim==3)+('''
 
         std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+(('''
 
-        std::cout << "in (im)" << std::endl;
-        std::cout << "expr = " << expr.str(1) << std::endl;
-        std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
-        expr[0] = expr[0] * (*dynamic_scaling)[0] + (*dynamic_scaling)[1];
-        std::cout << "out (im)" << std::endl;''')*(im_type=="im")+('''
+        // std::cout << "in (im)" << std::endl;
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // expr[0] *= (*dynamic_scaling)[0]; // does not work
+        // expr[0] += (*dynamic_scaling)[1]; // does not work
+        expr[0] *= dynamic_scaling_a;        // should not be needed
+        expr[0] += dynamic_scaling_b;        // should not be needed
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // std::cout << "out (im)" << std::endl;''')*(im_type=="im")+('''
 
-        expr[0] = expr[0] * (*dynamic_scaling)[0];
-        expr[1] = expr[1] * (*dynamic_scaling)[0];''')*(im_type=="grad")*(im_dim==2)+('''
+        // std::cout << "in (grad)" << std::endl;
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // expr[0] *= (*dynamic_scaling)[0]; // does not work
+        // expr[1] *= (*dynamic_scaling)[0]; // does not work
+        expr[0] *= dynamic_scaling_a;        // should not be needed
+        expr[1] *= dynamic_scaling_a;        // should not be needed
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==2)+('''
 
-        std::cout << "in (grad)" << std::endl;
-        std::cout << "expr = " << expr.str(1) << std::endl;
-        std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl;
-        expr[0] = expr[0] * (*dynamic_scaling)[0];
-        expr[1] = expr[1] * (*dynamic_scaling)[0];
-        expr[2] = expr[2] * (*dynamic_scaling)[0];
-        std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==3)+('''
+        // std::cout << "in (grad)" << std::endl;
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // expr[0] *= (*dynamic_scaling)[0]; // does not work
+        // expr[1] *= (*dynamic_scaling)[0]; // does not work
+        // expr[2] *= (*dynamic_scaling)[0]; // does not work
+        expr[0] *= dynamic_scaling_a;        // should not be needed
+        expr[1] *= dynamic_scaling_a;        // should not be needed
+        expr[2] *= dynamic_scaling_a;        // should not be needed
+        // std::cout << "expr = " << expr.str(1) << std::endl;
+        // std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==3)+('''
 
-        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose))*(im_is_def)*0+'''
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose))*(im_is_def)+'''
     }
 };
 
