@@ -98,7 +98,7 @@ def fedic(
     mypy.print_str(tab,"Loading reference image…")
     ref_image = myvtk.readImage(
         filename=ref_image_filename,
-        verbose=verbose)
+        verbose=0)
     images_dimension = myvtk.getImageDimensionality(
         image=ref_image,
         verbose=0)
