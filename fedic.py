@@ -62,6 +62,7 @@ def fedic(
         tol_im=None,
         n_iter_max=100,
         continue_after_fail=0,
+        print_refined_mesh=0,
         print_iterations=0):
 
     tab = 0
@@ -90,6 +91,10 @@ def fedic(
     mesh_V0 = dolfin.assemble(dolfin.Constant(1)*dX)
     mypy.print_var(tab+1,"mesh_n_cells",len(mesh.cells()))
     mypy.print_sci(tab+1,"mesh_V0",mesh_V0)
+
+    if (print_refined_mesh):
+        mesh_for_plot = dolfin.refine(mesh)
+        V_for_plot = dolfin.VectorFunctionSpace(mesh_for_plot, "Lagrange", 1)
 
     mypy.print_str(tab,"Computing quadrature degree for images…")
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+".vti"
@@ -202,8 +207,23 @@ def fedic(
         os.remove(vtu_filename)
     file_pvd = dolfin.File(pvd_basename+"__.pvd")
     file_pvd << (U, float(images_ref_frame))
-    os.remove(pvd_basename+"__.pvd")
-    shutil.move(pvd_basename+"__"+"".zfill(6)+".vtu", pvd_basename+"_"+str(images_ref_frame).zfill(6)+".vtu")
+    os.remove(
+        pvd_basename+"__.pvd")
+    shutil.move(
+        pvd_basename+"__"+"".zfill(6)+".vtu",
+        pvd_basename+"_"+str(images_ref_frame).zfill(6)+".vtu")
+
+    if (print_refined_mesh):
+        U.set_allow_extrapolation(True)
+        U_for_plot = dolfin.interpolate(U, V_for_plot)
+        U_for_plot.rename("displacement", "a Function")
+        file_pvd = dolfin.File(pvd_basename+"-refined__.pvd")
+        file_pvd << (U_for_plot, float(images_ref_frame))
+        os.remove(
+            pvd_basename+"-refined__.pvd")
+        shutil.move(
+            pvd_basename+"-refined__"+"".zfill(6)+".vtu",
+            pvd_basename+"-refined_"+str(images_ref_frame).zfill(6)+".vtu")
 
     if (print_iterations):
         for filename in glob.glob(working_folder+"/"+working_basename+"-frame=[0-9]*.*"):
@@ -679,6 +699,17 @@ def fedic(
             shutil.move(
                 pvd_basename+"__"+"".zfill(6)+".vtu",
                 pvd_basename+"_"+str(k_frame).zfill(6)+".vtu")
+
+            if (print_refined_mesh):
+                U_for_plot = dolfin.interpolate(U, V_for_plot)
+                U_for_plot.rename("displacement", "a Function")
+                file_pvd = dolfin.File(pvd_basename+"-refined__.pvd")
+                file_pvd << (U_for_plot, float(k_frame))
+                os.remove(
+                    pvd_basename+"-refined__.pvd")
+                shutil.move(
+                    pvd_basename+"-refined__"+"".zfill(6)+".vtu",
+                    pvd_basename+"-refined_"+str(k_frame).zfill(6)+".vtu")
 
             if (images_dynamic_scaling):
                 p = numpy.empty((2,2))
