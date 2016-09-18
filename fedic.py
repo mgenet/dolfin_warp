@@ -229,7 +229,7 @@ def fedic(
         for filename in glob.glob(working_folder+"/"+working_basename+"-frame=[0-9]*.*"):
             os.remove(filename)
 
-    mypy.print_str(tab,"Defining mechanical energy…")
+    mypy.print_str(tab,"Defining regularization energy…")
     E     = dolfin.Constant(1.0)
     nu    = dolfin.Constant(regul_poisson)
     kappa = E/3/(1-2*nu)         # = E/3 if nu = 0
@@ -269,6 +269,13 @@ def fedic(
 
     mesh_V = dolfin.assemble(J*dX)
     mypy.print_sci(tab+1,"mesh_V",mesh_V)
+
+    regularization_quadrature = 2*mesh_degree+1
+    #regularization_quadrature = 2*mesh_degree
+    #regularization_quadrature = mesh_degree+1
+    #regularization_quadrature = mesh_degree
+    #regularization_quadrature = 1
+    #regularization_quadrature = None
 
     file_volume_basename = working_folder+"/"+working_basename+"-volume"
     file_volume = open(file_volume_basename+".dat","w")
@@ -386,7 +393,10 @@ def fedic(
         mypy.print_str(tab,"Matrix assembly… (image term)")
         A = dolfin.assemble((1.-regul_level) * DDpsi_c_ref * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
         mypy.print_str(tab,"Matrix assembly… (regularization term)")
-        A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+        if (regularization_quadrature is not None):
+            A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':regularization_quadrature}, add_values=True)
+        else:
+            A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
     B = None
 
     mypy.print_str(tab,"Looping over frames…")
@@ -439,7 +449,10 @@ def fedic(
                 mypy.print_str(tab,"Matrix assembly… (image term)")
                 A = dolfin.assemble((1.-regul_level) * DDpsi_c_old * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
                 mypy.print_str(tab,"Matrix assembly… (regularization term)")
-                A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                if (regularization_quadrature is not None):
+                    A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, form_compiler_parameters={'quadrature_degree':regularization_quadrature}, add_values=True)
+                else:
+                    A = dolfin.assemble((   regul_level) * DDpsi_m     * dX, tensor=A, add_values=True)
                 #mypy.print_var(tab,"A",A.array())
                 #A_norm = A.norm("l2")
                 #mypy.print_var(tab,"A_norm",A_norm)
@@ -473,7 +486,10 @@ def fedic(
                     mypy.print_str(tab,"Matrix assembly… (image term)")
                     A = dolfin.assemble((1.-regul_level) * DDpsi_c * dX, tensor=A, form_compiler_parameters={'quadrature_degree':images_quadrature})
                     mypy.print_str(tab,"Matrix assembly… (regularization term)")
-                    A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                    if (regularization_quadrature is not None):
+                        A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, form_compiler_parameters={'quadrature_degree':regularization_quadrature}, add_values=True)
+                    else:
+                        A = dolfin.assemble((   regul_level) * DDpsi_m * dX, tensor=A, add_values=True)
                     #mypy.print_var(tab,"A",A.array())
                     #A_norm = A.norm("l2")
                     #mypy.print_sci(tab,"A_norm",A_norm)
@@ -489,12 +505,18 @@ def fedic(
                     mypy.print_str(tab,"Residual assembly… (image term)")
                     B = dolfin.assemble(- (1.-regul_level) * Dpsi_c_old * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
                     mypy.print_str(tab,"Residual assembly… (regularization term)")
-                    B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                    if (regularization_quadrature is not None):
+                        B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, form_compiler_parameters={'quadrature_degree':regularization_quadrature}, add_values=True)
+                    else:
+                        B = dolfin.assemble(- (   regul_level) * Dpsi_m     * dX, tensor=B, add_values=True)
                 else:
                     mypy.print_str(tab,"Residual assembly… (image term)")
                     B = dolfin.assemble(- (1.-regul_level) * Dpsi_c * dX, tensor=B, form_compiler_parameters={'quadrature_degree':images_quadrature})
                     mypy.print_str(tab,"Residual assembly… (regularization term)")
-                    B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, form_compiler_parameters={'quadrature_degree':mesh_degree}, add_values=True)
+                    if (regularization_quadrature is not None):
+                        B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, form_compiler_parameters={'quadrature_degree':regularization_quadrature}, add_values=True)
+                    else:
+                        B = dolfin.assemble(- (   regul_level) * Dpsi_m * dX, tensor=B, add_values=True)
                 #mypy.print_var(tab,"B",B.array())
 
                 # residual error
@@ -553,7 +575,10 @@ def fedic(
                             relax_cur = relax_c
                             relax_fc  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                             #mypy.print_sci(tab,"relax_fc",relax_fc)
-                            relax_fc += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':mesh_degree})
+                            if (regularization_quadrature is not None):
+                                relax_fc += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':regularization_quadrature})
+                            else:
+                                relax_fc += dolfin.assemble((   regul_level) * psi_m * dX)
                             #mypy.print_sci(tab,"relax_fc",relax_fc)
                             if (numpy.isnan(relax_fc)):
                                 relax_fc = float('+inf')
@@ -570,7 +595,10 @@ def fedic(
                             relax_cur = relax_d
                             relax_fd  = dolfin.assemble((1.-regul_level) * psi_c * dX, form_compiler_parameters={'quadrature_degree':images_quadrature})
                             #mypy.print_sci(tab,"relax_fd",relax_fd)
-                            relax_fd += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':mesh_degree})
+                            if (regularization_quadrature is not None):
+                                relax_fd += dolfin.assemble((   regul_level) * psi_m * dX, form_compiler_parameters={'quadrature_degree':regularization_quadrature})
+                            else:
+                                relax_fd += dolfin.assemble((   regul_level) * psi_m * dX)
                             #mypy.print_sci(tab,"relax_fd",relax_fd)
                             if (numpy.isnan(relax_fd)):
                                 relax_fd = float('+inf')
