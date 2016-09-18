@@ -27,6 +27,11 @@ dolfin.parameters["form_compiler"]["optimize"] = False # can't use that for "com
 dolfin.parameters["form_compiler"]["cpp_optimize"] = True
 # dolfin.parameters["num_threads"] = 8 # 2016-07-07: doesn't seem to work…
 
+#linear_solver = "default"
+linear_solver = "mumps"
+#linear_solver = "petsc"
+#linear_solver = "umfpack"
+
 ########################################################################
 
 def fedic(
@@ -491,7 +496,8 @@ def fedic(
 
                 # linear system: solve
                 mypy.print_str(tab,"Solve…")
-                dolfin.solve(A, dU.vector(), B)
+                dolfin.solve(A, dU.vector(), B,
+                             linear_solver)
                 #mypy.print_var(tab,"dU",dU.vector().array())
 
                 # relaxation
