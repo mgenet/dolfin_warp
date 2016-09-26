@@ -12,6 +12,7 @@ from plot_displacement_error import *
 from compute_displacements import *
 from compute_unwarped_images import *
 from image_expressions_py import *
+from plot_binned_strains_vs_radius import *
 from compute_displacement_error import *
 from compute_warped_images import *
 from compute_quadrature_degree import *

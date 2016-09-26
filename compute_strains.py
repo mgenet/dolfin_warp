@@ -32,7 +32,8 @@ def compute_strains(
         CYL_or_PPS="PPS",
         write_strains=1,
         plot_strains=1,
-        write_strain_vs_radius=0,
+        write_strains_vs_radius=0,
+        write_binned_strains_vs_radius=0,
         verbose=1):
 
     if (mesh_w_local_basis_folder is not None) and (mesh_w_local_basis_basename is not None):
@@ -70,9 +71,13 @@ def compute_strains(
         strain_file = open(sol_folder+"/"+sol_basename+"-strains.dat", "w")
         strain_file.write("#t Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std\n")
 
-    if (write_strain_vs_radius):
+    if (write_strains_vs_radius):
         strain_vs_radius_file = open(sol_folder+"/"+sol_basename+"-strains_vs_radius.dat", "w")
-        strain_vs_radius_file.write("#t r Err Ecc Ell Erc Erl Ecl\n")
+        strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
+
+    if (write_binned_strains_vs_radius):
+        binned_strain_vs_radius_file = open(sol_folder+"/"+sol_basename+"-binned_strains_vs_radius.dat", "w")
+        binned_strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (ref_frame is not None):
         ref_mesh_filename = sol_folder+"/"+sol_basename+"_"+str(ref_frame).zfill(sol_zfill)+"."+sol_ext
@@ -118,7 +123,7 @@ def compute_strains(
             filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
             verbose=verbose)
 
-        if (write_strains) or (write_strain_vs_radius):
+        if (write_strains) or (write_strains_vs_radius) or (write_binned_strains_vs_radius):
             if (mesh_w_local_basis is not None):
                 assert (mesh.GetCellData().HasArray(strain_array_name+"_"+CYL_or_PPS))
                 farray_strain = mesh.GetCellData().GetArray(strain_array_name+"_"+CYL_or_PPS)
@@ -156,13 +161,34 @@ def compute_strains(
                     strain_file.write("".join([" " + str(strains_per_sector_avg[k_comp]) + " " + str(strains_per_sector_std[k_comp]) for k_comp in xrange(6)]))
             strain_file.write("\n")
 
-        if (write_strain_vs_radius):
-            assert (mesh_w_local_basis.GetCellData().HasArray("r"))
-            farray_r = mesh_w_local_basis.GetCellData().GetArray("r")
+        if (write_strains_vs_radius):
+            assert (mesh_w_local_basis.GetCellData().HasArray("rr"))
+            farray_rr = mesh_w_local_basis.GetCellData().GetArray("rr")
             for k_cell in xrange(n_cells):
-                strain_vs_radius_file.write(" ".join([str(val) for val in [k_frame, farray_r.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
+                strain_vs_radius_file.write(" ".join([str(val) for val in [k_frame, farray_rr.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
             strain_vs_radius_file.write("\n")
             strain_vs_radius_file.write("\n")
+
+        if (write_binned_strains_vs_radius):
+            assert (mesh_w_local_basis.GetCellData().HasArray("rr"))
+            farray_rr = mesh_w_local_basis.GetCellData().GetArray("rr")
+            n_r = 10
+            binned_strains = [[] for k_r in xrange(n_r)]
+            for k_cell in xrange(n_cells):
+                k_r = int(farray_rr.GetTuple1(k_cell)*n_r)
+                binned_strains[k_r].append(list(farray_strain.GetTuple(k_cell)))
+            #print binned_strains
+            binned_strains_avg = []
+            binned_strains_std = []
+            for k_r in xrange(n_r):
+                binned_strains_avg.append(numpy.mean(binned_strains[k_r], 0))
+                binned_strains_std.append(numpy.std (binned_strains[k_r], 0))
+            #print binned_strains_avg
+            #print binned_strains_std
+            for k_r in xrange(n_r):
+                binned_strain_vs_radius_file.write(" ".join([str(val) for val in [k_frame, (k_r+0.5)/n_r]+[val for k_comp in xrange(6) for val in [binned_strains_avg[k_r][k_comp], binned_strains_std[k_r][k_comp]]]]) + "\n")
+            binned_strain_vs_radius_file.write("\n")
+            binned_strain_vs_radius_file.write("\n")
 
     if (write_strains):
         strain_file.close()
@@ -174,5 +200,8 @@ def compute_strains(
                 suffix=None,
                 verbose=verbose)
 
-    if (write_strain_vs_radius):
+    if (write_strains_vs_radius):
         strain_vs_radius_file.close()
+
+    if (write_binned_strains_vs_radius):
+        binned_strain_vs_radius_file.close()
