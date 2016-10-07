@@ -1,5 +1,5 @@
 # dolfin_dic
-A set of FEniCS and VTK-based python tools for Finite Element Digital Image Correlation.
+A set of FEniCS- and VTK-based python tools for Finite Element Digital Image Correlation.
 ### Requirements
 First you need to install [myPythonLibrary](https://github.com/mgenet/myPythonLibrary) as well as [myVTKPythonLibrary](https://github.com/mgenet/myVTKPythonLibrary)
 ### Installation
