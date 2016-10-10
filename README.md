@@ -2,6 +2,16 @@
 A set of FEniCS- and VTK-based python tools for Finite Element Digital Image Correlation.
 ### Requirements
 First you need to install [myPythonLibrary](https://github.com/mgenet/myPythonLibrary) as well as [myVTKPythonLibrary](https://github.com/mgenet/myVTKPythonLibrary). You also need a working installation of FEniCS (including DOLFIN python interface) & VTK (also including python interface).
+### FEniCS installation
+```
+git clone https://bitbucket.org/fenics-project/fenics-developer-tools.git
+cd fenics-developer-tools
+cp install/profiles/fenics.Linux.yaml fenics.yaml
+```
+In fenics.yaml, add numpy & scipy in the requested packages, and set vtk_wrap_python to true.
+```
+./install/fenics-install.sh fenics.yaml
+```
 ### Installation
 Get the code:
 ```
