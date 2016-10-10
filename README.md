@@ -9,7 +9,7 @@ git clone https://bitbucket.org/fenics-project/fenics-developer-tools.git
 cd fenics-developer-tools
 cp install/profiles/fenics.Linux.yaml fenics.yaml
 ```
-In fenics.yaml, add numpy & scipy in the requested packages, and set vtk_wrap_python to true.
+In `fenics.yaml`, add `numpy` & `scipy` in the list of requested packages, and set `vtk_wrap_python` to true. Then run the installation again:
 ```
 ./install/fenics-install.sh fenics.yaml
 ```
@@ -18,7 +18,7 @@ Get the code:
 ```
 > git clone git@bitbucket.org:mgenet/dolfin_dic.git
 ```
-To load the library within python, the simplest is to add the folder containing dolfin_dic to `PYTHONPATH`:
+To load the library within python, the simplest is to add the folder containing `dolfin_dic` to `PYTHONPATH`:
 ```
 > export PYTHONPATH=$PYTHONPATH:/path/to/folder
 ```
