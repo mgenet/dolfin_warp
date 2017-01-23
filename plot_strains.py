@@ -2,7 +2,7 @@
 
 ########################################################################
 ###                                                                  ###
-### Created by Martin Genet, 2016                                    ###
+### Created by Martin Genet, 2016-2017                               ###
 ###                                                                  ###
 ### École Polytechnique, Palaiseau, France                           ###
 ###                                                                  ###
@@ -121,4 +121,4 @@ plot 0 linecolor rgb "black" notitle,\\
 
     plotfile.close()
 
-    os.system("gnuplot "+plotfile_basename+".plt")
+    os.system("gnuplot \""+plotfile_basename+".plt\"")

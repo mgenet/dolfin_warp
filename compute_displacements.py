@@ -2,7 +2,7 @@
 
 ########################################################################
 ###                                                                  ###
-### Created by Martin Genet, 2016                                    ###
+### Created by Martin Genet, 2016-2017                               ###
 ###                                                                  ###
 ### École Polytechnique, Palaiseau, France                           ###
 ###                                                                  ###
@@ -25,6 +25,7 @@ def compute_displacements(
         sol_basename,
         ref_frame,
         sol_ext="vtu",
+        suffix="",
         verbose=1):
 
     sol_filenames = glob.glob(sol_folder+"/"+sol_basename+"_[0-9]*."+sol_ext)
@@ -58,5 +59,5 @@ def compute_displacements(
         [warped_disp_farray.SetTuple(k_point, numpy.array(cur_disp_farray.GetTuple(k_point)) - numpy.array(ref_disp_farray.GetTuple(k_point))) for k_point in xrange(n_points)]
         myvtk.writeUGrid(
             ugrid=warped_mesh,
-            filename=sol_folder+"/"+sol_basename+"__"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
+            filename=sol_folder+"/"+sol_basename+("-"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
             verbose=verbose)

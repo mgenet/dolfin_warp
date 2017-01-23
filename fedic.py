@@ -2,7 +2,7 @@
 
 ########################################################################
 ###                                                                  ###
-### Created by Martin Genet, 2016                                    ###
+### Created by Martin Genet, 2016-2017                               ###
 ###                                                                  ###
 ### École Polytechnique, Palaiseau, France                           ###
 ###                                                                  ###
@@ -53,7 +53,7 @@ def fedic(
         regul_poisson=0.0,
         tangent_type="Idef", # Idef, Idef-wHess, Iold, Iref
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
-        relax_type="constant", # constant, aitken, gss
+        relax_type="gss", # constant, aitken, gss
         relax_init=1.0,
         initialize_DU_with_DUold=0,
         tol_res=None,
@@ -66,6 +66,9 @@ def fedic(
         print_iterations=0):
 
     tab = 0
+
+    if not os.path.exists(working_folder):
+        os.mkdir(working_folder)
 
     mypy.print_str(tab,"Checking number of frames…")
     image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*.vti")
