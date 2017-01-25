@@ -39,6 +39,7 @@ def fedic(
         working_basename,
         images_folder,
         images_basename,
+        images_ext="vti", # vti, vtk
         images_n_frames=None,
         images_ref_frame=0,
         images_quadrature=None,
@@ -71,7 +72,7 @@ def fedic(
         os.mkdir(working_folder)
 
     mypy.print_str(tab,"Checking number of frames…")
-    image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*.vti")
+    image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
     images_zfill = len(image_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     #mypy.print_var(tab+1,"images_zfill",images_zfill)
     if (images_n_frames is None):
@@ -100,7 +101,7 @@ def fedic(
         V_for_plot = dolfin.VectorFunctionSpace(mesh_for_plot, "Lagrange", 1)
 
     mypy.print_str(tab,"Computing quadrature degree for images…")
-    ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+".vti"
+    ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+"."+images_ext
     if (images_quadrature is None):
         images_quadrature = ddic.compute_quadrature_degree_from_points_count(
             image_filename=ref_image_filename,
@@ -438,12 +439,12 @@ def fedic(
                 file_pvd_frame << (U, 0.)
 
             mypy.print_str(tab,"Loading image, image gradient and image hessian…")
-            image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+".vti"
+            image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext
             Idef.init_image(image_filename)
             DIdef.init_image(image_filename)
             if ("-wHess" in tangent_type):
                 DDIdef.init_image(image_filename)
-            image_filename = images_folder+"/"+images_basename+"_"+str(k_frame_old).zfill(images_zfill)+".vti"
+            image_filename = images_folder+"/"+images_basename+"_"+str(k_frame_old).zfill(images_zfill)+"."+images_ext
             Iold.init_image(image_filename)
             DIold.init_image(image_filename)
 
@@ -635,7 +636,7 @@ def fedic(
                         file_dat_iter = open(iter_basename+".dat","w")
                         file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], relax_vals[relax_k]]]) for relax_k in xrange(len(relax_list))]))
                         file_dat_iter.close()
-                        os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' u 1:2 w p title 'psi_int'\"")
+                        os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' using 1:2 with points title 'psi_int'; plot '"+iter_basename+".dat' using (\$2=='inf'?\$1:1/0):(GPVAL_Y_MIN+(0.8)*(GPVAL_Y_MAX-GPVAL_Y_MIN)):(0):((0.2)*(GPVAL_Y_MAX-GPVAL_Y_MIN)) with vectors notitle, '"+iter_basename+".dat' u 1:2 with points title 'psi_int'\"")
 
                     relax = relax_list[numpy.argmin(relax_vals)]
                     mypy.print_sci(tab,"relax",relax)
@@ -706,7 +707,7 @@ def fedic(
             tab -= 1
 
             if (print_iterations):
-                #os.remove(frame_basename+"_.pvd")
+                os.remove(frame_basename+"_.pvd")
                 file_dat_frame.close()
                 os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'err_res', '' u 1:7 pt 1 lw 3 title 'err_dU', '' using 1:9 pt 1 lw 3 title 'err_im', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
 
