@@ -43,6 +43,7 @@ def fedic(
         images_n_frames=None,
         images_ref_frame=0,
         images_quadrature=None,
+        images_quadrature_from="points_count", # points_count, integral
         images_expressions_type="cpp", # cpp, py
         images_dynamic_scaling=0,
         mesh=None,
@@ -103,10 +104,19 @@ def fedic(
     mypy.print_str(tab,"Computing quadrature degree for images…")
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+"."+images_ext
     if (images_quadrature is None):
-        images_quadrature = ddic.compute_quadrature_degree_from_points_count(
-            image_filename=ref_image_filename,
-            mesh_filebasename=mesh_filebasename,
-            verbose=1)
+        if (images_quadrature_from == "points_count"):
+            images_quadrature = ddic.compute_quadrature_degree_from_points_count(
+                image_filename=ref_image_filename,
+                mesh_filebasename=mesh_filebasename,
+                verbose=1)
+        elif (images_quadrature_from == "integral"):
+            images_quadrature = ddic.compute_quadrature_degree_from_integral(
+                image_filename=ref_image_filename,
+                mesh=mesh,
+                deg_min=1,
+                deg_max=10,
+                tol=1e-2,
+                verbose=1)
     mypy.print_var(tab+1,"images_quadrature",images_quadrature)
 
     mypy.print_str(tab,"Loading reference image…")
