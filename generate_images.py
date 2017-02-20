@@ -160,8 +160,8 @@ class Image():
             self.I0_noise = self.I0_noise_no
         elif (noise["type"] == "normal"):
             self.I0_noise = self.I0_noise_normal
-            self.avg = noise.avg if ("avg" in noise.keys()) else 0.
-            self.std = noise.std
+            self.avg = noise["avg"] if ("avg" in noise.keys()) else 0.
+            self.std = noise["stdev"]
         else:
             assert (0), "noise type must be \"no\" or \"normal\". Aborting."
 
@@ -271,15 +271,15 @@ class Mapping:
             self.init_t = self.init_t_no
             self.X = self.X_no
             self.x = self.x_no
-        elif (self.deformation["type"] == "trans"):
-            self.init_t = self.init_t_trans
-            self.X = self.X_trans
-            self.x = self.x_trans
+        elif (self.deformation["type"] == "translation"):
+            self.init_t = self.init_t_translation
+            self.X = self.X_translation
+            self.x = self.x_translation
             self.D = numpy.empty(3)
-        elif (self.deformation["type"] == "rot"):
-            self.init_t = self.init_t_rot
-            self.X = self.X_rot
-            self.x = self.x_rot
+        elif (self.deformation["type"] == "rotation"):
+            self.init_t = self.init_t_rotation
+            self.X = self.X_rotation
+            self.x = self.x_rotation
             self.C = numpy.empty(3)
             self.R = numpy.empty((3,3))
             self.Rinv = numpy.empty((3,3))
@@ -301,7 +301,7 @@ class Mapping:
             self.Re = structure["Re"]
             self.R = numpy.empty((3,3))
         else:
-            assert (0), "deformation type must be \"no\", \"trans\", \"rot\", \"homogeneous\" or \"heart\". Aborting."
+            assert (0), "deformation type must be \"no\", \"translation\", \"rotation\", \"homogeneous\" or \"heart\". Aborting."
 
         if (evolution["type"] == "linear"):
             self.phi = self.phi_linear
@@ -320,12 +320,12 @@ class Mapping:
     def init_t_no(self, t):
         pass
 
-    def init_t_trans(self, t):
+    def init_t_translation(self, t):
         self.D[0] = self.deformation["Dx"]*self.phi(t) if ("Dx" in self.deformation.keys()) else 0.
         self.D[1] = self.deformation["Dy"]*self.phi(t) if ("Dy" in self.deformation.keys()) else 0.
         self.D[2] = self.deformation["Dz"]*self.phi(t) if ("Dz" in self.deformation.keys()) else 0.
 
-    def init_t_rot(self, t):
+    def init_t_rotation(self, t):
         self.C[0] = self.deformation["Cx"] if ("Cx" in self.deformation.keys()) else 0.
         self.C[1] = self.deformation["Cy"] if ("Cy" in self.deformation.keys()) else 0.
         self.C[2] = self.deformation["Cz"] if ("Cz" in self.deformation.keys()) else 0.
@@ -354,9 +354,14 @@ class Mapping:
         Ezx = self.deformation["Ezx"]*self.phi(t) if ("Ezx" in self.deformation.keys()) else 0.
         Eyz = self.deformation["Eyz"]*self.phi(t) if ("Eyz" in self.deformation.keys()) else 0.
         Ezy = self.deformation["Ezy"]*self.phi(t) if ("Ezy" in self.deformation.keys()) else 0.
-        self.F = numpy.array([[math.sqrt(1.+Exx),              Exy ,              Exz ],
-                              [             Eyx , math.sqrt(1.+Eyy),              Eyz ],
-                              [             Ezx ,              Ezy , math.sqrt(1.+Ezz)]])
+        self.F = numpy.array([[Exx, Exy, Exz],
+                              [Eyx, Eyy, Eyz],
+                              [Ezx, Ezy, Ezz]])
+        self.F *= 2
+        self.F += numpy.eye(3)
+        w, v = numpy.linalg.eig(self.F)
+        #assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
+        self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
         self.Finv = numpy.linalg.inv(self.F)
 
     def init_t_heart(self, t):
@@ -374,11 +379,11 @@ class Mapping:
         X[:] = x
         #if (Finv is not None): Finv[:,:] = numpy.identity(numpy.sqrt(numpy.size(Finv)))
 
-    def X_trans(self, x, X, Finv=None):
+    def X_translation(self, x, X, Finv=None):
         X[:] = x - self.D
         #if (Finv is not None): Finv[:,:] = numpy.identity(numpy.sqrt(numpy.size(Finv)))
 
-    def X_rot(self, x, X, Finv=None):
+    def X_rotation(self, x, X, Finv=None):
         X[:] = numpy.dot(self.Rinv, x - self.C) + self.C
         #if (Finv is not None): Finv[:,:] = self.Rinv
 
@@ -430,11 +435,11 @@ class Mapping:
         x[:] = X
         #if (F is not None): F[:,:] = numpy.identity(numpy.sqrt(numpy.size(F)))
 
-    def x_trans(self, X, x, F=None):
+    def x_translation(self, X, x, F=None):
         x[:] = X + self.D
         #if (F is not None): F[:,:] = numpy.identity(numpy.sqrt(numpy.size(F)))
 
-    def x_rot(self, X, x, F=None):
+    def x_rotation(self, X, x, F=None):
         x[:] = numpy.dot(self.R, X - self.C) + self.C
         #if (F is not None): F[:,:] = self.R
 
