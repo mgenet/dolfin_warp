@@ -1,12 +1,12 @@
 #coding=utf8
 
-########################################################################
-###                                                                  ###
-### Created by Martin Genet, 2016-2017                               ###
-###                                                                  ###
-### École Polytechnique, Palaiseau, France                           ###
-###                                                                  ###
-########################################################################
+################################################################################
+###                                                                          ###
+### Created by Martin Genet, 2016-2017                                       ###
+###                                                                          ###
+### École Polytechnique, Palaiseau, France                                   ###
+###                                                                          ###
+################################################################################
 
 import dolfin
 import numpy
@@ -16,7 +16,7 @@ import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
 
-########################################################################
+################################################################################
 
 def getScalingFactor(scalar_type_as_string):
     if   (scalar_type_as_string == 'unsigned char' ): return float(2**8 -1)

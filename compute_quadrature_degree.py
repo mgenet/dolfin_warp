@@ -1,12 +1,12 @@
 #coding=utf8
 
-########################################################################
-###                                                                  ###
-### Created by Martin Genet, 2016-2017                               ###
-###                                                                  ###
-### École Polytechnique, Palaiseau, France                           ###
-###                                                                  ###
-########################################################################
+################################################################################
+###                                                                          ###
+### Created by Martin Genet, 2016-2017                                       ###
+###                                                                          ###
+### École Polytechnique, Palaiseau, France                                   ###
+###                                                                          ###
+################################################################################
 
 import dolfin
 import numpy
@@ -16,7 +16,7 @@ import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
 
-########################################################################
+################################################################################
 
 def compute_quadrature_degree_from_points_count(
         image_filename,
@@ -79,7 +79,7 @@ def compute_quadrature_degree_from_points_count(
 
     return degree
 
-########################################################################
+################################################################################
 
 def compute_quadrature_degree_from_integral(
         image_filename,

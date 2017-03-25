@@ -1,12 +1,12 @@
 #coding=utf8
 
-########################################################################
-###                                                                  ###
-### Created by Martin Genet, 2016-2017                               ###
-###                                                                  ###
-### École Polytechnique, Palaiseau, France                           ###
-###                                                                  ###
-########################################################################
+################################################################################
+###                                                                          ###
+### Created by Martin Genet, 2016-2017                                       ###
+###                                                                          ###
+### École Polytechnique, Palaiseau, France                                   ###
+###                                                                          ###
+################################################################################
 
 import glob
 import math
@@ -20,7 +20,7 @@ import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
 
-########################################################################
+################################################################################
 
 #class ImagesInfo():
     #def __init__(self, n_dim, L, n_voxels, n_integration, T, n_frames, data_type, images_folder, images_basename):
@@ -94,7 +94,7 @@ import dolfin_dic as ddic
     #def __init__(self, type, **kwargs):
         #self["type"] = type
 
-########################################################################
+################################################################################
 
 class Image():
     def __init__(self, images, structure, texture, noise):
@@ -262,7 +262,7 @@ class Image():
         i[0] += random.normalvariate(self.avg, self.std)
         #if (g is not None): g[k] += [2*random.normalvariate(self.avg, self.std) for k in xrange(len(g))]
 
-########################################################################
+################################################################################
 
 class Mapping:
     def __init__(self, images, structure, deformation, evolution):
@@ -484,7 +484,7 @@ class Mapping:
             #F[:] = numpy.dot(numpy.transpose(self.R), numpy.dot(F, self.R))
             ##print "F = "+str(F)
 
-########################################################################
+################################################################################
 
 def generateImages(
         images,
