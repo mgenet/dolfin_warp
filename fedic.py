@@ -36,6 +36,8 @@ dolfin.parameters["form_compiler"]["optimize"] = True
 #dolfin.parameters["form_compiler"]["cpp_optimize"] = False
 #dolfin.parameters["form_compiler"]["cpp_optimize_flags"] = '-O0'
 
+dolfin.parameters['allow_extrapolation'] = True # 2017-04-10: why do I need to do that?
+
 # dolfin.parameters["num_threads"] = 8 # 2016-07-07: doesn't seem to work…
 
 linear_solver = "default"
