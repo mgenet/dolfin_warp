@@ -58,8 +58,8 @@ public:
 
     MyExpr():
         Expression('''+str(im_dim)*(im_type=="grad")+''')'''+(''',
-        dynamic_scaling_a(1.),
-        dynamic_scaling_b(0.),
+        dynamic_scaling_a(1.), // should not be needed
+        dynamic_scaling_b(0.), // should not be needed
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
         X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
@@ -91,7 +91,7 @@ public:
     void init_image(
         const char* filename,
         const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type=="grad")+'''",
-        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''1.''')*(im_type=="grad")+(''',
+        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type=="grad")+(''',
         const double &Z=0.''')*(im_dim==2)+''')
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
@@ -206,3 +206,76 @@ public:
 }'''
     #print ExprIm_cpp
     return ExprIm_cpp
+
+def get_ExprCharFuncIm_cpp(
+        im_dim,
+        verbose=0):
+
+    assert (im_dim in (2,3))
+
+    ExprCharFuncIm_cpp = '''\
+#include <string.h>
+
+#include <vtkSmartPointer.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkImageData.h>
+
+namespace dolfin
+{
+
+class MyExpr : public Expression
+{
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+
+public:
+
+    MyExpr():
+        Expression()
+    {
+    }
+
+    void init_image(
+        const char* filename)
+    {
+        vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+        reader->SetFileName(filename);
+        reader->Update();
+
+        vtkSmartPointer<vtkImageData> image = reader->GetOutput();
+        double* bounds = image->GetBounds();
+        xmin = bounds[0];
+        xmax = bounds[1];
+        ymin = bounds[2];
+        ymax = bounds[3];
+        zmin = bounds[4];
+        zmax = bounds[5];'''+('''
+        std::cout << "bounds = " << bounds[0] << " " << bounds[1] << " " << bounds[2] << " " << bounds[3] << " " << bounds[4] << " " << bounds[5] << std::endl;
+        std::cout << "xmin = " << xmin << std::endl;
+        std::cout << "xmax = " << xmax << std::endl;
+        std::cout << "ymin = " << ymin << std::endl;
+        std::cout << "ymax = " << ymax << std::endl;
+        std::cout << "zmin = " << zmin << std::endl;
+        std::cout << "zmax = " << zmax << std::endl;''')*(verbose)+'''
+    }
+
+    void eval(Array<double>& expr, const Array<double>& X) const
+    {'''+('''
+        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
+
+        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax))''')*(im_dim==2)+('''
+
+        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax) && (X[2] >= zmin) && (X[2] <= zmax))''')*(im_dim==3)+'''
+        {
+            expr[0] = 1.;
+        }
+        else
+        {
+            expr[0] = 0.;
+        }'''+('''
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+'''
+    }
+};
+
+}'''
+    #print ExprCharFuncIm_cpp
+    return ExprCharFuncIm_cpp

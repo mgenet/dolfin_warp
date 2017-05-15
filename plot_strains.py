@@ -93,6 +93,7 @@ set ylabel "'''+comp_name+''' strain (%)"
             if ("-" in comp_name):
                 plotfile.write('''\
 set yrange [-10:10]
+
 ''')
             else:
                 plotfile.write('''\
@@ -104,8 +105,8 @@ plot 0 linecolor rgb "black" notitle,\\
 ''')
             if (ref_folder is not None) and (ref_basename is not None):
                 plotfile.write('''\
-     "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linecolor "black" linewidth 5 notitle,\
-     "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linecolor "black" pointtype 1 linewidth 1 notitle'''+(len(working_basenames)>0)*(''',\\
+    "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linecolor "black" linewidth 5 notitle,\\
+    "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linecolor "black" pointtype 1 linewidth 1 notitle'''+(len(working_basenames)>0)*(''',\\
 ''')+(len(working_basenames)==0)*('''
 
 '''))
@@ -113,8 +114,8 @@ plot 0 linecolor rgb "black" notitle,\\
                 working_basename = working_basenames[k_basename]
                 working_scaling = working_scalings[k_basename]
                 plotfile.write('''\
-     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linestyle '''+str(k_basename+1)+''' linewidth 5 title "'''+working_basename+'''",\
-     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
+    "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linestyle '''+str(k_basename+1)+''' linewidth 5 title "'''+working_basename+'''",\\
+    "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
 ''')+(k_basename==len(working_basenames)-1)*('''
 
 '''))

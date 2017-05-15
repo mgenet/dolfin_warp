@@ -330,7 +330,7 @@ def fedic(
                              Div_P)
         N = dolfin.FacetNormal(mesh)
         Jump_P_N = dolfin.jump(P_m, N)
-        h = mesh.hmin()
+        h = dolfin.Constant(mesh.hmin())
         psi_m_F = dolfin.dot(Jump_P_N,
                              Jump_P_N)/h
         #P_N = P_m * N
@@ -456,9 +456,14 @@ def fedic(
         assert (0), "\"images_expressions_type\" (="+str(images_expressions_type)+") must be \"cpp\" or \"py\". Aborting."
 
     mypy.print_str("Defining correlation energy…",tab)
-    psi_c   = (Idef - Iref)**2/2
-    Dpsi_c  = (Idef - Iref) * dolfin.dot(DIdef, dU_test)
-    DDpsi_c = dolfin.dot(DIdef, dU_trial) * dolfin.dot(DIdef, dU_test)
+    phi_Iref = dolfin.Expression(
+        cppcode=ddic.get_ExprCharFuncIm_cpp(
+            im_dim=images_dimension),
+        element=fe)
+    phi_Iref.init_image(ref_image_filename)
+    psi_c   = phi_Iref * (Idef - Iref)**2/2
+    Dpsi_c  = phi_Iref * (Idef - Iref) * dolfin.dot(DIdef, dU_test)
+    DDpsi_c = phi_Iref * dolfin.dot(DIdef, dU_trial) * dolfin.dot(DIdef, dU_test)
     if ("-wHess" in tangent_type):
         DDpsi_c += (Idef - Iref) * dolfin.inner(dolfin.dot(DDIdef, dU_trial), dU_test)
 
@@ -831,7 +836,7 @@ def fedic(
             if (print_iterations):
                 os.remove(frame_basename+"_.pvd")
                 file_dat_frame.close()
-                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'err_res', '' u 1:7 pt 1 lw 3 title 'err_dU', '' using 1:9 pt 1 lw 3 title 'err_im', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
+                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'err_res', '' u 1:8 pt 1 lw 3 title 'err_dU', '' using 1:10 pt 1 lw 3 title 'err_im', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
 
             if not (success) and not (continue_after_fail):
                 break
