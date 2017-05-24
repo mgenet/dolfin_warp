@@ -87,12 +87,22 @@ set xrange [0:'''+str(n_frames)+''']
             elif (comp_name == "radial-circumferential"      ): k_comp = 3
             elif (comp_name == "radial-longitudinal"         ): k_comp = 4
             elif (comp_name == "circumferential-longitudinal"): k_comp = 5
+
+            if (k_comp == 0):
+                plotfile.write('''\
+set key bottom
+''')
+            else:
+                plotfile.write('''\
+set key top
+''')
+
             plotfile.write('''\
 set ylabel "'''+comp_name+''' strain (%)"
 ''')
             if ("-" in comp_name):
                 plotfile.write('''\
-set yrange [-10:10]
+set yrange [-20:20]
 
 ''')
             else:

@@ -20,9 +20,9 @@ import dolfin_dic as ddic
 ################################################################################
 
 def compute_strains(
-        sol_folder,
-        sol_basename,
-        sol_ext="vtu",
+        working_folder,
+        working_basename,
+        working_ext="vtu",
         ref_frame=None,
         disp_array_name="displacement",
         defo_grad_array_name="DeformationGradient",
@@ -59,28 +59,28 @@ def compute_strains(
         mesh_w_local_basis = None
         n_sector_ids = 0
 
-    sol_filenames = glob.glob(sol_folder+"/"+sol_basename+"_[0-9]*."+sol_ext)
+    working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
 
-    sol_zfill = len(sol_filenames[0].rsplit("_",1)[-1].split(".")[0])
-    if (verbose): print "sol_zfill = " + str(sol_zfill)
+    working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])
+    if (verbose): print "working_zfill = " + str(working_zfill)
 
-    n_frames = len(sol_filenames)
+    n_frames = len(working_filenames)
     if (verbose): print "n_frames = " + str(n_frames)
 
     if (write_strains):
-        strain_file = open(sol_folder+"/"+sol_basename+"-strains.dat", "w")
+        strain_file = open(working_folder+"/"+working_basename+"-strains.dat", "w")
         strain_file.write("#t Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std\n")
 
     if (write_strains_vs_radius):
-        strain_vs_radius_file = open(sol_folder+"/"+sol_basename+"-strains_vs_radius.dat", "w")
+        strain_vs_radius_file = open(working_folder+"/"+working_basename+"-strains_vs_radius.dat", "w")
         strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (write_binned_strains_vs_radius):
-        binned_strain_vs_radius_file = open(sol_folder+"/"+sol_basename+"-binned_strains_vs_radius.dat", "w")
+        binned_strain_vs_radius_file = open(working_folder+"/"+working_basename+"-binned_strains_vs_radius.dat", "w")
         binned_strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (ref_frame is not None):
-        ref_mesh_filename = sol_folder+"/"+sol_basename+"_"+str(ref_frame).zfill(sol_zfill)+"."+sol_ext
+        ref_mesh_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
         ref_mesh = myvtk.readUGrid(
             filename=ref_mesh_filename,
             verbose=verbose)
@@ -91,7 +91,7 @@ def compute_strains(
         farray_F0 = ref_mesh.GetCellData().GetArray(defo_grad_array_name)
 
     for k_frame in xrange(n_frames):
-        mesh_filename = sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext
+        mesh_filename = working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
         mesh = myvtk.readUGrid(
             filename=mesh_filename,
             verbose=verbose)
@@ -120,7 +120,7 @@ def compute_strains(
             verbose=verbose)
         myvtk.writeUGrid(
             ugrid=mesh,
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
+            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
             verbose=verbose)
 
         if (write_strains) or (write_strains_vs_radius) or (write_binned_strains_vs_radius):
@@ -195,8 +195,8 @@ def compute_strains(
 
         if (plot_strains):
             ddic.plot_strains(
-                working_folder=sol_folder,
-                working_basenames=[sol_basename],
+                working_folder=working_folder,
+                working_basenames=[working_basename],
                 suffix=None,
                 verbose=verbose)
 
