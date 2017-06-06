@@ -24,10 +24,10 @@ import dolfin_dic as ddic
 def compute_warped_images(
         ref_image_folder,
         ref_image_basename,
-        sol_folder,
-        sol_basename,
+        working_folder,
+        working_basename,
         ref_frame=0,
-        sol_ext="vtu",
+        working_ext="vtu",
         verbose=0):
 
     ref_image_zfill = len(glob.glob(ref_image_folder+"/"+ref_image_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
@@ -52,8 +52,8 @@ def compute_warped_images(
         image.AllocateScalars()
     scalars = image.GetPointData().GetScalars()
 
-    sol_zfill = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)[0].rsplit("_")[-1].split(".")[0])
-    n_frames = len(glob.glob(sol_folder+"/"+sol_basename+"_"+"[0-9]"*sol_zfill+"."+sol_ext))
+    working_zfill = len(glob.glob(working_folder+"/"+working_basename+"_*."+working_ext)[0].rsplit("_")[-1].split(".")[0])
+    n_frames = len(glob.glob(working_folder+"/"+working_basename+"_"+"[0-9]"*working_zfill+"."+working_ext))
     #n_frames = 1
 
     X = numpy.empty(3)
@@ -65,7 +65,7 @@ def compute_warped_images(
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
         mesh = myvtk.readUGrid(
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext)
+            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
         #print mesh
 
         warp = vtk.vtkWarpVector()
@@ -77,7 +77,7 @@ def compute_warped_images(
         warped_mesh = warp.GetOutput()
         #myvtk.writeUGrid(
             #ugrid=warped_mesh,
-            #filename=sol_folder+"/"+sol_basename+"-warped_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext)
+            #filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
 
         probe = vtk.vtkProbeFilter()
         if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
@@ -92,7 +92,7 @@ def compute_warped_images(
         scalars_U = probed_image.GetPointData().GetArray("displacement")
         #myvtk.writeImage(
             #image=probed_image,
-            #filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+".vti")
+            #filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+".vti")
 
         for k_point in xrange(image.GetNumberOfPoints()):
             scalars_mask.GetTuple(k_point, m)
@@ -107,4 +107,4 @@ def compute_warped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=sol_folder+"/"+sol_basename+"-warped_"+str(k_frame).zfill(sol_zfill)+".vti")
+            filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+".vti")

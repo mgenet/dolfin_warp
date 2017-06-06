@@ -24,9 +24,9 @@ import dolfin_dic as ddic
 def compute_unwarped_images(
         images_folder,
         images_basename,
-        sol_folder,
-        sol_basename,
-        sol_ext="vtu",
+        working_folder,
+        working_basename,
+        working_ext="vtu",
         verbose=0):
 
     ref_image_zfill = len(glob.glob(images_folder+"/"+images_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
@@ -46,8 +46,8 @@ def compute_unwarped_images(
         image.AllocateScalars()
     scalars = image.GetPointData().GetScalars()
 
-    sol_zfill = len(glob.glob(sol_folder+"/"+sol_basename+"_*."+sol_ext)[0].rsplit("_")[-1].split(".")[0])
-    n_frames = len(glob.glob(sol_folder+"/"+sol_basename+"_"+"[0-9]"*sol_zfill+"."+sol_ext))
+    working_zfill = len(glob.glob(working_folder+"/"+working_basename+"_*."+working_ext)[0].rsplit("_")[-1].split(".")[0])
+    n_frames = len(glob.glob(working_folder+"/"+working_basename+"_"+"[0-9]"*working_zfill+"."+working_ext))
     #n_frames = 1
 
     X = numpy.empty(3)
@@ -65,7 +65,7 @@ def compute_unwarped_images(
             image=def_image)
 
         mesh = myvtk.readUGrid(
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext)
+            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
 
         probe = vtk.vtkProbeFilter()
         if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
@@ -92,4 +92,4 @@ def compute_unwarped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=sol_folder+"/"+sol_basename+"-unwarped_"+str(k_frame).zfill(sol_zfill)+".vti")
+            filename=working_folder+"/"+working_basename+"-unwarped_"+str(k_frame).zfill(working_zfill)+".vti")

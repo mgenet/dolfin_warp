@@ -20,29 +20,29 @@ import dolfin_dic as ddic
 ################################################################################
 
 def compute_displacement_error(
-        sol_folder,
-        sol_basename,
+        working_folder,
+        working_basename,
         ref_folder,
         ref_basename,
-        sol_ext="vtu",
+        working_ext="vtu",
         ref_ext="vtu",
-        sol_disp_array_name="displacement",
+        working_disp_array_name="displacement",
         ref_disp_array_name="displacement",
         verbose=1):
 
-    sol_filenames = glob.glob(sol_folder+"/"+sol_basename+"_[0-9]*."+sol_ext)
+    working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
     ref_filenames = glob.glob(ref_folder+"/"+ref_basename+"_[0-9]*."+ref_ext)
 
-    sol_zfill = len(sol_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+    working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     ref_zfill = len(ref_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     if (verbose): print "ref_zfill = " + str(ref_zfill)
-    if (verbose): print "sol_zfill = " + str(sol_zfill)
+    if (verbose): print "working_zfill = " + str(working_zfill)
 
-    n_frames = len(sol_filenames)
+    n_frames = len(working_filenames)
     assert (len(ref_filenames) == n_frames)
     if (verbose): print "n_frames = " + str(n_frames)
 
-    error_file = open(sol_folder+"/"+sol_basename+"-displacement_error.dat", "w")
+    error_file = open(working_folder+"/"+working_basename+"-displacement_error.dat", "w")
     error_file.write("#t e\n")
 
     err_int = numpy.empty(n_frames)
@@ -54,15 +54,15 @@ def compute_displacement_error(
         n_points = ref.GetNumberOfPoints()
         n_cells = ref.GetNumberOfCells()
         sol = myvtk.readUGrid(
-            filename=sol_folder+"/"+sol_basename+"_"+str(k_frame).zfill(sol_zfill)+"."+sol_ext,
+            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
             verbose=0)
         assert (sol.GetNumberOfPoints() == n_points)
         assert (sol.GetNumberOfCells() == n_cells)
 
         ref_disp = ref.GetPointData().GetArray(ref_disp_array_name)
-        sol_disp = sol.GetPointData().GetArray(sol_disp_array_name)
+        working_disp = sol.GetPointData().GetArray(working_disp_array_name)
 
-        err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(sol_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in xrange(3)]) for k_point in xrange(n_points)]))
+        err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in xrange(3)]) for k_point in xrange(n_points)]))
         ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in xrange(3)]) for k_point in xrange(n_points)]))
 
     ref_int_int = numpy.mean(ref_int)
