@@ -668,9 +668,12 @@ def fedic(
                     mypy.print_sci("err_res_rel",err_res_rel,tab)
 
                 # linear system: solve
-                mypy.print_str("Solve…",tab)
+                mypy.print_str("Solve…",tab,newline=False)
+                t = time.time()
                 dolfin.solve(A, dU.vector(), B,
                              linear_solver)
+                t = time.time() - t
+                mypy.print_str(" "+str(t)+" s")
                 #mypy.print_var("dU",dU.vector().array(),tab)
 
                 # relaxation
