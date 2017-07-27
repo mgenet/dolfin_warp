@@ -63,7 +63,7 @@ def fedic(
         mesh_folder=None,
         mesh_basename=None,
         mesh_degree=1,
-        regul_type="hyperelastic", # hyperelastic, equilibrated
+        regul_type="equilibrated", # hyperelastic, equilibrated
         regul_model="neohookean", # linear, kirchhoff, neohookean, mooneyrivlin
         regul_quadrature=None,
         regul_level=0.1,
@@ -291,31 +291,39 @@ def fedic(
     if (regul_model == "linear"): # <- super bad
         e     = dolfin.sym(dolfin.grad(U))
         psi_m = (lmbda * dolfin.tr(e)**2 + 2*mu * dolfin.tr(e*e))/2
-        S_m   = lmbda * dolfin.tr(e) * I + 2*mu * e
+        if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+            e   = dolfin.variable(e)
+            S_m = dolfin.diff(psi_m, e)
+        else:
+            S_m = lmbda * dolfin.tr(e) * I + 2*mu * e
         P_m   = S_m
-    elif (regul_model == "kirchhoff"): # <- pretty bad too
-        C     = F.T * F
-        E     = (C - I)/2
-        psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
-        S_m   = lmbda * dolfin.tr(E) * I + 2*mu * E
-        P_m   = F * S_m
-    elif (regul_model == "neohookean"):
-        C     = F.T * F
-        Ic    = dolfin.tr(C)
-        Ic0   = dolfin.tr(I)
-        psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J))
-        Cinv  = dolfin.inv(C)
-        S_m   = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv)
-        P_m   = F * S_m
-    elif (regul_model == "mooneyrivlin"):
-        C     = F.T * F
-        Ic    = dolfin.tr(C)
-        Ic0   = dolfin.tr(I)
-        IIc   = (dolfin.tr(C)**2 - dolfin.tr(C*C))/2
-        IIc0  = (dolfin.tr(I)**2 - dolfin.tr(I*I))/2
-        psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + C2 * (IIc - IIc0 - 4*dolfin.ln(J))
-        Cinv  = dolfin.inv(C)
-        S_m   = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv) + 2*C2 * (Ic * I - C - 2*Cinv)
+    elif (regul_model in ("kirchhoff", "neohookean", "mooneyrivlin")):
+        C = F.T * F
+        E = (C - I)/2
+        if (regul_model == "kirchhoff"): # <- pretty bad too
+            psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
+            if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                S_m = lmbda * dolfin.tr(E) * I + 2*mu * E
+        elif (regul_model in ("neohookean", "mooneyrivlin")):
+            Ic    = dolfin.tr(C)
+            Ic0   = dolfin.tr(I)
+            if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                Cinv = dolfin.inv(C)
+            if (regul_model == "neohookean"):
+                psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J))
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv)
+            elif (regul_model == "mooneyrivlin"):
+                IIc   = (dolfin.tr(C)**2 - dolfin.tr(C*C))/2
+                IIc0  = (dolfin.tr(I)**2 - dolfin.tr(I*I))/2
+                psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + C2 * (IIc - IIc0 - 4*dolfin.ln(J))
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv) + 2*C2 * (Ic * I - C - 2*Cinv)
+        if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+            E   = dolfin.variable(E)
+            S_m = dolfin.diff(psi_m, E)
+        else:
+
         P_m   = F * S_m
     else:
         assert (0), "\"regul_model\" must be \"linear\", \"kirchhoff\", \"neohookean\", or \"mooneyrivlin\". Aborting."
