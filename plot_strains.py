@@ -51,7 +51,7 @@ def plot_strains(
     plotfile = open(plotfile_basename+".plt", "w")
 
     plotfile.write('''\
-set terminal pdf enhanced size 15,'''+('''6''')*(components=="all")+('''3''')*(components in ("circ-long", "rad-circ"))+'''
+set terminal pdf size 15,'''+('''6''')*(components=="all")+('''3''')*(components in ("circ-long", "rad-circ"))+'''
 
 set output "'''+plotfile_basename+'''.pdf"
 
@@ -66,7 +66,7 @@ set linestyle 7 pointtype 1
 set linestyle 8 pointtype 1
 set linestyle 9 pointtype 1
 
-set key box textcolor variable width +1
+set key box textcolor variable width +0
 
 set grid
 
@@ -74,7 +74,7 @@ set grid
 
     for k_sector in range(n_sectors):
         plotfile.write('''\
-set multiplot layout '''+('''2''')*(components=="all")+('''1''')*(components in ("circ-long", "rad-circ"))+''',3
+set multiplot layout '''+('''2''')*(components=="all")+('''1''')*(components in ("circ-long", "rad-circ"))+''',3'''+(''' title "sector '''+str(k_sector)+'''"''')*(k_sector > 0)+'''
 
 set xlabel "frame ()"
 set xrange [0:'''+str(n_frames)+''']
@@ -102,12 +102,12 @@ set ylabel "'''+comp_name+''' strain (%)"
 ''')
             if ("-" in comp_name):
                 plotfile.write('''\
-set yrange [-20:20]
+#set yrange [-20:20]
 
 ''')
             else:
                 plotfile.write('''\
-set yrange [-30:30]
+#set yrange [-30:30]
 
 ''')
             plotfile.write('''\
