@@ -322,9 +322,7 @@ def fedic(
         if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
             E   = dolfin.variable(E)
             S_m = dolfin.diff(psi_m, E)
-        else:
-
-        P_m   = F * S_m
+        P_m = F * S_m
     else:
         assert (0), "\"regul_model\" must be \"linear\", \"kirchhoff\", \"neohookean\", or \"mooneyrivlin\". Aborting."
 
@@ -745,17 +743,19 @@ def fedic(
                             if (numpy.isnan(relax_fd)):
                                 relax_fd = float('+inf')
                                 #mypy.print_sci("relax_fd",relax_fd,tab)
-                            #mypy.print_sci("relax_fd",relax_fd,tab)
+                            mypy.print_sci("relax_fd",relax_fd,tab)
                             relax_vals.append(relax_fd)
                             #mypy.print_var("relax_list",relax_list,tab)
                             #mypy.print_var("relax_vals",relax_vals,tab)
-                        if (relax_fc < relax_fd):
+                        if ((relax_fc == 0.) and (relax_fd == 0.)):
+                            break
+                        elif (relax_fc < relax_fd):
                             relax_b = relax_d
                             relax_d = relax_c
                             relax_fd = relax_fc
                             need_update_c = True
                             need_update_d = False
-                        elif (relax_fc > relax_fd):
+                        elif (relax_fc >= relax_fd):
                             relax_a = relax_c
                             relax_c = relax_d
                             relax_fc = relax_fd
