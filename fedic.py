@@ -747,7 +747,7 @@ def fedic(
                             relax_vals.append(relax_fd)
                             #mypy.print_var("relax_list",relax_list,tab)
                             #mypy.print_var("relax_vals",relax_vals,tab)
-                        if ((relax_fc < 1e-12) and (relax_fd == 1e-12)):
+                        if ((relax_fc < 1e-12) and (relax_fd < 1e-12)):
                             break
                         elif (relax_fc < relax_fd):
                             relax_b = relax_d
