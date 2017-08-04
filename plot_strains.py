@@ -19,6 +19,7 @@ def plot_strains(
         ref_folder=None,
         ref_basename=None,
         components="all", # all, circ-long, or rad-circ
+        yranges=[0]*6,
         suffix="",
         verbose=1):
 
@@ -28,21 +29,28 @@ def plot_strains(
         working_scalings = [1.] * len(working_basenames)
 
     if (ref_folder is not None) and (ref_basename is not None):
-        lines = open(ref_folder+"/"+ref_basename+"-strains.dat").readlines()
+        lines = open(ref_folder+"/"+ref_basename+"-strains.dat").readlines()[1:]
     else:
-        lines = open(working_folder+"/"+working_basenames[0]+"-strains.dat").readlines()
-    n_frames = len(lines)-1
-    n_sectors = (len(lines[-1].split(" "))-1)/12
+        lines = open(working_folder+"/"+working_basenames[0]+"-strains.dat").readlines()[1:]
+    n_frames = len(lines)
+    n_sectors = (len(lines[0].split(" "))-1)/12
     #print "n_frames = " + str(n_frames)
     #print "n_sectors = " + str(n_sectors)
 
+    comp_names = ["radial", "circumferential", "longitudinal", "radial-circumferential", "radial-longitudinal", "circumferential-longitudinal"]
     assert (components in ("all", "circ-long", "rad-circ"))
     if (components == "all"):
-        comp_names = ["radial", "circumferential", "longitudinal", "radial-circumferential", "radial-longitudinal", "circumferential-longitudinal"]
+        comp_indx = [0,1,2,3,4,5]
+        n_cols = 3
+        n_rows = 2
     elif (components == "circ-long"):
-        comp_names = ["circumferential","longitudinal","circumferential-longitudinal"]
+        comp_indx = [1,2,5]
+        n_cols = 3
+        n_rows = 1
     elif (components == "rad-circ"):
-        comp_names = ["radial", "circumferential", "radial-circumferential"]
+        comp_indx = [0,1,3]
+        n_cols = 3
+        n_rows = 1
 
     if (suffix is None):
         plotfile_basename = working_folder+"/"+working_basenames[0]+"-strains"
@@ -50,21 +58,14 @@ def plot_strains(
         plotfile_basename = "plot_strains"+("-"+suffix)*(suffix!="")
     plotfile = open(plotfile_basename+".plt", "w")
 
+    size_x = 5
+    size_y = 3
     plotfile.write('''\
-set terminal pdf size 15,'''+('''6''')*(components=="all")+('''3''')*(components in ("circ-long", "rad-circ"))+'''
+set terminal pdf size '''+str(n_cols*size_x)+''','''+str(n_rows*size_y)+'''
 
 set output "'''+plotfile_basename+'''.pdf"
 
 load "Set1.plt"
-set linestyle 1 pointtype 1
-set linestyle 2 pointtype 1
-set linestyle 3 pointtype 1
-set linestyle 4 pointtype 1
-set linestyle 5 pointtype 1
-set linestyle 6 pointtype 1
-set linestyle 7 pointtype 1
-set linestyle 8 pointtype 1
-set linestyle 9 pointtype 1
 
 set key box textcolor variable width +0
 
@@ -74,49 +75,29 @@ set grid
 
     for k_sector in range(n_sectors):
         plotfile.write('''\
-set multiplot layout '''+('''2''')*(components=="all")+('''1''')*(components in ("circ-long", "rad-circ"))+''',3'''+(''' title "sector '''+str(k_sector)+'''"''')*(k_sector > 0)+'''
+set multiplot layout '''+str(n_rows)+''','''+str(n_cols)+(''' title "sector '''+str(k_sector)+'''"''')*(k_sector > 0)+'''
 
 set xlabel "frame ()"
 set xrange [0:'''+str(n_frames)+''']
 
 ''')
-        for comp_name in comp_names:
-            if   (comp_name == "radial"                      ): k_comp = 0
-            elif (comp_name == "circumferential"             ): k_comp = 1
-            elif (comp_name == "longitudinal"                ): k_comp = 2
-            elif (comp_name == "radial-circumferential"      ): k_comp = 3
-            elif (comp_name == "radial-longitudinal"         ): k_comp = 4
-            elif (comp_name == "circumferential-longitudinal"): k_comp = 5
-
-            if (k_comp == 0):
-                plotfile.write('''\
-set key bottom
-''')
-            else:
-                plotfile.write('''\
-set key top
-''')
-
+        for k_comp in comp_indx:
             plotfile.write('''\
-set ylabel "'''+comp_name+''' strain (%)"
+set ylabel "'''+comp_names[k_comp]+''' strain (%)"
 ''')
-            if ("-" in comp_name):
+            yrange = yranges[k_comp]
+            if (yrange > 0):
                 plotfile.write('''\
-#set yrange [-20:20]
-
-''')
-            else:
-                plotfile.write('''\
-#set yrange [-30:30]
-
+set yrange [-'''+str(yrange)+''':'''+str(yrange)+''']
 ''')
             plotfile.write('''\
+
 plot 0 linecolor rgb "black" notitle,\\
 ''')
             if (ref_folder is not None) and (ref_basename is not None):
                 plotfile.write('''\
     "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linecolor "black" linewidth 5 notitle,\\
-    "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linecolor "black" pointtype 1 linewidth 1 notitle'''+(len(working_basenames)>0)*(''',\\
+    "'''+ref_folder+'''/'''+ref_basename+'''-strains.dat" using ($1):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linecolor "black" linewidth 1 pointtype 1 notitle'''+(len(working_basenames)>0)*(''',\\
 ''')+(len(working_basenames)==0)*('''
 
 '''))
@@ -125,7 +106,7 @@ plot 0 linecolor rgb "black" notitle,\\
                 working_scaling = working_scalings[k_basename]
                 plotfile.write('''\
     "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with lines linestyle '''+str(k_basename+1)+''' linewidth 5 title "'''+working_basename+'''",\\
-    "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
+    "'''+working_folder+'''/'''+working_basename+'''-strains.dat" using ('''+str(working_scaling)+'''*($1)+'''+str(k_basename)+'''./10):(100*$'''+str(2+12*k_sector+2*k_comp)+'''):(100*$'''+str(2+12*k_sector+2*k_comp+1)+''') with errorbars linestyle '''+str(k_basename+1)+''' linewidth 1 pointtype 1 notitle'''+(k_basename<len(working_basenames)-1)*(''',\\
 ''')+(k_basename==len(working_basenames)-1)*('''
 
 '''))

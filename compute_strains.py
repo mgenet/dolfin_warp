@@ -32,6 +32,7 @@ def compute_strains(
         CYL_or_PPS="PPS",
         write_strains=1,
         plot_strains=1,
+        plot_regional_strains=1,
         write_strains_vs_radius=0,
         write_binned_strains_vs_radius=0,
         verbose=1):
@@ -197,6 +198,13 @@ def compute_strains(
             ddic.plot_strains(
                 working_folder=working_folder,
                 working_basenames=[working_basename],
+                suffix=None,
+                verbose=verbose)
+
+        if (plot_regional_strains):
+            ddic.plot_regional_strains(
+                working_folder=working_folder,
+                working_basename=working_basename,
                 suffix=None,
                 verbose=verbose)
 
