@@ -230,14 +230,14 @@ class Image():
     def I0_texture_tagging_signed_XY(self, X, i, g=None):
         i[0] *= (math.sin(math.pi*X[0]/self.s)
               +  math.sin(math.pi*X[1]/self.s))/2
-        assert (i[0] >= 0.)
+        #assert (i[0] >= 0.)
         #if (g is not None):
             #assert (0), "ToDo"
 
     def I0_texture_tagging_XY(self, X, i, g=None):
         i[0] *= (abs(math.sin(math.pi*X[0]/self.s))
               +  abs(math.sin(math.pi*X[1]/self.s)))/2
-        assert (i[0] >= 0.)
+        #assert (i[0] >= 0.)
         #if (g is not None):
             #assert (0), "ToDo"
 

@@ -31,8 +31,10 @@ def compute_strains(
         mesh_w_local_basis_basename=None,
         CYL_or_PPS="PPS",
         write_strains=1,
+        temporal_offset=None,
+        temporal_resolution=None,
         plot_strains=1,
-        plot_regional_strains=1,
+        plot_regional_strains=0,
         write_strains_vs_radius=0,
         write_binned_strains_vs_radius=0,
         verbose=1):
@@ -61,6 +63,7 @@ def compute_strains(
         n_sector_ids = 0
 
     working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
+    assert (len(working_filenames) > 0), "There is no working file ("+working_folder+"/"+working_basename+"_[0-9]*."+working_ext+"). Aborting."
 
     working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])
     if (verbose): print "working_zfill = " + str(working_zfill)
@@ -151,7 +154,10 @@ def compute_strains(
                     strains_all.append(farray_strain.GetTuple(k_cell))
                     strains_per_sector[sector_id].append(farray_strain.GetTuple(k_cell))
 
-            strain_file.write(str(k_frame))
+            if (temporal_offset is not None) and (temporal_resolution is not None):
+                strain_file.write(str(temporal_offset + k_frame*temporal_resolution))
+            else:
+                strain_file.write(str(k_frame))
             strains_all_avg = numpy.mean(strains_all, 0)
             strains_all_std = numpy.std(strains_all, 0)
             strain_file.write("".join([" " + str(strains_all_avg[k_comp]) + " " + str(strains_all_std[k_comp]) for k_comp in xrange(6)]))

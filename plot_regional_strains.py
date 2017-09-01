@@ -50,7 +50,7 @@ def plot_regional_strains(
     #print "len(strains_es) = "+str(len(strains_es))
 
     n_sectors = n_sectors_l * n_sectors_c
-    assert (len(strains_es) == (1+n_sectors)*2*n_comp), "Number of strain components ("+str(len(strains_es))+") inconsistent with number of sectors (n_sectors_c="+str(n_sectors_c)+", n_sectors_l="+str(n_sectors_l)+"). Aborting."
+    assert (len(strains_es)/2 == (1+n_sectors)*n_comp), "Number of strain components ("+str(len(strains_es)/2)+") inconsistent with number of sectors (n_sectors_c="+str(n_sectors_c)+", n_sectors_l="+str(n_sectors_l)+"). Aborting."
 
     strains_es_avg = [[strains_es[(k_sector+1)*2*n_comp+2*k_comp] for k_sector in xrange(n_sectors)] for k_comp in xrange(n_comp)]
 
@@ -101,6 +101,14 @@ def plot_regional_strains(
                     bottom = 1.-float(k_l+1)/n_sectors_l,
                     color = cmap(float(strains_comp[k_sector]-strains_comp_min)/(strains_comp_max - strains_comp_min)),
                     linewidth=0)
+                #subplot.annotate(
+                    #"{:+2.1f}".format(strains_comp[k_sector]),
+                    #xy=    [(k_c+0.5) * 2*math.pi/n_sectors_c, 1.-float(k_l+0.5)/n_sectors_l],
+                    #xytext=[(k_c+0.5) * 2*math.pi/n_sectors_c, 1.-float(k_l+0.5)/n_sectors_l],
+                    #xycoords='polar',
+                    #textcoords='data',
+                    #horizontalalignment='center',
+                    #verticalalignment='center')
                 subplot.annotate(
                     str(k_sector+1),
                     xy=    [(k_c+0.5) * 2*math.pi/n_sectors_c, 1.-float(k_l+0.5)/n_sectors_l],
