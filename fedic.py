@@ -216,6 +216,7 @@ def fedic(
     mypy.print_var("Iref_int",Iref_int,tab+1)
     mypy.print_var("Iref_norm",Iref_norm,tab+1)
 
+    mypy.print_str("Initializing image error file…",tab)
     file_error_basename = working_folder+"/"+working_basename+"-error"
     file_error = open(file_error_basename+".dat", "w")
     file_error.write("#k_frame im_err"+"\n")
@@ -275,106 +276,109 @@ def fedic(
         for filename in glob.glob(working_folder+"/"+working_basename+"-frame=[0-9]*.*"):
             os.remove(filename)
 
-    mypy.print_str("Defining regularization energy…",tab)
-    E     = dolfin.Constant(1.0)
-    nu    = dolfin.Constant(regul_poisson)
-    kappa = E/3/(1-2*nu)                            # = E/3 if nu = 0
-    lmbda = E*nu/(1+nu)/(1-(images_dimension-1)*nu) # = 0   if nu = 0
-    mu    = E/2/(1+nu)                              # = E/2 if nu = 0
-    C1    = mu/2                                    # = E/4 if nu = 0
-    C2    = mu/2                                    # = E/4 if nu = 0
-    D1    = kappa/2                                 # = E/6 if nu = 0
-
+    mypy.print_str("Initializing volume file…",tab)
     I = dolfin.Identity(images_dimension)
     F = I + dolfin.grad(U)
     J = dolfin.det(F)
-    if (regul_model == "linear"): # <- super bad
-        e     = dolfin.sym(dolfin.grad(U))
-        psi_m = (lmbda * dolfin.tr(e)**2 + 2*mu * dolfin.tr(e*e))/2
-        if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
-            e   = dolfin.variable(e)
-            S_m = dolfin.diff(psi_m, e)
-        else:
-            S_m = lmbda * dolfin.tr(e) * I + 2*mu * e
-        P_m   = S_m
-    elif (regul_model in ("kirchhoff", "neohookean", "mooneyrivlin")):
-        C = F.T * F
-        E = (C - I)/2
-        if (regul_model == "kirchhoff"): # <- pretty bad too
-            psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
-            if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
-                S_m = lmbda * dolfin.tr(E) * I + 2*mu * E
-        elif (regul_model in ("neohookean", "mooneyrivlin")):
-            Ic    = dolfin.tr(C)
-            Ic0   = dolfin.tr(I)
-            if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
-                Cinv = dolfin.inv(C)
-            if (regul_model == "neohookean"):
-                psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J))
-                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
-                    S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv)
-            elif (regul_model == "mooneyrivlin"):
-                IIc   = (dolfin.tr(C)**2 - dolfin.tr(C*C))/2
-                IIc0  = (dolfin.tr(I)**2 - dolfin.tr(I*I))/2
-                psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + C2 * (IIc - IIc0 - 4*dolfin.ln(J))
-                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
-                    S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv) + 2*C2 * (Ic * I - C - 2*Cinv)
-        if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
-            E   = dolfin.variable(E)
-            S_m = dolfin.diff(psi_m, E)
-        P_m = F * S_m
-    else:
-        assert (0), "\"regul_model\" must be \"linear\", \"kirchhoff\", \"neohookean\", or \"mooneyrivlin\". Aborting."
-
-    if (regul_type == "hyperelastic"):
-        psi_m_V = psi_m
-        psi_m_F = dolfin.Constant(0)
-        psi_m_S = dolfin.Constant(0)
-    elif (regul_type == "equilibrated"):
-        Div_P = dolfin.div(P_m)
-        psi_m_V = dolfin.dot(Div_P,
-                             Div_P)
-        N = dolfin.FacetNormal(mesh)
-        Jump_P_N = dolfin.jump(P_m, N)
-        h = dolfin.Constant(mesh.hmin())
-        psi_m_F = dolfin.dot(Jump_P_N,
-                             Jump_P_N)/h
-        #P_N = P_m * N
-        #P_N_N = dolfin.dot(N, P_N)
-        #P_N_T = P_N - P_N_N * N
-        #psi_m_S  = dolfin.dot(P_N_T,
-                              #P_N_T)/h
-        #psi_m_S  = dolfin.dot(P_N,
-                              #P_N)/h
-        psi_m_S = dolfin.Constant(0)
-    else:
-        assert (0), "\"regul_type\" must be \"hyperelastic\" or \"equilibrated\". Aborting."
-    Dpsi_m_V  = dolfin.derivative( psi_m_V, U, dU_test)
-    DDpsi_m_V = dolfin.derivative(Dpsi_m_V, U, dU_trial)
-    Dpsi_m_F  = dolfin.derivative( psi_m_F, U, dU_test)
-    DDpsi_m_F = dolfin.derivative(Dpsi_m_F, U, dU_trial)
-    Dpsi_m_S  = dolfin.derivative( psi_m_S, U, dU_test)
-    DDpsi_m_S = dolfin.derivative(Dpsi_m_S, U, dU_trial)
 
     mesh_V = dolfin.assemble(J * dV)
     mypy.print_sci("mesh_V",mesh_V,tab+1)
-
-    #regul_quadrature = 2*mesh_degree+1
-    #regul_quadrature = 2*mesh_degree
-    #regul_quadrature = mesh_degree+1
-    #regul_quadrature = mesh_degree
-    #regul_quadrature = 1
-    regul_quadrature = None
-
-    form_compiler_parameters_for_regul = {}
-    form_compiler_parameters_for_regul["representation"] = "uflacs"
-    if (regul_quadrature is not None):
-        form_compiler_parameters_for_regul["quadrature_degree"] = regul_quadrature
 
     file_volume_basename = working_folder+"/"+working_basename+"-volume"
     file_volume = open(file_volume_basename+".dat","w")
     file_volume.write("#k_frame mesh_V"+"\n")
     file_volume.write(" ".join([str(val) for val in [images_ref_frame, mesh_V]])+"\n")
+
+    if (regul_level > 0):
+        mypy.print_str("Defining regularization energy…",tab)
+        E     = dolfin.Constant(1.0)
+        nu    = dolfin.Constant(regul_poisson)
+        kappa = E/3/(1-2*nu)                            # = E/3 if nu = 0
+        lmbda = E*nu/(1+nu)/(1-(images_dimension-1)*nu) # = 0   if nu = 0
+        mu    = E/2/(1+nu)                              # = E/2 if nu = 0
+        C1    = mu/2                                    # = E/4 if nu = 0
+        C2    = mu/2                                    # = E/4 if nu = 0
+        D1    = kappa/2                                 # = E/6 if nu = 0
+
+        if (regul_model == "linear"): # <- super bad
+            e = dolfin.sym(dolfin.grad(U))
+            psi_m = (lmbda * dolfin.tr(e)**2 + 2*mu * dolfin.tr(e*e))/2
+            if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+                e   = dolfin.variable(e)
+                S_m = dolfin.diff(psi_m, e)
+            else:
+                S_m = lmbda * dolfin.tr(e) * I + 2*mu * e
+            P_m = S_m
+        elif (regul_model in ("kirchhoff", "neohookean", "mooneyrivlin")):
+            C = F.T * F
+            E = (C - I)/2
+            if (regul_model == "kirchhoff"): # <- pretty bad too
+                psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    S_m = lmbda * dolfin.tr(E) * I + 2*mu * E
+            elif (regul_model in ("neohookean", "mooneyrivlin")):
+                Ic    = dolfin.tr(C)
+                Ic0   = dolfin.tr(I)
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    Cinv = dolfin.inv(C)
+                if (regul_model == "neohookean"):
+                    psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J))
+                    if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                        S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv)
+                elif (regul_model == "mooneyrivlin"):
+                    IIc   = (dolfin.tr(C)**2 - dolfin.tr(C*C))/2
+                    IIc0  = (dolfin.tr(I)**2 - dolfin.tr(I*I))/2
+                    psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + C2 * (IIc - IIc0 - 4*dolfin.ln(J))
+                    if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                        S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv) + 2*C2 * (Ic * I - C - 2*Cinv)
+            if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+                E   = dolfin.variable(E)
+                S_m = dolfin.diff(psi_m, E)
+            P_m = F * S_m
+        else:
+            assert (0), "\"regul_model\" must be \"linear\", \"kirchhoff\", \"neohookean\", or \"mooneyrivlin\". Aborting."
+
+        if (regul_type == "hyperelastic"):
+            psi_m_V = psi_m
+            psi_m_F = dolfin.Constant(0)
+            psi_m_S = dolfin.Constant(0)
+        elif (regul_type == "equilibrated"):
+            Div_P = dolfin.div(P_m)
+            psi_m_V = dolfin.dot(Div_P,
+                                 Div_P)
+            N = dolfin.FacetNormal(mesh)
+            Jump_P_N = dolfin.jump(P_m, N)
+            h = dolfin.Constant(mesh.hmin())
+            psi_m_F = dolfin.dot(Jump_P_N,
+                                 Jump_P_N)/h
+            #P_N = P_m * N
+            #P_N_N = dolfin.dot(N, P_N)
+            #P_N_T = P_N - P_N_N * N
+            #psi_m_S  = dolfin.dot(P_N_T,
+                                  #P_N_T)/h
+            #psi_m_S  = dolfin.dot(P_N,
+                                  #P_N)/h
+            psi_m_S = dolfin.Constant(0)
+        else:
+            assert (0), "\"regul_type\" must be \"hyperelastic\" or \"equilibrated\". Aborting."
+        Dpsi_m_V  = dolfin.derivative( psi_m_V, U, dU_test)
+        DDpsi_m_V = dolfin.derivative(Dpsi_m_V, U, dU_trial)
+        Dpsi_m_F  = dolfin.derivative( psi_m_F, U, dU_test)
+        DDpsi_m_F = dolfin.derivative(Dpsi_m_F, U, dU_trial)
+        Dpsi_m_S  = dolfin.derivative( psi_m_S, U, dU_test)
+        DDpsi_m_S = dolfin.derivative(Dpsi_m_S, U, dU_trial)
+
+        #regul_quadrature = 2*mesh_degree+1
+        #regul_quadrature = 2*mesh_degree
+        #regul_quadrature = mesh_degree+1
+        #regul_quadrature = mesh_degree
+        #regul_quadrature = 1
+        regul_quadrature = None
+
+        form_compiler_parameters_for_regul = {}
+        form_compiler_parameters_for_regul["representation"] = "uflacs"
+        if (regul_quadrature is not None):
+            form_compiler_parameters_for_regul["quadrature_degree"] = regul_quadrature
 
     mypy.print_str("Defining deformed image…",tab)
     scaling = numpy.array([1.,0.])
@@ -495,18 +499,21 @@ def fedic(
         A_c = dolfin.assemble(DDpsi_c_ref * dV, tensor=A_c, form_compiler_parameters=form_compiler_parameters_for_images)
         t = time.time() - t
         mypy.print_str(" "+str(t)+" s")
-    if (regul_model == "linear"):
+    if (regul_level > 0) and (regul_model == "linear"):
         mypy.print_str("Matrix assembly (regularization term)…",tab,newline=False)
         t = time.time()
         A_m = dolfin.assemble(DDpsi_m_V * dV + DDpsi_m_F * dF + DDpsi_m_S * dS, tensor=A_m, form_compiler_parameters=form_compiler_parameters_for_regul)
         t = time.time() - t
         mypy.print_str(" "+str(t)+" s")
     if (tangent_type.startswith("Iref")) and (regul_model == "linear"):
-        mypy.print_str("Matrix assembly (combination)…",tab,newline=False)
-        t = time.time()
-        A = (1.-regul_level) * A_c + regul_level * A_m
-        t = time.time() - t
-        mypy.print_str(" "+str(t)+" s")
+        if (regul_level > 0):
+            mypy.print_str("Matrix assembly (combination)…",tab,newline=False)
+            t = time.time()
+            A = (1.-regul_level) * A_c + regul_level * A_m
+            t = time.time() - t
+            mypy.print_str(" "+str(t)+" s")
+        else:
+            A = A_c
     B_c = None
     B_m = None
     B   = None
@@ -579,12 +586,16 @@ def fedic(
             if (tangent_type.startswith("Iold")) and (regul_model == "linear"):
                 mypy.print_str("Matrix assembly (combination)…",tab,newline=False)
                 t = time.time()
-                if (A is None):
-                    A = (1.-regul_level) * A_c + regul_level * A_m
+                if (regul_level > 0):
+                    if (A is None):
+                        A = (1.-regul_level) * A_c + regul_level * A_m
+                    else:
+                        A.zero()
+                        A.axpy(1.-regul_level, A_c, False)
+                        A.axpy(   regul_level, A_m, False)
                 else:
-                    A.zero()
-                    A.axpy(1.-regul_level, A_c, False)
-                    A.axpy(   regul_level, A_m, False)
+                    if (A is None):
+                        A = A_c
                 t = time.time() - t
                 mypy.print_str(" "+str(t)+" s")
 
@@ -607,25 +618,32 @@ def fedic(
                     mypy.print_str("Matrix assembly (image term)…",tab,newline=False)
                     t = time.time()
                     A_c = dolfin.assemble(DDpsi_c * dV, tensor=A_c, form_compiler_parameters=form_compiler_parameters_for_images)
+                    #mypy.print_var("A_c",A_c.array(),tab)
                     t = time.time() - t
                     mypy.print_str(" "+str(t)+" s")
-                if (regul_model != "linear"):
+                if (regul_level > 0) and (regul_model != "linear"):
                     mypy.print_str("Matrix assembly (regularization term)…",tab,newline=False)
                     t = time.time()
                     A_m = dolfin.assemble(DDpsi_m_V * dV + DDpsi_m_F * dF + DDpsi_m_S * dS, tensor=A_m, form_compiler_parameters=form_compiler_parameters_for_regul)
+                    #mypy.print_var("A_m",A_m.array(),tab)
                     t = time.time() - t
                     mypy.print_str(" "+str(t)+" s")
                 if (tangent_type.startswith("Idef")) or (regul_model != "linear"):
                     mypy.print_str("Matrix assembly (combination)…",tab,newline=False)
                     t = time.time()
-                    if (A is None):
-                        A = (1.-regul_level) * A_c + regul_level * A_m
+                    if (regul_level > 0):
+                        if (A is None):
+                            A = (1.-regul_level) * A_c + regul_level * A_m
+                        else:
+                            A.zero()
+                            A.axpy(1.-regul_level, A_c, False)
+                            A.axpy(   regul_level, A_m, False)
                     else:
-                        A.zero()
-                        A.axpy(1.-regul_level, A_c, False)
-                        A.axpy(   regul_level, A_m, False)
+                        if (A is None):
+                            A = A_c
                     t = time.time() - t
                     mypy.print_str(" "+str(t)+" s")
+                    #mypy.print_var("A",A.array(),tab)
 
                 # linear system: residual assembly
                 if (k_iter > 0):
@@ -642,19 +660,27 @@ def fedic(
                     B_c = dolfin.assemble(Dpsi_c * dV, tensor=B_c, form_compiler_parameters=form_compiler_parameters_for_images)
                 t = time.time() - t
                 mypy.print_str(" "+str(t)+" s")
-                mypy.print_str("Residual assembly (regularization term)…",tab,newline=False)
-                t = time.time()
-                B_m = dolfin.assemble(Dpsi_m_V * dV + Dpsi_m_F * dF + Dpsi_m_S * dS, tensor=B_m, form_compiler_parameters=form_compiler_parameters_for_regul)
-                t = time.time() - t
-                mypy.print_str(" "+str(t)+" s")
+                if (regul_level > 0):
+                    mypy.print_str("Residual assembly (regularization term)…",tab,newline=False)
+                    t = time.time()
+                    B_m = dolfin.assemble(Dpsi_m_V * dV + Dpsi_m_F * dF + Dpsi_m_S * dS, tensor=B_m, form_compiler_parameters=form_compiler_parameters_for_regul)
+                    t = time.time() - t
+                    mypy.print_str(" "+str(t)+" s")
                 mypy.print_str("Residual assembly (combination)…",tab,newline=False)
                 t = time.time()
-                if (B is None):
-                    B = -(1.-regul_level) * B_c - regul_level * B_m
+                if (regul_level > 0):
+                    if (B is None):
+                        B = -(1.-regul_level) * B_c - regul_level * B_m
+                    else:
+                        B.zero()
+                        B.axpy(-(1.-regul_level), B_c)
+                        B.axpy(-    regul_level , B_m)
                 else:
-                    B.zero()
-                    B.axpy(-(1.-regul_level), B_c)
-                    B.axpy(-    regul_level , B_m)
+                    if (B is None):
+                        B = - B_c
+                    else:
+                        B.zero()
+                        B.axpy(-1., B_c)
                 t = time.time() - t
                 mypy.print_str(" "+str(t)+" s")
                 #mypy.print_var("B",B.array(),tab)
@@ -721,8 +747,9 @@ def fedic(
                             else:
                                 relax_fc  = (1.-regul_level) * dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)
                             #mypy.print_sci("relax_fc",relax_fc,tab)
-                            relax_fc += regul_level * dolfin.assemble(psi_m_V * dV + psi_m_F * dF + psi_m_S * dS, form_compiler_parameters=form_compiler_parameters_for_regul)
-                            #mypy.print_sci("relax_fc",relax_fc,tab)
+                            if (regul_level > 0):
+                                relax_fc += regul_level * dolfin.assemble(psi_m_V * dV + psi_m_F * dF + psi_m_S * dS, form_compiler_parameters=form_compiler_parameters_for_regul)
+                                #mypy.print_sci("relax_fc",relax_fc,tab)
                             if (numpy.isnan(relax_fc)):
                                 relax_fc = float('+inf')
                                 #mypy.print_sci("relax_fc",relax_fc,tab)
@@ -741,8 +768,9 @@ def fedic(
                             else:
                                 relax_fd  = (1.-regul_level) * dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)
                             #mypy.print_sci("relax_fd",relax_fd,tab)
-                            relax_fd += regul_level * dolfin.assemble(psi_m_V * dV + psi_m_F * dF + psi_m_S * dS, form_compiler_parameters=form_compiler_parameters_for_regul)
-                            #mypy.print_sci("relax_fd",relax_fd,tab)
+                            if (regul_level > 0):
+                                relax_fd += regul_level * dolfin.assemble(psi_m_V * dV + psi_m_F * dF + psi_m_S * dS, form_compiler_parameters=form_compiler_parameters_for_regul)
+                                #mypy.print_sci("relax_fd",relax_fd,tab)
                             if (numpy.isnan(relax_fd)):
                                 relax_fd = float('+inf')
                                 #mypy.print_sci("relax_fd",relax_fd,tab)
