@@ -750,9 +750,9 @@ def fedic(
                             relax_vals.append(relax_fd)
                             #mypy.print_var("relax_list",relax_list,tab)
                             #mypy.print_var("relax_vals",relax_vals,tab)
-                        if ((relax_fc < 1e-12) and (relax_fd < 1e-12)):
-                            break
-                        elif (relax_fc < relax_fd):
+                        #if ((relax_fc < 1e-12) and (relax_fd < 1e-12)):
+                            #break
+                        if (relax_fc < relax_fd):
                             relax_b = relax_d
                             relax_d = relax_c
                             relax_fd = relax_fc
@@ -765,7 +765,8 @@ def fedic(
                             need_update_c = False
                             need_update_d = True
                         else: assert(0)
-                        if (relax_k >= 5) and (numpy.argmin(relax_vals) > 0):
+                        if (relax_k >= 9):
+                        #if (relax_k >= 9) and (numpy.argmin(relax_vals) > 0):
                             break
                         relax_k += 1
                     tab -= 1
