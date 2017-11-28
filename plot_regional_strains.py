@@ -76,6 +76,7 @@ def plot_regional_strains(
         else:
             strains_comp_min = -yrange
             strains_comp_max = +yrange
+        assert (strains_comp_max>strains_comp_min), "strains_comp_max ("+str(strains_comp_max)+") <= strains_comp_min (strains_comp_min). Aborting."
 
         cmap = matplotlib.pyplot.cm.get_cmap('coolwarm')
         smap = matplotlib.pyplot.cm.ScalarMappable(
