@@ -20,6 +20,15 @@ def get_ExprIm_cpp(
     assert (im_type in ("im","grad"))
 
     ExprIm_cpp = '''\
+#include <string.h>
+
+#include <vtkSmartPointer.h>
+#include <vtkStructuredPointsReader.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkImageData.h>'''+('''
+#include <vtkImageGradient.h>''')*(im_type=="grad")+'''
+#include <vtkImageInterpolator.h>
+
 double getStaticScalingFactor(const char* scalar_type_as_string)
 {
     if (strcmp(scalar_type_as_string, "unsigned char" ) == 0) return pow(2,  8)-1;
@@ -30,14 +39,6 @@ double getStaticScalingFactor(const char* scalar_type_as_string)
     if (strcmp(scalar_type_as_string, "double"        ) == 0) return 1.;
     assert (0);
 }
-
-#include <string.h>
-
-#include <vtkSmartPointer.h>
-#include <vtkXMLImageDataReader.h>
-#include <vtkImageData.h>'''+('''
-#include <vtkImageGradient.h>''')*(im_type=="grad")+'''
-#include <vtkImageInterpolator.h>
 
 namespace dolfin
 {
@@ -90,7 +91,7 @@ public:
 
     void init_image(
         const char* filename,
-        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type=="grad")+'''",
+        const char* interpol_mode="'''+('''nearest''')*(im_type=="im")+('''nearest''')*(im_type=="grad")+'''",
         const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type=="grad")+(''',
         const double &Z=0.''')*(im_dim==2)+''')
     {
