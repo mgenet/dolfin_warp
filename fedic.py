@@ -218,8 +218,8 @@ def fedic(
 
     file_error_basename = working_folder+"/"+working_basename+"-error"
     file_error = open(file_error_basename+".dat", "w")
-    file_error.write("#k_frame err_im"+"\n")
-    file_error.write(" ".join([str(val) for val in [images_ref_frame, 0.]])+"\n")
+    file_error.write("#k_frame im_err"+"\n")
+    file_error.write(" ".join([str(val) for val in [images_ref_frame, 0., 0., 0.]])+"\n")
 
     mypy.print_str("Defining functions…",tab)
     function_space = dolfin.VectorFunctionSpace(
@@ -541,7 +541,7 @@ def fedic(
             if (print_iterations):
                 frame_basename = working_folder+"/"+working_basename+"-frame="+str(k_frame).zfill(images_zfill)
                 file_dat_frame = open(frame_basename+".dat", "w")
-                file_dat_frame.write("#k_iter res_norm err_res err_res_rel relax dU_norm U_norm err_dU im_diff err_im\n")
+                file_dat_frame.write("#k_iter res_norm res_err res_err_rel relax dU_norm U_norm dU_err im_diff im_err\n")
 
                 file_pvd_frame = dolfin.File(frame_basename+"_.pvd")
                 file_pvd_frame << (U, 0.)
@@ -555,6 +555,19 @@ def fedic(
             image_filename = images_folder+"/"+images_basename+"_"+str(k_frame_old).zfill(images_zfill)+"."+images_ext
             Iold.init_image(image_filename)
             DIold.init_image(image_filename)
+
+            U.vector().zero()
+            im_diff_0 = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
+            im_err_0 = im_diff_0/Iref_norm
+            mypy.print_sci("im_err_0",im_err_0,tab)
+            U.vector()[:] = Uold.vector()[:]
+            im_diff_m1 = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
+            im_err_m1 = im_diff_m1/Iref_norm
+            mypy.print_sci("im_err_m1",im_err_m1,tab)
+
+            if (print_iterations):
+                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, im_diff_0, im_err_0, None]])+"\n")
+                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff_m1, im_err_m1, None]])+"\n")
 
             # linear system: matrix
             if (tangent_type.startswith("Iold")):
@@ -574,16 +587,6 @@ def fedic(
                     A.axpy(   regul_level, A_m, False)
                 t = time.time() - t
                 mypy.print_str(" "+str(t)+" s")
-
-            if (print_iterations):
-                U.vector().zero()
-                im_diff = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
-                err_im = im_diff/Iref_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, im_diff, err_im, None]])+"\n")
-                U.vector()[:] = Uold.vector()[:]
-                im_diff = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
-                err_im = im_diff/Iref_norm
-                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff, err_im, None]])+"\n")
 
             if (initialize_DU_with_DUold):
                 U.vector().axpy(1., DUold.vector())
@@ -659,19 +662,19 @@ def fedic(
                 # residual error
                 res_norm = B.norm("l2")
                 #mypy.print_sci("res_norm",res_norm,tab)
-                err_res = res_norm/res_norm0
-                mypy.print_sci("err_res",err_res,tab)
+                res_err = res_norm/res_norm0
+                mypy.print_sci("res_err",res_err,tab)
 
                 if (k_iter == 0):
-                    err_res_rel = 1.
+                    res_err_rel = 1.
                 else:
                     if (k_iter == 1):
                         dB = B - B_old
                     elif (k_iter > 1):
                         dB[:] = B[:] - B_old[:]
                     dres_norm = dB.norm("l2")
-                    err_res_rel = dres_norm / res_old_norm
-                    mypy.print_sci("err_res_rel",err_res_rel,tab)
+                    res_err_rel = dres_norm / res_old_norm
+                    mypy.print_sci("res_err_rel",res_err_rel,tab)
 
                 # linear system: solve
                 mypy.print_str("Solve…",tab,newline=False)
@@ -792,33 +795,33 @@ def fedic(
                 # displacement error
                 dU_norm = abs(relax) * dU.vector().norm("l2")
                 if (dU_norm == 0.) and (Uold_norm == 0.) and (U_norm == 0.):
-                    err_dU = 0.
+                    dU_err = 0.
                 elif (Uold_norm == 0.):
-                    err_dU = dU_norm/U_norm
+                    dU_err = dU_norm/U_norm
                 else:
-                    err_dU = dU_norm/Uold_norm
-                mypy.print_sci("err_dU",err_dU,tab)
+                    dU_err = dU_norm/Uold_norm
+                mypy.print_sci("dU_err",dU_err,tab)
 
                 # image error
                 if (k_iter > 0):
                     im_diff_old = im_diff
                 im_diff = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
                 #mypy.print_sci("im_diff",im_diff,tab)
-                err_im = im_diff/Iref_norm
-                mypy.print_sci("err_im",err_im,tab)
+                im_err = im_diff/Iref_norm
+                mypy.print_sci("im_err",im_err,tab)
 
                 if (print_iterations):
-                    file_dat_frame.write(" ".join([str(val) for val in [k_iter, res_norm, err_res, err_res_rel, relax, dU_norm, U_norm, err_dU, im_diff, err_im]])+"\n")
+                    file_dat_frame.write(" ".join([str(val) for val in [k_iter, res_norm, res_err, res_err_rel, relax, dU_norm, U_norm, dU_err, im_diff, im_err]])+"\n")
 
                 # exit test
                 success = True
-                if (tol_res is not None) and (err_res > tol_res):
+                if (tol_res is not None) and (res_err > tol_res):
                     success = False
-                if (tol_res_rel is not None) and (err_res_rel > tol_res_rel):
+                if (tol_res_rel is not None) and (res_err_rel > tol_res_rel):
                     success = False
-                if (tol_dU is not None) and (err_dU > tol_dU):
+                if (tol_dU is not None) and (dU_err > tol_dU):
                     success = False
-                if (tol_im is not None) and (err_im > tol_im):
+                if (tol_im is not None) and (im_err > tol_im):
                     success = False
 
                 # exit
@@ -847,7 +850,7 @@ def fedic(
             if (print_iterations):
                 os.remove(frame_basename+"_.pvd")
                 file_dat_frame.close()
-                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'err_res', '' u 1:8 pt 1 lw 3 title 'err_dU', '' using 1:10 pt 1 lw 3 title 'err_im', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
+                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'res_err', '' u 1:8 pt 1 lw 3 title 'dU_err', '' using 1:10 pt 1 lw 3 title 'im_err', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
 
             if not (success) and not (continue_after_fail):
                 break
@@ -902,10 +905,10 @@ def fedic(
                     DIold.update_dynamic_scaling(scaling)      # should not be needed
 
                 im_diff = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
-                err_im = im_diff/Iref_norm
-                mypy.print_sci("err_im",err_im,tab)
+                im_err = im_diff/Iref_norm
+                mypy.print_sci("im_err",im_err,tab)
 
-            file_error.write(" ".join([str(val) for val in [k_frame, err_im]])+"\n")
+            file_error.write(" ".join([str(val) for val in [k_frame, im_err_0, im_err_m1, im_err]])+"\n")
 
         tab -= 1
 
@@ -915,7 +918,7 @@ def fedic(
     mypy.print_var("n_iter_tot",n_iter_tot,tab)
 
     file_error.close()
-    os.system("gnuplot -e \"set terminal pdf; set output '"+file_error_basename+".pdf'; set grid; set yrange [0:1]; plot '"+file_error_basename+".dat' u 1:2 lw 3 notitle\"")
+    os.system("gnuplot -e \"set terminal pdf; set output '"+file_error_basename+".pdf'; set key box textcolor variable; set grid; plot '"+file_error_basename+".dat' u 1:2 pt 1 lw 3 title 'correlation energy for U=0', '' u 1:3 pt 1 lw 3 title 'correlation energy for U=U_old', '' u 1:4 pt 1 lw 3 title 'correlation energy for U=U'\"")
 
     file_volume.close()
     os.system("gnuplot -e \"set terminal pdf; set output '"+file_volume_basename+".pdf'; set grid; set yrange [0:*]; plot '"+file_volume_basename+".dat' u 1:2 lw 3 notitle\"")
