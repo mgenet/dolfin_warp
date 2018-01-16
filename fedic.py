@@ -574,8 +574,8 @@ def fedic(
             mypy.print_sci("im_err_m1",im_err_m1,tab)
 
             if (print_iterations):
-                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, im_diff_0, im_err_0, None]])+"\n")
-                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, im_diff_m1, im_err_m1, None]])+"\n")
+                file_dat_frame.write(" ".join([str(val) for val in [-2, None, None, None, None, None, None, None, im_diff_0, im_err_0]])+"\n")
+                file_dat_frame.write(" ".join([str(val) for val in [-1, None, None, None, None, None, None, None, im_diff_m1, im_err_m1]])+"\n")
 
             # linear system: matrix
             if (tangent_type.startswith("Iold")):
@@ -880,7 +880,7 @@ def fedic(
             if (print_iterations):
                 os.remove(frame_basename+"_.pvd")
                 file_dat_frame.close()
-                os.system("gnuplot -e \"set terminal pdf; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'res_err', '' u 1:8 pt 1 lw 3 title 'dU_err', '' using 1:10 pt 1 lw 3 title 'im_err', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
+                os.system("gnuplot -e \"set terminal pdf noenhanced; set output '"+frame_basename+".pdf'; set key box textcolor variable; set grid; set logscale y; set yrange [1e-3:1e0]; plot '"+frame_basename+".dat' u 1:3 pt 1 lw 3 title 'res_err', '' u 1:8 pt 1 lw 3 title 'dU_err', '' using 1:10 pt 1 lw 3 title 'im_err', "+str(tol_res or tol_dU or tol_im)+" lt -1 notitle; unset logscale y; set yrange [*:*]; plot '' u 1:4 pt 1 lw 3 title 'relax'\"")
 
             if not (success) and not (continue_after_fail):
                 break
