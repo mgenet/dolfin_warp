@@ -398,7 +398,7 @@ def fedic(
                 im_type="grad",
                 im_is_def=1),
             element=ve)
-        Idef.init_dynamic_scaling(scaling)
+        DIdef.init_dynamic_scaling(scaling)
         DIdef.init_disp(U)
         if ("-wHess" in tangent_type):
             assert (0), "ToDo"
