@@ -352,20 +352,20 @@ def fedic(
             psi_m_S = dolfin.Constant(0)
         elif (regul_type == "equilibrated"):
             Div_P = dolfin.div(P_m)
-            psi_m_V = dolfin.dot(Div_P,
-                                 Div_P)
+            psi_m_V = dolfin.inner(Div_P,
+                                   Div_P)
             N = dolfin.FacetNormal(mesh)
             Jump_P_N = dolfin.jump(P_m, N)
-            h = dolfin.Constant(mesh.hmin())
-            psi_m_F = dolfin.dot(Jump_P_N,
-                                 Jump_P_N)/h
+            cell_h = dolfin.Constant(mesh.hmin())
+            psi_m_F = dolfin.inner(Jump_P_N,
+                                   Jump_P_N)/cell_h
             #P_N = P_m * N
             #P_N_N = dolfin.dot(N, P_N)
             #P_N_T = P_N - P_N_N * N
-            #psi_m_S  = dolfin.dot(P_N_T,
-                                  #P_N_T)/h
-            #psi_m_S  = dolfin.dot(P_N,
-                                  #P_N)/h
+            #psi_m_S  = dolfin.inner(P_N_T,
+                                  #P_N_T)/cell_h
+            #psi_m_S  = dolfin.inner(P_N,
+                                  #P_N)/cell_h
             psi_m_S = dolfin.Constant(0)
         else:
             assert (0), "\"regul_type\" must be \"hyperelastic\" or \"equilibrated\". Aborting."
@@ -483,7 +483,7 @@ def fedic(
     Dpsi_c  = phi_Iref * (Idef - Iref) * dolfin.dot(DIdef, dU_test)
     DDpsi_c = phi_Iref * dolfin.dot(DIdef, dU_trial) * dolfin.dot(DIdef, dU_test)
     if ("-wHess" in tangent_type):
-        DDpsi_c += (Idef - Iref) * dolfin.inner(dolfin.dot(DDIdef, dU_trial), dU_test)
+        DDpsi_c += (Idef - Iref) * dolfin.dot(dolfin.dot(DDIdef, dU_trial), dU_test)
 
     psi_c_old  = (Idef - Iold)**2/2
     Dpsi_c_old = (Idef - Iold) * dolfin.dot(DIdef, dU_test)
