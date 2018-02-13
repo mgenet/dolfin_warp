@@ -719,6 +719,11 @@ def fedic(
                 mypy.print_str(" "+str(t)+" s")
                 #mypy.print_var("dU",dU.vector().array(),tab)
 
+                dU_norm = dU.vector().norm("l2")
+                #mypy.print_sci("dU_norm",dU_norm,tab)
+                if not (numpy.isfinite(dU_norm)):
+                    dU.vector().zero()
+
                 # relaxation
                 if (relax_type == "constant"):
                     if (k_iter == 0):
@@ -818,19 +823,23 @@ def fedic(
 
                     relax = relax_list[numpy.argmin(relax_vals)]
                     mypy.print_sci("relax",relax,tab)
+                    if (relax == 0.):
+                        mypy.print_str("Warning! Optimal relaxation is null…",tab)
                 else:
                     assert (0), "relax_type must be \"constant\", \"aitken\" or \"gss\". Aborting."
 
                 # solution update
                 U.vector().axpy(relax, dU.vector())
                 U_norm = U.vector().norm("l2")
+                #mypy.print_sci("U_norm",U_norm,tab)
 
                 if (print_iterations):
                     #mypy.print_var("U",U.vector().array(),tab)
                     file_pvd_frame << (U, float(k_iter+1))
 
                 # displacement error
-                dU_norm = abs(relax) * dU.vector().norm("l2")
+                dU_norm *= abs(relax)
+                #mypy.print_sci("dU_norm",dU_norm,tab)
                 if (dU_norm == 0.) and (Uold_norm == 0.) and (U_norm == 0.):
                     dU_err = 0.
                 elif (Uold_norm == 0.):
