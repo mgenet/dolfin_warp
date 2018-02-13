@@ -91,7 +91,7 @@ public:
 
     void init_image(
         const char* filename,
-        const char* interpol_mode="'''+('''nearest''')*(im_type=="im")+('''nearest''')*(im_type=="grad")+'''",
+        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type=="grad")+'''",
         const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type=="grad")+(''',
         const double &Z=0.''')*(im_dim==2)+''')
     {

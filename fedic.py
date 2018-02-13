@@ -58,7 +58,7 @@ def fedic(
         images_quadrature=None,
         images_quadrature_from="points_count", # points_count, integral
         images_expressions_type="cpp", # cpp, py
-        images_dynamic_scaling=0,
+        images_dynamic_scaling=1,
         mesh=None,
         mesh_folder=None,
         mesh_basename=None,
