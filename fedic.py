@@ -112,6 +112,10 @@ def fedic(
         assert (os.path.exists(mesh_filename)),\
             "No mesh in "+mesh_filename+". Aborting."
         mesh = dolfin.Mesh(mesh_filename)
+    mesh_dimension = mesh.ufl_domain().geometric_dimension()
+    assert (mesh_dimension in (2,3)),\
+        "mesh_dimension ("+str(mesh_dimension)+") must be 2 or 3. Aborting."
+    mypy.print_var("mesh_dimension",mesh_dimension,tab+1)
     mypy.print_var("mesh_n_cells",len(mesh.cells()),tab+1)
     dV = dolfin.Measure(
         "dx",
@@ -124,6 +128,9 @@ def fedic(
         domain=mesh)
     mesh_V0 = dolfin.assemble(dolfin.Constant(1) * dV)
     mypy.print_sci("mesh_V0",mesh_V0,tab+1)
+    mesh_h0 = mesh_V0**(1./mesh_dimension)
+    mypy.print_sci("mesh_h0",mesh_h0,tab+1)
+    mesh_h0 = dolfin.Constant(mesh_h0)
 
     if (print_refined_mesh):
         mesh_for_plot = dolfin.refine(mesh)
@@ -157,9 +164,9 @@ def fedic(
     images_dimension = myvtk.getImageDimensionality(
         image=ref_image,
         verbose=0)
+    assert (images_dimension == mesh_dimension),\
+        "images_dimension ("+str(images_dimension)+") ≠ mesh_dimension ("+str(mesh_dimension)+"). Aborting."
     mypy.print_var("images_dimension",images_dimension,tab+1)
-    assert (images_dimension in (2,3)),\
-        "images_dimension must be 2 or 3. Aborting."
     fe = dolfin.FiniteElement(
         family="Quadrature",
         cell=mesh.ufl_cell(),
@@ -176,7 +183,7 @@ def fedic(
         degree=images_quadrature,
         quad_scheme="default")
     te._quad_scheme = "default"                       # should not be needed
-    for k in xrange(images_dimension**2):             # should not be needed
+    for k in xrange(mesh_dimension**2):             # should not be needed
         te.sub_elements()[k]._quad_scheme = "default" # should not be needed
     if (images_expressions_type == "cpp"):
         Iref = dolfin.Expression(
@@ -278,7 +285,7 @@ def fedic(
             os.remove(filename)
 
     mypy.print_str("Initializing volume file…",tab)
-    I = dolfin.Identity(images_dimension)
+    I = dolfin.Identity(mesh_dimension)
     F = I + dolfin.grad(U)
     J = dolfin.det(F)
 
@@ -294,12 +301,12 @@ def fedic(
         mypy.print_str("Defining regularization energy…",tab)
         E     = dolfin.Constant(1.0)
         nu    = dolfin.Constant(regul_poisson)
-        kappa = E/3/(1-2*nu)                            # = E/3 if nu = 0
-        lmbda = E*nu/(1+nu)/(1-(images_dimension-1)*nu) # = 0   if nu = 0
-        mu    = E/2/(1+nu)                              # = E/2 if nu = 0
-        C1    = mu/2                                    # = E/4 if nu = 0
-        C2    = mu/2                                    # = E/4 if nu = 0
-        D1    = kappa/2                                 # = E/6 if nu = 0
+        kappa = E/3/(1-2*nu)                          # = E/3 if nu = 0
+        lmbda = E*nu/(1+nu)/(1-(mesh_dimension-1)*nu) # = 0   if nu = 0
+        mu    = E/2/(1+nu)                            # = E/2 if nu = 0
+        C1    = mu/2                                  # = E/4 if nu = 0
+        C2    = mu/2                                  # = E/4 if nu = 0
+        D1    = kappa/2                               # = E/6 if nu = 0
 
         if (regul_model == "linear"): # <- super bad
             e = dolfin.sym(dolfin.grad(U))
