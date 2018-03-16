@@ -311,7 +311,7 @@ def fedic(
         if (regul_model == "linear"): # <- super bad
             e = dolfin.sym(dolfin.grad(U))
             psi_m = (lmbda * dolfin.tr(e)**2 + 2*mu * dolfin.tr(e*e))/2
-            if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+            if (int(dolfin.dolfin_version().split('.')[0]) >= 2018): # 2018-03-16: does not seem to work…
                 e   = dolfin.variable(e)
                 S_m = dolfin.diff(psi_m, e)
             else:
@@ -322,24 +322,24 @@ def fedic(
             E = (C - I)/2
             if (regul_model == "kirchhoff"): # <- pretty bad too
                 psi_m = (lmbda * dolfin.tr(E)**2 + 2*mu * dolfin.tr(E*E))/2
-                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2018): # 2018-03-16: does not seem to work…
                     S_m = lmbda * dolfin.tr(E) * I + 2*mu * E
             elif (regul_model in ("neohookean", "mooneyrivlin")):
                 Ic    = dolfin.tr(C)
                 Ic0   = dolfin.tr(I)
-                if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                if (int(dolfin.dolfin_version().split('.')[0]) < 2018): # 2018-03-16: does not seem to work…
                     Cinv = dolfin.inv(C)
                 if (regul_model == "neohookean"):
                     psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J))
-                    if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    if (int(dolfin.dolfin_version().split('.')[0]) < 2018): # 2018-03-16: does not seem to work…
                         S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv)
                 elif (regul_model == "mooneyrivlin"):
                     IIc   = (dolfin.tr(C)**2 - dolfin.tr(C*C))/2
                     IIc0  = (dolfin.tr(I)**2 - dolfin.tr(I*I))/2
                     psi_m = D1 * (J**2 - 1 - 2*dolfin.ln(J)) + C1 * (Ic - Ic0 - 2*dolfin.ln(J)) + C2 * (IIc - IIc0 - 4*dolfin.ln(J))
-                    if (int(dolfin.dolfin_version().split('.')[0]) < 2017):
+                    if (int(dolfin.dolfin_version().split('.')[0]) < 2018): # 2018-03-16: does not seem to work…
                         S_m = 2*D1 * (J**2 - 1) * Cinv + 2*C1 * (I - Cinv) + 2*C2 * (Ic * I - C - 2*Cinv)
-            if (int(dolfin.dolfin_version().split('.')[0]) >= 2017):
+            if (int(dolfin.dolfin_version().split('.')[0]) >= 2018): # 2018-03-16: does not seem to work…
                 E   = dolfin.variable(E)
                 S_m = dolfin.diff(psi_m, E)
             P_m = F * S_m
