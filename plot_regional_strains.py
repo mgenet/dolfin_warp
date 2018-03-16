@@ -10,6 +10,7 @@
 
 import math
 import matplotlib.pyplot
+import numpy
 
 ################################################################################
 
@@ -39,12 +40,12 @@ def plot_regional_strains(
         n_rows = 1
     n_comp = len(comp_names)
 
-    strains_lines = open(working_folder+"/"+working_basename+"-strains.dat").readlines()[1:]
-    strains_all = [[100*float(string) for string in line.split()[1:]] for line in strains_lines]
+    strains_all = 100*numpy.loadtxt(working_folder+"/"+working_basename+"-strains.dat")[:,1:]
 
-    n_frames = len(strains_lines)
+    n_frames = len(strains_all)
     if (k_frame is None):
-        k_frame = n_frames/2
+        #k_frame = n_frames/2
+        k_frame = numpy.argmin(strains_all[:,2])
 
     strains_es = strains_all[k_frame]
     #print "len(strains_es) = "+str(len(strains_es))
@@ -163,4 +164,5 @@ def plot_regional_strains(
         plotfile_basename = working_folder+"/"+working_basename+"-regional_strains"
     else:
         plotfile_basename = "plot_regional_strains"+("-"+suffix)*(suffix!="")
-    matplotlib.pyplot.savefig(plotfile_basename+".pdf", format='pdf')
+    #matplotlib.pyplot.savefig(plotfile_basename+".pdf", format='pdf')
+    matplotlib.pyplot.savefig(plotfile_basename+".pdf", format='pdf', bbox_inches="tight")
