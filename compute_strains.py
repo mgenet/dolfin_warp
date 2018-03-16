@@ -29,6 +29,7 @@ def compute_strains(
         strain_array_name="Strain",
         mesh_w_local_basis_folder=None,
         mesh_w_local_basis_basename=None,
+        mesh_w_local_basis_ext="vtk",
         CYL_or_PPS="PPS",
         write_strains=1,
         temporal_offset=None,
@@ -40,9 +41,8 @@ def compute_strains(
         verbose=1):
 
     if (mesh_w_local_basis_folder is not None) and (mesh_w_local_basis_basename is not None):
-        mesh_w_local_basis_filename = mesh_w_local_basis_folder+"/"+mesh_w_local_basis_basename+"-WithLocalBasis.vtk"
         mesh_w_local_basis = myvtk.readUGrid(
-            filename=mesh_w_local_basis_filename,
+            filename=mesh_w_local_basis_folder+"/"+mesh_w_local_basis_basename+"."+mesh_w_local_basis_ext,
             verbose=verbose)
         mesh_w_local_basis_n_cells = mesh_w_local_basis.GetNumberOfCells()
         if (verbose): print "mesh_w_local_basis_n_cells = " + str(mesh_w_local_basis_n_cells)
@@ -95,13 +95,15 @@ def compute_strains(
         farray_F0 = ref_mesh.GetCellData().GetArray(defo_grad_array_name)
 
     for k_frame in xrange(n_frames):
+        print "k_frame = "+str(k_frame)
+
         mesh_filename = working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
         mesh = myvtk.readUGrid(
             filename=mesh_filename,
             verbose=verbose)
         n_cells = mesh.GetNumberOfCells()
         if (mesh_w_local_basis is not None):
-            assert (n_cells == mesh_w_local_basis_n_cells)
+            assert (n_cells == mesh_w_local_basis_n_cells), "mesh_w_local_basis_n_cells ("+str(mesh_w_local_basis_n_cells)+") ≠ n_cells ("+str(n_cells)+"). Aborting."
             mesh.GetCellData().AddArray(mesh_w_local_basis.GetCellData().GetArray("part_id"))
             mesh.GetCellData().AddArray(mesh_w_local_basis.GetCellData().GetArray("sector_id"))
         myvtk.addDeformationGradients(
