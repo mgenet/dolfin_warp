@@ -17,7 +17,7 @@ def get_ExprIm_cpp(
         verbose=0):
 
     assert (im_dim in (2,3))
-    assert (im_type in ("im","grad"))
+    assert (im_type in ("im","grad","grad_no_deriv"))
 
     ExprIm_cpp = '''\
 #include <string.h>
@@ -58,7 +58,7 @@ class MyExpr : public Expression
 public:
 
     MyExpr():
-        Expression('''+str(im_dim)*(im_type=="grad")+''')'''+(''',
+        Expression('''+str(im_dim)*(im_type in ("grad", "grad_no_deriv"))+''')'''+(''',
         dynamic_scaling_a(1.), // should not be needed
         dynamic_scaling_b(0.), // should not be needed
         UX('''+str(im_dim)+'''),
@@ -91,8 +91,8 @@ public:
 
     void init_image(
         const char* filename,
-        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type=="grad")+'''",
-        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type=="grad")+(''',
+        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type in ("grad", "grad_no_deriv"))+'''",
+        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type in ("grad", "grad_no_deriv"))+(''',
         const double &Z=0.''')*(im_dim==2)+''')
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
@@ -129,7 +129,7 @@ public:
             assert(0);
         }
         interpolator->SetOutValue(interpol_out_value);
-        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type=="im")+('''gradient->GetOutput()''')*(im_type=="grad")+''');
+        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');
         interpolator->Update();'''+('''
 
         x[2] = Z;''')*(im_is_def)*(im_dim==2)+('''

@@ -52,6 +52,7 @@ def fedic(
         working_basename,
         images_folder,
         images_basename,
+        images_grad_basename=None,
         images_ext="vti", # vti, vtk
         images_n_frames=None,
         images_ref_frame=0,
@@ -138,6 +139,8 @@ def fedic(
 
     mypy.print_str("Computing quadrature degree for images…",tab)
     ref_image_filename = images_folder+"/"+images_basename+"_"+str(images_ref_frame).zfill(images_zfill)+"."+images_ext
+    if (images_grad_basename is not None):
+        ref_image_grad_filename = images_folder+"/"+images_grad_basename+"_"+str(images_ref_frame).zfill(images_zfill)+"."+images_ext
     if (images_quadrature is None):
         if (images_quadrature_from == "points_count"):
             images_quadrature = ddic.compute_quadrature_degree_from_points_count(
@@ -196,10 +199,10 @@ def fedic(
         DIref = dolfin.Expression(
             cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
-                im_type="grad",
+                im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=0),
             element=ve)
-        DIref.init_image(ref_image_filename)
+        DIref.init_image(ref_image_filename if (images_grad_basename is None) else ref_image_grad_filename)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
             Iref = ddic.ExprIm2(
@@ -402,7 +405,7 @@ def fedic(
         DIdef = dolfin.Expression(
             cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
-                im_type="grad",
+                im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
             element=ve)
         DIdef.init_dynamic_scaling(scaling)
@@ -420,7 +423,7 @@ def fedic(
         DIold = dolfin.Expression(
             cppcode=ddic.get_ExprIm_cpp(
                 im_dim=images_dimension,
-                im_type="grad",
+                im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
             element=ve)
         DIold.init_dynamic_scaling(scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
@@ -564,12 +567,20 @@ def fedic(
             mypy.print_str("Loading image, image gradient and image hessian…",tab)
             image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext
             Idef.init_image(image_filename)
-            DIdef.init_image(image_filename)
+            if (images_grad_basename is None):
+                DIdef.init_image(image_filename)
+            else:
+                image_grad_filename = images_folder+"/"+images_grad_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext
+                DIdef.init_image(image_grad_filename)
             if ("-wHess" in tangent_type):
                 DDIdef.init_image(image_filename)
             image_filename = images_folder+"/"+images_basename+"_"+str(k_frame_old).zfill(images_zfill)+"."+images_ext
             Iold.init_image(image_filename)
-            DIold.init_image(image_filename)
+            if (images_grad_basename is None):
+                DIold.init_image(image_filename)
+            else:
+                image_grad_filename = images_folder+"/"+images_grad_basename+"_"+str(k_frame_old).zfill(images_zfill)+"."+images_ext
+                DIold.init_image(image_grad_filename)
 
             U.vector().zero()
             im_diff_0 = (dolfin.assemble(psi_c * dV, form_compiler_parameters=form_compiler_parameters_for_images)/mesh_V0)**(1./2)
