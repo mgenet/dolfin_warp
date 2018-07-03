@@ -509,12 +509,12 @@ def generateImages(
     else:
         assert (0), "n_dim must be \"1\", \"2\" or \"3\". Aborting."
 
-    spacing = numpy.array(images["L"])/numpy.array(images["n_voxels"])
+    #spacing = numpy.array(images["L"])/numpy.array(images["n_voxels"])
     if   (images["n_dim"] == 1):
         spacing = numpy.array([images["L"][0]/images["n_voxels"][0], 1., 1.])
     elif (images["n_dim"] == 2):
         spacing = numpy.array([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], 1.])
-    elif (images["n_dim"] == 2):
+    elif (images["n_dim"] == 3):
         spacing = numpy.array([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], images["L"][2]/images["n_voxels"][2]])
     vtk_image.SetSpacing(spacing)
 
@@ -544,16 +544,16 @@ def generateImages(
     if not os.path.exists(images["folder"]):
         os.mkdir(images["folder"])
 
-    x0   = numpy.empty(3)
-    x    = numpy.empty(3)
-    X    = numpy.empty(3)
+    x0 = numpy.empty(3)
+    x  = numpy.empty(3)
+    X  = numpy.empty(3)
     if (generate_image_gradient):
         F    = numpy.empty((3,3))
         Finv = numpy.empty((3,3))
     else:
         F    = None
         Finv = None
-    dx   = spacing[0:images["n_dim"]]/images["n_integration"][0:images["n_dim"]]
+    dx = spacing[0:images["n_dim"]]/images["n_integration"][0:images["n_dim"]]
     global_min = float("+Inf")
     global_max = float("-Inf")
     I = numpy.empty(1)
@@ -627,7 +627,7 @@ def generateImages(
             if (I[0] > global_max): global_max = I[0]
         myvtk.writeImage(
             image=vtk_image,
-            filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+".vti",
+            filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+".vtk",
             verbose=verbose-1)
 
     if (images["data_type"] in ("float")):

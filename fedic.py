@@ -182,9 +182,9 @@ def fedic(
         cell=mesh.ufl_cell(),
         degree=images_quadrature,
         quad_scheme="default")
-    te._quad_scheme = "default"                       # should not be needed
-    for k in xrange(mesh_dimension**2):             # should not be needed
-        te.sub_elements()[k]._quad_scheme = "default" # should not be needed
+    te._quad_scheme = "default"              # should not be needed
+    for sub_element in te.sub_elements():    # should not be needed
+        sub_element._quad_scheme = "default" # should not be needed
     if (images_expressions_type == "cpp"):
         Iref = dolfin.Expression(
             cppcode=ddic.get_ExprIm_cpp(
@@ -301,12 +301,12 @@ def fedic(
         mypy.print_str("Defining regularization energy…",tab)
         E     = dolfin.Constant(1.0)
         nu    = dolfin.Constant(regul_poisson)
-        kappa = E/3/(1-2*nu)                          # = E/3 if nu = 0
-        lmbda = E*nu/(1+nu)/(1-(mesh_dimension-1)*nu) # = 0   if nu = 0
-        mu    = E/2/(1+nu)                            # = E/2 if nu = 0
-        C1    = mu/2                                  # = E/4 if nu = 0
-        C2    = mu/2                                  # = E/4 if nu = 0
-        D1    = kappa/2                               # = E/6 if nu = 0
+        lmbda = E*nu/(1+nu)/(1-2*nu)                        # = 0   if nu = 0
+        mu    = E/2/(1+nu)                                  # = E/2 if nu = 0
+        kappa = (mesh_dimension*lmbda+2*mu)/mesh_dimension  # = E/3 (3D) or E/2 (2D) if nu = 0
+        C1    = mu/2                                        # = E/4 if nu = 0
+        C2    = mu/2                                        # = E/4 if nu = 0
+        D1    = kappa/2                                     # = E/6 (3D) or E/4 (2D) if nu = 0
 
         if (regul_model == "linear"): # <- super bad
             e = dolfin.sym(dolfin.grad(U))
@@ -384,7 +384,7 @@ def fedic(
         regul_quadrature = None
 
         form_compiler_parameters_for_regul = {}
-        form_compiler_parameters_for_regul["representation"] = "uflacs"
+        form_compiler_parameters_for_regul["representation"] = "uflacs" # MG20180327: Is that needed?
         if (regul_quadrature is not None):
             form_compiler_parameters_for_regul["quadrature_degree"] = regul_quadrature
 
