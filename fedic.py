@@ -90,7 +90,8 @@ def fedic(
 
     mypy.print_str("Checking number of frames…",tab)
     image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
-    assert (len(image_filenames) > 1), "Not enough images ("+images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext+"). Aborting."
+    assert (len(image_filenames) > 1),\
+        "Not enough images ("+images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext+"). Aborting."
     images_zfill = len(image_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     #mypy.print_var("images_zfill",images_zfill,tab+1)
     if (images_n_frames is None):
@@ -98,7 +99,6 @@ def fedic(
     assert (images_n_frames > 1),\
         "images_n_frames = "+str(images_n_frames)+" <= 1. Aborting."
     mypy.print_var("images_n_frames",images_n_frames,tab+1)
-
     assert (abs(images_ref_frame) < images_n_frames),\
         "abs(images_ref_frame) = "+str(images_ref_frame)+" >= images_n_frames. Aborting."
     images_ref_frame = images_ref_frame%images_n_frames
