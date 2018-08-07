@@ -317,59 +317,59 @@ class Image():
             g[2] *= (math.pi/self.s)*math.cos(math.pi*X[2]/self.s) / 3
 
     def I0_texture_tagging_signed_normalized_X(self, X, i, g=None):
-        i[0] *= (1+math.sin(math.pi*X[0]/self.s))/2
+        i[0] *= (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
         if (g is not None):
-            g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s)/2
+            g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s-math.pi/2)/2
             g[1] *= 0
             g[2] *= 0
 
     def I0_texture_tagging_signed_normalized_Y(self, X, i, g=None):
-        i[0] *= (1+math.sin(math.pi*X[1]/self.s))/2
+        i[0] *= (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
         if (g is not None):
             g[0] *= 0
-            g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s)/2
+            g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s-math.pi/2)/2
             g[2] *= 0
 
     def I0_texture_tagging_signed_normalized_Z(self, X, i, g=None):
-        i[0] *= (1+math.sin(math.pi*X[2]/self.s))/2
+        i[0] *= (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2
         if (g is not None):
             g[0] *= 0
             g[1] *= 0
-            g[2] *= (math.pi/self.s)*math.cos(math.pi*X[2]/self.s)/2
+            g[2] *= (math.pi/self.s)*math.cos(math.pi*X[2]/self.s-math.pi/2)/2
 
     def I0_texture_tagging_signed_normalized_XY(self, X, i, g=None):
-        i[0] *= (1 + 3 * (1+math.sin(math.pi*X[0]/self.s))/2
-                       * (1+math.sin(math.pi*X[1]/self.s))/2)**(1./2) - 1
+        i[0] *= (1 + 3 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2)**(1./2) - 1
         if (g is not None):
-            g[0] *= 3 * (math.pi/self.s)*math.cos(math.pi*X[0]/self.s)/2 * (1+math.sin(math.pi*X[1]/self.s))/2 / 2 / (i[0] + 1)
-            g[1] *= 3 * (1+math.sin(math.pi*X[0]/self.s))/2 * (math.pi/self.s)*math.cos(math.pi*X[1]/self.s)/2 / 2 / (i[0] + 1)
+            g[0] *= 3 * (math.pi/self.s)*math.cos(math.pi*X[0]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 / 2 / (i[0] + 1)
+            g[1] *= 3 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 * (math.pi/self.s)*math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 2 / (i[0] + 1)
             g[2] *= 0
 
     #def I0_texture_tagging_signed_normalized_XY(self, X, i, g=None):
-        #i[0] *= ((1+math.sin(math.pi*X[0]/self.s))/2
-              #+  (1+math.sin(math.pi*X[1]/self.s))/2)/2
+        #i[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
+              #+  (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2)/2
         #if (g is not None):
-            #g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s)/2 / 2
-            #g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s)/2 / 2
+            #g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 2
+            #g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 2
             #g[2] *= 0.
 
     def I0_texture_tagging_signed_normalized_XYZ(self, X, i, g=None):
-        i[0] *= (1 + 7 * (1+math.sin(math.pi*X[0]/self.s))/2
-                       * (1+math.sin(math.pi*X[1]/self.s))/2
-                       * (1+math.sin(math.pi*X[2]/self.s))/2)**(1./3) - 1
+        i[0] *= (1 + 7 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2)**(1./3) - 1
         if (g is not None):
-            g[0] *= 7 * (math.pi/self.s)*math.cos(math.pi*X[0]/self.s)/2 * (1+math.sin(math.pi*X[1]/self.s))/2 * (1+math.sin(math.pi*X[2]/self.s))/2 / 3 / (i[0] + 1)
-            g[1] *= 7 * (1+math.sin(math.pi*X[0]/self.s))/2 * (math.pi/self.s)*math.cos(math.pi*X[1]/self.s)/2 * (1+math.sin(math.pi*X[2]/self.s))/2 / 3 / (i[0] + 1)
-            g[2] *= 7 * (1+math.sin(math.pi*X[0]/self.s))/2 * (1+math.sin(math.pi*X[1]/self.s))/2 * (math.pi/self.s)*math.cos(math.pi*X[2]/self.s)/2 / 3 / (i[0] + 1)
+            g[0] *= 7 * (math.pi/self.s)*math.cos(math.pi*X[0]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2 / 3 / (i[0] + 1)
+            g[1] *= 7 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 * (math.pi/self.s)*math.cos(math.pi*X[1]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2 / 3 / (i[0] + 1)
+            g[2] *= 7 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 * (math.pi/self.s)*math.cos(math.pi*X[2]/self.s-math.pi/2)/2 / 3 / (i[0] + 1)
 
     #def I0_texture_tagging_signed_normalized_XYZ(self, X, i, g=None):
-        #i[0] *= ((1+math.sin(math.pi*X[0]/self.s))/2
-              #+  (1+math.sin(math.pi*X[1]/self.s))/2
-              #+  (1+math.sin(math.pi*X[2]/self.s))/2)/3
+        #i[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
+              #+  (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
+              #+  (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2)/3
         #if (g is not None):
-            #g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s)/2 / 3
-            #g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s)/2 / 3
-            #g[2] *= (math.pi/self.s)*math.cos(math.pi*X[2]/self.s)/2 / 3
+            #g[0] *= (math.pi/self.s)*math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 3
+            #g[1] *= (math.pi/self.s)*math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 3
+            #g[2] *= (math.pi/self.s)*math.cos(math.pi*X[2]/self.s-math.pi/2)/2 / 3
 
     def I0_noise_no(self, i, g=None):
         pass
