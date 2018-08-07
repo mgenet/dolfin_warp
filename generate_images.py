@@ -642,6 +642,10 @@ def generateImages(
         origin[2] = 0.
     vtk_image.SetOrigin(origin)
 
+    if (generate_image_gradient):
+        vtk_gradient = vtk.vtkImageData()
+        vtk_gradient.DeepCopy(vtk_image)
+
     n_points = vtk_image.GetNumberOfPoints()
     vtk_image_scalars = myvtk.createFloatArray(
         name="ImageScalars",
@@ -649,13 +653,14 @@ def generateImages(
         n_tuples=n_points,
         verbose=verbose-1)
     vtk_image.GetPointData().SetScalars(vtk_image_scalars)
+
     if (generate_image_gradient):
-        vtk_image_gradient = myvtk.createFloatArray(
+        vtk_gradient_vectors = myvtk.createFloatArray(
             name="ImageScalarsGradient",
             n_components=3,
             n_tuples=n_points,
             verbose=verbose-1)
-        vtk_image.GetPointData().SetVectors(vtk_image_gradient)
+        vtk_gradient.GetPointData().SetScalars(vtk_gradient_vectors)
 
     if not os.path.exists(images["folder"]):
         os.mkdir(images["folder"])
@@ -741,13 +746,20 @@ def generateImages(
             else:
                 assert (0), "n_dim must be \"1\", \"2\" or \"3\". Aborting."
             vtk_image_scalars.SetTuple(k_point, I)
-            if (generate_image_gradient): vtk_image_gradient.SetTuple(k_point, G)
+            if (generate_image_gradient): vtk_gradient_vectors.SetTuple(k_point, G)
             if (I[0] < global_min): global_min = I[0]
             if (I[0] > global_max): global_max = I[0]
+        #print vtk_image
         myvtk.writeImage(
             image=vtk_image,
             filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
             verbose=verbose-1)
+        if (generate_image_gradient):
+            #print vtk_gradient
+            myvtk.writeImage(
+                image=vtk_gradient,
+                filename=images["folder"]+"/"+images["basename"]+"-grad"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                verbose=verbose-1)
 
     if (images["data_type"] in ("float")):
         pass
