@@ -2,8 +2,8 @@
 #FROM quay.io/fenicsproject/stable:2016.1.0
 #FROM quay.io/fenicsproject/stable:2016.2.0
 #FROM quay.io/fenicsproject/stable:2017.1.0
-#FROM quay.io/fenicsproject/stable:2017.2.0
-FROM quay.io/fenicsproject/stable:current
+FROM quay.io/fenicsproject/stable:2017.2.0
+#FROM quay.io/fenicsproject/stable:current
 #FROM quay.io/fenicsproject/stable:latest
 
 #USER root
