@@ -13,6 +13,7 @@ from compute_strains import *
 from compute_displacements import *
 from compute_displacement_error import *
 from compute_quadrature_degree import *
+from generated_image_expressions_cpp import *
 from image_expressions_cpp import *
 from plot_strains import *
 from plot_displacement_error import *
