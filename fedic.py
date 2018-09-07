@@ -100,7 +100,7 @@ def fedic(
         "images_n_frames = "+str(images_n_frames)+" <= 1. Aborting."
     mypy.print_var("images_n_frames",images_n_frames,tab+1)
     assert (abs(images_ref_frame) < images_n_frames),\
-        "abs(images_ref_frame) = "+str(images_ref_frame)+" >= images_n_frames. Aborting."
+        "abs(images_ref_frame) = "+str(abs(images_ref_frame))+" >= images_n_frames. Aborting."
     images_ref_frame = images_ref_frame%images_n_frames
     mypy.print_var("images_ref_frame",images_ref_frame,tab+1)
 

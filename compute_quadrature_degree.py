@@ -96,7 +96,8 @@ def compute_quadrature_degree_from_points_count(
 
 def compute_quadrature_degree_from_integral(
         image_filename,
-        mesh,
+        mesh=None,
+        mesh_filebasename=None,
         deg_min=1,
         deg_max=10,
         tol=1e-2,
@@ -111,6 +112,8 @@ def compute_quadrature_degree_from_integral(
         verbose=verbose-1)
     if (verbose): print "image_dimension = " + str(image_dimension)
 
+    if (mesh is None):
+        mesh = dolfin.Mesh(mesh_filebasename+"."+"xml")
     dX = dolfin.dx(mesh)
 
     first_time = True
