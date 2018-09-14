@@ -46,6 +46,7 @@ public:
     vtkSmartPointer<vtkImageInterpolator> interpolator; // MG20180913: pointer would be instantiated at class object construction, but would point toward nothing; object would not be instantiated
     double static_scaling;
     std::shared_ptr<dolfin::Mesh> mesh;
+    std::shared_ptr<dolfin::Function> U;
 
     MyExpr():
         Expression(),
@@ -73,12 +74,18 @@ public:
     }
 
     void init_mesh(
-        const dolfin::Mesh* mesh)
+        const std::shared_ptr<dolfin::Mesh> mesh_)
     {
-        mesh = mesh;
+        mesh = mesh_;
 
         std::cout << mesh->num_vertices() << std::endl;
         std::cout << mesh->num_cells() << std::endl;
+    }
+
+    void init_disp(
+        const std::shared_ptr<dolfin::Function> U_)
+    {
+        U = U_;
     }
 
     void eval(Array<double>& expr, const Array<double>& X) const
