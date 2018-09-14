@@ -20,7 +20,6 @@ def get_ExprGenIm_cpp(
 #include <string.h>
 
 #include <vtkSmartPointer.h>
-#include <vtkStructuredPointsReader.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkImageData.h>
 #include <vtkImageInterpolator.h>
@@ -41,13 +40,16 @@ namespace dolfin
 
 class MyExpr : public Expression
 {
-    vtkSmartPointer<vtkImageInterpolator> interpolator;
-    double static_scaling;
-
 public:
 
+    vtkSmartPointer<vtkImageData> image; // MG20180913: pointer would be instantiated at class object construction, but would point toward nothing; object would not be instantiated
+    vtkSmartPointer<vtkImageInterpolator> interpolator; // MG20180913: pointer would be instantiated at class object construction, but would point toward nothing; object would not be instantiated
+    double static_scaling;
+    std::shared_ptr<dolfin::Mesh> mesh;
+
     MyExpr():
-        Expression()
+        Expression(),
+        interpolator(vtkSmartPointer<vtkImageInterpolator>::New()) // MG20180913: object is instantiated together with pointer
     {
     }
 
@@ -58,25 +60,32 @@ public:
         reader->SetFileName(filename);
         reader->Update();
 
-        static_scaling = getStaticScalingFactor(reader->GetOutput()->GetScalarTypeAsString());
+        image = reader->GetOutput();
+        // image = vtkSmartPointer<vtkImageData>::New(); // MG20180913: another way to instantiate object
 
-        interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
+        static_scaling = getStaticScalingFactor(image->GetScalarTypeAsString());
+
+        // interpolator = vtkSmartPointer<vtkImageInterpolator>::New(); // MG20180913: another way to instantiate object
         interpolator->SetInterpolationModeToLinear();
         interpolator->SetOutValue(0.);
-        interpolator->Initialize(reader->GetOutput());
+        interpolator->Initialize(image);
         interpolator->Update();
+    }
+
+    void init_mesh(
+        const dolfin::Mesh* mesh)
+    {
+        mesh = mesh;
+
+        std::cout << mesh->num_vertices() << std::endl;
+        std::cout << mesh->num_cells() << std::endl;
     }
 
     void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
+        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+'''
 
-        X3D[0] = X[0];
-        X3D[1] = X[1];'''+('''
-        std::cout << "X3D = " << X3D.str(1) << std::endl;''')*(verbose)+'''
-        interpolator->Interpolate(X3D.data(), expr.data());''')*(im_dim==2)+('''
-
-        interpolator->Interpolate(X.data(), expr.data());''')*(im_dim==3)+('''
+        interpolator->Interpolate(X.data(), expr.data());'''+('''
 
         std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+'''
 
