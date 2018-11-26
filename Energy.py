@@ -29,6 +29,14 @@ class Energy():
 
 
 
+    def call_before_assembly(self,
+            *args,
+            **kwargs):
+
+        pass
+
+
+
     def call_before_solve(self,
             *args,
             **kwargs):

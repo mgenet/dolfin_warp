@@ -14,6 +14,7 @@ def get_ExprIm_cpp(
         im_dim,
         im_type="im",
         im_is_def=0,
+        disp_type="fenics", # "vtk"
         verbose=0):
 
     assert (im_dim in (2,3))

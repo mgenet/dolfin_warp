@@ -179,6 +179,8 @@ class NonlinearSolver():
                 self.res_old_vec = self.res_vec.copy()
             self.res_old_norm = self.res_norm
 
+        self.problem.call_before_assembly()
+
         # linear system: residual assembly
         self.printer.print_str("Residual assembly…",newline=False)
         timer = time.time()
@@ -281,6 +283,7 @@ class NonlinearSolver():
             self.printer.print_var("relax_k",relax_k,-1)
             # self.printer.print_sci("relax_a",relax_a)
             # self.printer.print_sci("relax_b",relax_b)
+            self.problem.call_before_assembly()
             if (need_update_c):
                 relax_c = relax_b - (relax_b - relax_a) / phi
                 relax_list.append(relax_c)

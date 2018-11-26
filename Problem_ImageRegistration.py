@@ -179,6 +179,17 @@ class ImageRegistrationProblem(Problem):
 
 
 
+    def call_before_assembly(self,
+            *kargs,
+            **kwargs):
+
+        for energy in self.energies:
+            energy.call_before_assembly(
+                *kargs,
+                **kwargs)
+
+
+
     def assemble_ener(self):
 
         ener_form = 0.
