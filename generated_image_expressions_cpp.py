@@ -61,8 +61,8 @@ public:
         reader->SetFileName(filename);
         reader->Update();
 
-        image = reader->GetOutput();
         // image = vtkSmartPointer<vtkImageData>::New(); // MG20180913: another way to instantiate object
+        image = reader->GetOutput();
 
         static_scaling = getStaticScalingFactor(image->GetScalarTypeAsString());
 
