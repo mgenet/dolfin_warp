@@ -14,6 +14,7 @@ def get_ExprIm_cpp(
         im_dim,
         im_type="im",
         im_is_def=0,
+        u_is_vtk=0,
         verbose=0):
 
     assert (im_dim in (2,3))
@@ -28,6 +29,12 @@ def get_ExprIm_cpp(
 #include <vtkImageData.h>'''+('''
 #include <vtkImageGradient.h>''')*(im_type=="grad")+'''
 #include <vtkImageInterpolator.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkProbeFilter.h>
+#include <vtkPointData.h>
+#include <vtkPolyData.h>
+
 
 double getStaticScalingFactor(const char* scalar_type_as_string)
 {
@@ -49,8 +56,11 @@ class MyExpr : public Expression
     double static_scaling;'''+('''
     Array<double>* dynamic_scaling; // does not work
     double dynamic_scaling_a;       // should not be needed
-    double dynamic_scaling_b;       // should not be needed
-    Function* U;
+    double dynamic_scaling_b;       // should not be needed'''+('''
+    Function* U;''')*(not u_is_vtk)+('''
+    vtkSmartPointer<vtkProbeFilter> probe_filter;
+    vtkSmartPointer<vtkPoints> probe_points;
+    vtkSmartPointer<vtkPolyData> probe_polydata;''')*(u_is_vtk)+'''
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
     mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
@@ -64,7 +74,10 @@ public:
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
         X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
-    {
+    {'''+('''
+        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
+        probe_points = vtkSmartPointer<vtkPoints>::New();
+        probe_polydata = vtkSmartPointer<vtkPolyData>::New();''')*(u_is_vtk)+'''
     }'''+('''
 
     void init_dynamic_scaling(
@@ -83,11 +96,26 @@ public:
         dynamic_scaling_b = scaling[1]; // should not be needed
     }                                   // should not be needed
 
+    '''+('''
     void init_disp(
         Function* UU)
     {
         U = UU;
-    }''')*(im_is_def)+'''
+    }''')*(not u_is_vtk)+('''
+    void init_disp(
+        const char* mesh_filename)
+    {
+        vtkSmartPointer<vtkXMLUnstructuredGridReader> reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+        reader->SetFileName(mesh_filename);
+        reader->Update();
+
+        vtkSmartPointer<vtkUnstructuredGrid> mesh = reader->GetOutput();
+
+        probe_filter->SetSourceData(mesh);
+        probe_points->SetNumberOfPoints(1);
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
+    }''')*(u_is_vtk))*(im_is_def)+'''
 
     void init_image(
         const char* filename,
@@ -139,9 +167,15 @@ public:
 
     void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
+        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+(('''
 
-        U->eval(UX, X);'''+('''
+        U->eval(UX, X);''')*(not u_is_vtk)+('''
+
+        probe_points->SetPoint(0,X.data());
+        probe_filter->Update();
+        probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
+
+        ''')*(u_is_vtk)+('''
         std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
         x[0] = X[0] + UX[0];
         x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
@@ -207,6 +241,7 @@ public:
 }'''
     #print ExprIm_cpp
     return ExprIm_cpp
+
 
 def get_ExprCharFuncIm_cpp(
         im_dim,
