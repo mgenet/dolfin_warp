@@ -29,12 +29,10 @@ def get_ExprIm_cpp(
 #include <vtkImageData.h>'''+('''
 #include <vtkImageGradient.h>''')*(im_type=="grad")+'''
 #include <vtkImageInterpolator.h>
-#include <vtkUnstructuredGridReader.h>
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkProbeFilter.h>
 #include <vtkPointData.h>
-#include <vtkDataArray.h>
 #include <vtkPolyData.h>
 
 
