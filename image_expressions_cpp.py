@@ -115,6 +115,8 @@ public:
 
         probe_filter->SetSourceData(mesh);
         probe_points->SetNumberOfPoints(1);
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
     }''')*(u_is_vtk))*(im_is_def)+'''
 
     void init_image(
@@ -172,8 +174,6 @@ public:
         U->eval(UX, X);''')*(not u_is_vtk)+('''
 
         probe_points->SetPoint(0,X.data());
-        probe_polydata->SetPoints(probe_points);
-        probe_filter->SetInputData(probe_polydata);
         probe_filter->Update();
         probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
 
