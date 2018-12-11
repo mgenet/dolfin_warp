@@ -465,14 +465,11 @@ class Mapping:
         Eyy = self.deformation["Eyy"]*self.phi(t) if ("Eyy" in self.deformation.keys()) else 0.
         Ezz = self.deformation["Ezz"]*self.phi(t) if ("Ezz" in self.deformation.keys()) else 0.
         Exy = self.deformation["Exy"]*self.phi(t) if ("Exy" in self.deformation.keys()) else 0.
-        Eyx = self.deformation["Eyx"]*self.phi(t) if ("Eyx" in self.deformation.keys()) else 0.
-        Exz = self.deformation["Exz"]*self.phi(t) if ("Exz" in self.deformation.keys()) else 0.
-        Ezx = self.deformation["Ezx"]*self.phi(t) if ("Ezx" in self.deformation.keys()) else 0.
         Eyz = self.deformation["Eyz"]*self.phi(t) if ("Eyz" in self.deformation.keys()) else 0.
-        Ezy = self.deformation["Ezy"]*self.phi(t) if ("Ezy" in self.deformation.keys()) else 0.
-        self.F = numpy.array([[Exx, Exy, Exz],
-                              [Eyx, Eyy, Eyz],
-                              [Ezx, Ezy, Ezz]])
+        Ezx = self.deformation["Ezx"]*self.phi(t) if ("Ezx" in self.deformation.keys()) else 0.
+        self.F = numpy.array([[Exx, Exy, Ezx],
+                              [Exy, Eyy, Eyz],
+                              [Ezx, Eyz, Ezz]])
         self.F *= 2
         self.F += numpy.eye(3)
         w, v = numpy.linalg.eig(self.F)
