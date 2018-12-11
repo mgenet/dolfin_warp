@@ -103,6 +103,10 @@ class Image():
         # structure
         if (structure["type"] == "no"):
             self.I0_structure = self.I0_structure_no
+        if (structure["type"] == "box"):
+            self.I0_structure = self.I0_structure_box
+            self.Xmin = structure["Xmin"]
+            self.Xmax = structure["Xmax"]
         elif (structure["type"] == "heart"):
             if (images["n_dim"] == 2):
                 self.I0_structure = self.I0_structure_heart_2
@@ -200,6 +204,13 @@ class Image():
     def I0_structure_no(self, X, i, g=None):
         i[0] = 1.
         if (g is not None): g[:] = 1. # MG 20180806: gradient is given by texture; here it is just indicator function
+
+    def I0_structure_box(self, X, i, g=None):
+        if numpy.greater_equal(X, self.Xmin) and numpy.less_equal(X, self.Xmax):
+            i[0] = 1.
+        else:
+            i[0] = 0.
+        if (g is not None): g[:] = 0. # MG 20180806: gradient is given by texture; here it is just indicator function
 
     def I0_structure_heart_2(self, X, i, g=None):
         self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
