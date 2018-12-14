@@ -103,7 +103,7 @@ class Image():
         # structure
         if (structure["type"] == "no"):
             self.I0_structure = self.I0_structure_no
-        if (structure["type"] == "box"):
+        elif (structure["type"] == "box"):
             self.I0_structure = self.I0_structure_box
             self.Xmin = structure["Xmin"]
             self.Xmax = structure["Xmax"]
@@ -206,7 +206,7 @@ class Image():
         if (g is not None): g[:] = 1. # MG 20180806: gradient is given by texture; here it is just indicator function
 
     def I0_structure_box(self, X, i, g=None):
-        if numpy.greater_equal(X, self.Xmin) and numpy.less_equal(X, self.Xmax):
+        if all(numpy.greater_equal(X, self.Xmin)) and all(numpy.less_equal(X, self.Xmax)):
             i[0] = 1.
         else:
             i[0] = 0.
