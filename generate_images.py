@@ -472,20 +472,31 @@ class Mapping:
         self.Rinv[:,:] = numpy.linalg.inv(self.R)
 
     def init_t_homogeneous(self, t):
-        Exx = self.deformation["Exx"]*self.phi(t) if ("Exx" in self.deformation.keys()) else 0.
-        Eyy = self.deformation["Eyy"]*self.phi(t) if ("Eyy" in self.deformation.keys()) else 0.
-        Ezz = self.deformation["Ezz"]*self.phi(t) if ("Ezz" in self.deformation.keys()) else 0.
-        Exy = self.deformation["Exy"]*self.phi(t) if ("Exy" in self.deformation.keys()) else 0.
-        Eyz = self.deformation["Eyz"]*self.phi(t) if ("Eyz" in self.deformation.keys()) else 0.
-        Ezx = self.deformation["Ezx"]*self.phi(t) if ("Ezx" in self.deformation.keys()) else 0.
-        self.F = numpy.array([[Exx, Exy, Ezx],
-                              [Exy, Eyy, Eyz],
-                              [Ezx, Eyz, Ezz]])
-        self.F *= 2
-        self.F += numpy.eye(3)
-        w, v = numpy.linalg.eig(self.F)
-        #assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
-        self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
+        if any(E in self.deformation.keys() for E in ("Exx", "Eyy", "Ezz")):
+            Exx = self.deformation["Exx"]*self.phi(t) if ("Exx" in self.deformation.keys()) else 0.
+            Eyy = self.deformation["Eyy"]*self.phi(t) if ("Eyy" in self.deformation.keys()) else 0.
+            Ezz = self.deformation["Ezz"]*self.phi(t) if ("Ezz" in self.deformation.keys()) else 0.
+            self.F = numpy.array([[Exx,  0.,  0.],
+                                  [ 0., Eyy,  0.],
+                                  [ 0.,  0., Ezz]])
+            self.F *= 2
+            self.F += numpy.eye(3)
+            w, v = numpy.linalg.eig(self.F)
+            # assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
+            self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
+        else:
+            Fxx = self.deformation["Fxx"]*self.phi(t) if ("Fxx" in self.deformation.keys()) else 0.
+            Fyy = self.deformation["Fyy"]*self.phi(t) if ("Fyy" in self.deformation.keys()) else 0.
+            Fzz = self.deformation["Fzz"]*self.phi(t) if ("Fzz" in self.deformation.keys()) else 0.
+            Fxy = self.deformation["Fxy"]*self.phi(t) if ("Fxy" in self.deformation.keys()) else 0.
+            Fyx = self.deformation["Fyx"]*self.phi(t) if ("Fyx" in self.deformation.keys()) else 0.
+            Fyz = self.deformation["Fyz"]*self.phi(t) if ("Fyz" in self.deformation.keys()) else 0.
+            Fzy = self.deformation["Fzy"]*self.phi(t) if ("Fzy" in self.deformation.keys()) else 0.
+            Fzx = self.deformation["Fzx"]*self.phi(t) if ("Fzx" in self.deformation.keys()) else 0.
+            Fxz = self.deformation["Fxz"]*self.phi(t) if ("Fxz" in self.deformation.keys()) else 0.
+            self.F = numpy.array([[Fxx, Fxy, Fxz],
+                                  [Fyx, Fyy, Fyz],
+                                  [Fzx, Fzy, Fzz]])
         self.Finv = numpy.linalg.inv(self.F)
 
     def init_t_heart(self, t):
