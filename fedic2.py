@@ -83,6 +83,8 @@ def fedic2(
         ext=images_ext)
 
     if (images_quadrature is None):
+        problem.printer.print_str("Computing quadrature degree…")
+        problem.printer.inc()
         if (images_quadrature_from == "points_count"):
             images_quadrature = ddic.compute_quadrature_degree_from_points_count(
                 image_filename=image_series.get_image_filename(images_ref_frame),
@@ -95,6 +97,8 @@ def fedic2(
                 verbose=1)
         else:
             assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
+        problem.printer.print_var("images_quadrature",images_quadrature)
+        problem.printer.dec()
 
     warped_image_energy = ddic.WarpedImageEnergy(
         problem=problem,
