@@ -16,6 +16,7 @@ import myPythonLibrary as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
+import dolfin
 
 ################################################################################
 
@@ -96,10 +97,54 @@ class ImageIterator():
                 #self.printer.print_var("k_frame_old",k_frame_old,-1)
 
                 if (self.initialize_U_from_file):
-                    xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xdmf"
+                    print k_frame
+                    print type(self.problem.U)
+
+                    # xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xmf"
+                    # print xdmf_filename
+                    # xdmf_file = dolfin.XDMFFile(xdmf_filename)
+                    # xdmf_file.read(self.problem.mesh)   #can not read type of cell
+
+                    # xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".h5"
+                    # print xdmf_filename
+                    # xdmf_file = dolfin.HDF5File(dolfin.mpi_comm_world(),xdmf_filename, 'r')
+                    # xdmf_file.read(self.problem.mesh, "grid",True) #unknown cell type
+
+                    # xdmf_filename = self.initialize_U_from_file+".vtu"
+                    # print xdmf_filename
+                    # xdmf_file = dolfin.XDMFFile(xdmf_filename)
+                    # xdmf_file.read(self.problem.mesh) #can not read vtu file
+
+                    xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xmf"
+                    print xdmf_filename
                     xdmf_file = dolfin.XDMFFile(xdmf_filename)
-                    xdmf_file.read(self.problem.U, "U")
+                    mesh = dolfin.MeshValueCollectionDouble()
+                    xdmf_file.read(mesh,'U')   #can not read type of cell
+
+
+
+
+
+
+
+
+                    # mesh_test = dolfin.MeshValueCollection()
+                    # xdmf_file.read(self.problem.U, "U")
+                    # xdmf_file.read(mesh_test, "U")
+
+
+                    # xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".h5"
+                    # print xdmf_filename
+                    # mesh_test = dolfin.Mesh()
+                    # xdmf_file = dolfin.HDF5File(mesh_test.mpi_comm(),xdmf_filename, 'r')
+                    # xdmf_file.read(self.problem.U, "U", False)
+
+
                     xdmf_file.close()
+
+
+
+
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
 
