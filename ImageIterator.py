@@ -34,6 +34,7 @@ class ImageIterator():
 
         self.working_folder           = parameters["working_folder"]           if ("working_folder"           in parameters) else "."
         self.working_basename         = parameters["working_basename"]         if ("working_basename"         in parameters) else "sol"
+        self.initialize_U_from_file   = parameters["initialize_U_from_file"]   if ("initialize_U_from_file"   in parameters) else False
         self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
 
 
@@ -94,7 +95,12 @@ class ImageIterator():
                     k_frame_old = k_frame+1
                 #self.printer.print_var("k_frame_old",k_frame_old,-1)
 
-                if (self.initialize_DU_with_DUold):
+                if (self.initialize_U_from_file):
+                    xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xdmf"
+                    xdmf_file = dolfin.XDMFFile(xdmf_filename)
+                    xdmf_file.read(self.problem.U, "U")
+                    xdmf_file.close()
+                elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
 
                 self.problem.call_before_solve(
