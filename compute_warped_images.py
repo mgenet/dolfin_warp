@@ -2,10 +2,10 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2012-2016                               ###
+### Created by Martin Genet, 2012-2016                                       ###
 ###                                                                          ###
-### University of California at San Francisco (UCSF), USA            ###
-### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland ###
+### University of California at San Francisco (UCSF), USA                    ###
+### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
 ################################################################################
@@ -27,6 +27,7 @@ def compute_warped_images(
         working_folder,
         working_basename,
         ref_frame=0,
+        ref_image_model=None,
         working_ext="vtu",
         verbose=0):
 
@@ -35,10 +36,11 @@ def compute_warped_images(
     ref_image = myvtk.readImage(
         filename=ref_image_filename)
 
-    interpolator = myvtk.getImageInterpolator(
-        image=ref_image)
-    #I = numpy.empty(1)
-    #interpolator.Interpolate([0.35, 0.25, 0.], I)
+    if (ref_image_model is None):
+        ref_image_interpolator = myvtk.getImageInterpolator(
+            image=ref_image)
+        #I = numpy.empty(1)
+        #ref_image_interpolator.Interpolate([0.35, 0.25, 0.], I)
 
     image = vtk.vtkImageData()
     image.SetOrigin(ref_image.GetOrigin())
@@ -102,7 +104,10 @@ def compute_warped_images(
                 image.GetPoint(k_point, x)
                 scalars_U.GetTuple(k_point, U)
                 X = x - U
-                interpolator.Interpolate(X, I)
+                if (ref_image_model is None):
+                    ref_image_interpolator.Interpolate(X, I)
+                else:
+                    I[0] = ref_image_model(X)
             scalars.SetTuple(k_point, I)
 
         myvtk.writeImage(
