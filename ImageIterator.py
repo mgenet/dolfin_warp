@@ -34,26 +34,19 @@ class ImageIterator():
 
         self.working_folder           = parameters["working_folder"]           if ("working_folder"           in parameters) else "."
         self.working_basename         = parameters["working_basename"]         if ("working_basename"         in parameters) else "sol"
+        self.register_ref_frame       = parameters["register_ref_frame"]       if ("register_ref_frame"       in parameters) else False
         self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
 
 
 
     def iterate(self):
 
-        self.printer.print_str("Writing initial solution…")
-        self.printer.inc()
-
         if not os.path.exists(self.working_folder):
             os.mkdir(self.working_folder)
         pvd_basename = self.working_folder+"/"+self.working_basename
         for vtu_filename in glob.glob(pvd_basename+"_[0-9]*.vtu"):
             os.remove(vtu_filename)
-        ddic.write_VTU_file(
-            filebasename=pvd_basename,
-            function=self.problem.U,
-            time=self.problem.images_ref_frame)
 
-        self.printer.dec()
         self.printer.print_str("Initializing QOI file…")
         self.printer.inc()
 
@@ -62,11 +55,26 @@ class ImageIterator():
         qoi_printer = mypy.DataPrinter(
             names=qoi_names,
             filename=qoi_filebasename+".dat")
-        qoi_values = [self.problem.images_ref_frame]+self.problem.get_qoi_values()
-        qoi_printer.write_line(
-            values=qoi_values)
 
-        self.printer.dec()
+        if not (self.register_ref_frame):
+            self.printer.print_str("Writing initial solution…")
+            self.printer.inc()
+
+            ddic.write_VTU_file(
+                filebasename=pvd_basename,
+                function=self.problem.U,
+                time=self.problem.images_ref_frame)
+
+            self.printer.dec()
+            self.printer.print_str("Writing initial QOI…")
+            self.printer.inc()
+
+            qoi_values = [self.problem.images_ref_frame]+self.problem.get_qoi_values()
+            qoi_printer.write_line(
+                values=qoi_values)
+
+            self.printer.dec()
+
         self.printer.print_str("Looping over frames…")
 
         n_iter_tot = 0
@@ -75,9 +83,15 @@ class ImageIterator():
             self.printer.print_var("forward_or_backward",forward_or_backward)
 
             if   (forward_or_backward == "forward"):
-                k_frames = range(self.problem.images_ref_frame+1, self.problem.images_n_frames, +1)
+                if not (self.register_ref_frame):
+                    k_frames = range(self.problem.images_ref_frame+1, self.problem.images_n_frames, +1)
+                else:
+                    k_frames = range(self.problem.images_ref_frame  , self.problem.images_n_frames, +1)
             elif (forward_or_backward == "backward"):
-                k_frames = range(self.problem.images_ref_frame-1,                           -1, -1)
+                if not (self.register_ref_frame):
+                    k_frames = range(self.problem.images_ref_frame-1,                           -1, -1)
+                else:
+                    k_frames = range(self.problem.images_ref_frame  ,                           -1, -1)
             #self.printer.print_var("k_frames",k_frames)
 
             if (forward_or_backward == "backward"):
@@ -122,7 +136,7 @@ class ImageIterator():
                     time=k_frame)
 
                 self.printer.dec()
-                self.printer.print_str("Writing QOI file…")
+                self.printer.print_str("Writing QOI…")
                 self.printer.inc()
 
                 qoi_printer.write_line(
