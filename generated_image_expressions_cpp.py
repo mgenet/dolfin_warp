@@ -92,12 +92,26 @@ public:
     {'''+('''
         std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+'''
 
-        interpolator->Interpolate(X.data(), expr.data());'''+('''
+        U->eval(UX, X);'''+('''
+        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];
+        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+'''
 
-        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+'''
+        interpolator->Interpolate(x.data(), expr.data());'''+('''
+        std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+('''
 
-        expr[0] /= static_scaling;'''+('''
+        expr[0] /= static_scaling;''')*(im_type=="im")+('''
 
+        expr[0] /= static_scaling;
+        expr[1] /= static_scaling;''')*(im_type=="grad")*(im_dim==2)+('''
+
+        expr[0] /= static_scaling;
+        expr[1] /= static_scaling;
+        expr[2] /= static_scaling;''')*(im_type=="grad")*(im_dim==3)+('''
         std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+'''
     }
 };
