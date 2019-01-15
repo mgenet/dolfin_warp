@@ -18,6 +18,10 @@ import myVTKPythonLibrary as myvtk
 import dolfin_dic as ddic
 import dolfin
 
+from vtk.util import numpy_support as ns
+import numpy as np
+import vtk
+
 ################################################################################
 
 class ImageIterator():
@@ -98,7 +102,6 @@ class ImageIterator():
 
                 if (self.initialize_U_from_file):
                     print k_frame
-                    print type(self.problem.U)
 
                     # xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xmf"
                     # print xdmf_filename
@@ -115,18 +118,11 @@ class ImageIterator():
                     # xdmf_file = dolfin.XDMFFile(xdmf_filename)
                     # xdmf_file.read(self.problem.mesh) #can not read vtu file
 
-                    xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xmf"
-                    print xdmf_filename
-                    xdmf_file = dolfin.XDMFFile(xdmf_filename)
-                    mesh = dolfin.MeshValueCollectionDouble()
-                    xdmf_file.read(mesh,'U')   #can not read type of cell
-
-
-
-
-
-
-
+                    # xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xmf"
+                    # print xdmf_filename
+                    # xdmf_file = dolfin.XDMFFile(xdmf_filename)
+                    # mesh = dolfin.MeshValueCollectionDouble()
+                    # xdmf_file.read(mesh,'U')   #can not read type of cell
 
                     # mesh_test = dolfin.MeshValueCollection()
                     # xdmf_file.read(self.problem.U, "U")
@@ -139,10 +135,47 @@ class ImageIterator():
                     # xdmf_file = dolfin.HDF5File(mesh_test.mpi_comm(),xdmf_filename, 'r')
                     # xdmf_file.read(self.problem.U, "U", False)
 
+                    filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".vtu"
+                    ugrid = myvtk.readUGrid(filename)
+                    vtk_u = ugrid.GetPointData().GetArray("U")
 
-                    xdmf_file.close()
+                    # print 'get cells', ugrid.GetCells()
+                    # print 'node 0', ugrid.GetCell(0)
+                    # print 'node 1', ugrid.GetCell(1)
+
+                    print 'vtk nb cells = ', ugrid.GetNumberOfCells()
+                    print 'dolfin nb cells = ', self.problem.mesh.num_cells()
+                    print 'vtk nb points = ', ugrid.GetNumberOfPoints()
+                    print 'dolfin nb points = ', self.problem.mesh.num_vertices()
+                    assert ugrid.GetNumberOfCells() == self.problem.mesh.num_cells()
+                    assert ugrid.GetNumberOfPoints() == self.problem.mesh.num_vertices()
+
+                    dofmap = self.problem.U_fs.dofmap()
+                    n_cells = self.problem.mesh.num_cells()
+                    nodes_per_element = dofmap.num_element_dofs(0)
+                    np_connectivity = np.zeros([n_cells, nodes_per_element], dtype=np.int)
+                    for i in range(n_cells):
+                        np_connectivity[i,:] = dofmap.cell_dofs(i)
+                    PERM_DOLFIN_TO_VTK = [0, 1, 2, 3]
+                    np_connectivity = np_connectivity[:, PERM_DOLFIN_TO_VTK]
+                    np_connectivity = np.hstack((np.ones([n_cells, 1], dtype=np.int)*nodes_per_element,
+                                                 np_connectivity)).flatten()
+                    vtk_connectivity = ns.numpy_to_vtkIdTypeArray(np_connectivity)
+                    vtk_cells = vtk.vtkCellArray()
+                    vtk_cells.SetCells(n_cells, vtk_connectivity)
+                    print 'vtk cells', vtk_cells
+                    vtk_grid = vtk.vtkUnstructuredGrid()
+                    vtk_grid.SetCells(vtk.VTK_QUADRATIC_TETRA, vtk_cells)
+                    print 'get cells', vtk_grid.GetCells()
+                    # print 'node 0', vtk_grid.GetCell(0)
+                    print 'node 1', vtk_grid.GetCell(1)
+
+                    # assert vtk_grid.GetCells() == ugrid.GetCells()
+                    # assert vtk_grid.GetCell(0) == ugrid.GetCell(0)
 
 
+
+                    self.problem.U = ns.vtk_to_numpy(vtk_u)
 
 
                 elif (self.initialize_DU_with_DUold):
