@@ -16,6 +16,11 @@ import myPythonLibrary as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
+import dolfin
+
+from vtk.util import numpy_support as ns
+import numpy as np
+import vtk
 
 ################################################################################
 
@@ -96,10 +101,14 @@ class ImageIterator():
                 #self.printer.print_var("k_frame_old",k_frame_old,-1)
 
                 if (self.initialize_U_from_file):
-                    xdmf_filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".xdmf"
-                    xdmf_file = dolfin.XDMFFile(xdmf_filename)
-                    xdmf_file.read(self.problem.U, "U")
-                    xdmf_file.close()
+                    filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".vtu"
+                    ugrid = myvtk.readUGrid(filename)
+                    vtk_u = ugrid.GetPointData().GetArray("U")
+                    np_U = ns.vtk_to_numpy(vtk_u)
+                    np_U_float = np_U.astype(float)
+                    np_U_float_reshape = np.reshape(np_U_float, np_U_float.size)
+                    self.problem.U.vector()[:] = np_U_float_reshape[dolfin.dof_to_vertex_map(self.problem.U_fs)]
+
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
 
