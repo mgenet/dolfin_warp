@@ -62,3 +62,12 @@ class MeshSeries():
             k_frame):
 
         return self.folder+"/"+self.basename+"_"+str(k_frame).zfill(self.zfill)+"."+self.ext
+
+
+
+    def get_mesh(self,
+            k_frame):
+
+        return myvtk.readDataSet(
+            filename=self.get_mesh_filename(
+                k_frame=k_frame))

@@ -8,19 +8,17 @@
 ###                                                                          ###
 ################################################################################
 
+import dolfin
 import glob
+import numpy
 import os
 import time
+import vtk
 
 import myPythonLibrary as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
-import dolfin
-
-from vtk.util import numpy_support as ns
-import numpy as np
-import vtk
 
 ################################################################################
 
@@ -40,6 +38,10 @@ class ImageIterator():
         self.working_folder           = parameters["working_folder"]           if ("working_folder"           in parameters) else "."
         self.working_basename         = parameters["working_basename"]         if ("working_basename"         in parameters) else "sol"
         self.initialize_U_from_file   = parameters["initialize_U_from_file"]   if ("initialize_U_from_file"   in parameters) else False
+        self.initialize_U_folder      = parameters["initialize_U_folder"]      if ("initialize_U_folder"      in parameters) else "."
+        self.initialize_U_basename    = parameters["initialize_U_basename"]    if ("initialize_U_basename"    in parameters) else None
+        self.initialize_U_ext         = parameters["initialize_U_ext"]         if ("initialize_U_ext"         in parameters) else "vtu"
+        self.initialize_U_array_name  = parameters["initialize_U_array_name"]  if ("initialize_U_array_name"  in parameters) else "displacement"
         self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
 
 
@@ -75,6 +77,13 @@ class ImageIterator():
         self.printer.dec()
         self.printer.print_str("Looping over frames…")
 
+        if (self.initialize_U_from_file):
+            mesh_series = ddic.MeshSeries(
+                problem=self.problem,
+                folder=self.initialize_U_folder,
+                basename=self.initialize_U_basename,
+                ext=self.initialize_U_ext)
+
         n_iter_tot = 0
         global_success = True
         for forward_or_backward in ["forward","backward"]:
@@ -101,13 +110,12 @@ class ImageIterator():
                 #self.printer.print_var("k_frame_old",k_frame_old,-1)
 
                 if (self.initialize_U_from_file):
-                    filename = self.initialize_U_from_file+"_"+str(k_frame).zfill(2)+".vtu"
-                    ugrid = myvtk.readUGrid(filename)
-                    vtk_u = ugrid.GetPointData().GetArray("U")
-                    np_U = ns.vtk_to_numpy(vtk_u)
-                    np_U_float = np_U.astype(float)
-                    np_U_float_reshape = np.reshape(np_U_float, np_U_float.size)
-                    self.problem.U.vector()[:] = np_U_float_reshape[dolfin.dof_to_vertex_map(self.problem.U_fs)]
+                    mesh = mesh_series.get_mesh(k_frame)
+                    array_U = mesh.GetPointData().GetArray(self.initialize_U_array_name)
+                    array_U = vtk.util.numpy_support.vtk_to_numpy(array_U)
+                    array_U = array_U.astype(float)
+                    array_U = numpy.reshape(array_U, array_U.size)
+                    self.problem.U.vector()[:] = array_U[dolfin.dof_to_vertex_map(self.problem.U_fs)]
 
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
