@@ -41,14 +41,14 @@ class MeshSeries():
         self.printer.inc()
 
         self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
-        assert (len(self.filenames) >= 2),\
+        assert (len(self.filenames) >= 1),\
             "Not enough meshes ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
-
+            
         if (self.n_frames is None):
             self.n_frames = len(self.filenames)
         else:
             assert (self.n_frames <= len(self.filenames))
-        assert (self.n_frames >= 2),\
+        assert (self.n_frames >= 1),\
             "n_frames = "+str(self.n_frames)+" < 2. Aborting."
         self.printer.print_var("n_frames",self.n_frames)
 
