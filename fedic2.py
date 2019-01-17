@@ -41,6 +41,11 @@ def fedic2(
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
         relax_type="gss", # constant, aitken, gss
         relax_init=1.0,
+        initialize_U_from_file=0,
+        initialize_U_folder=None,
+        initialize_U_basename=None,
+        initialize_U_ext="vtu",
+        initialize_U_array_name="displacement",
         initialize_DU_with_DUold=0,
         tol_res=None,
         tol_res_rel=None,
@@ -59,6 +64,8 @@ def fedic2(
         "residual_type must be \"Iref\". Aborting."
     assert (relax_init == 1.),\
         "relax_init must be 1. Aborting."
+    assert (not ((initialize_U_from_file) and (initialize_DU_with_DUold))),\
+        "Cannot initialize U from file and DU with DUold together. Aborting."
     assert (tol_res is None),\
         "tol_res is deprecated. Aborting."
     assert (tol_im is None),\
@@ -135,6 +142,11 @@ def fedic2(
         parameters={
             "working_folder":working_folder,
             "working_basename":working_basename,
+            "initialize_U_from_file":initialize_U_from_file,
+            "initialize_U_folder":initialize_U_folder,
+            "initialize_U_basename":initialize_U_basename,
+            "initialize_U_ext":initialize_U_ext,
+            "initialize_U_array_name":initialize_U_array_name,
             "initialize_DU_with_DUold":initialize_DU_with_DUold})
 
     image_iterator.iterate()
