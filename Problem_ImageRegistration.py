@@ -185,7 +185,7 @@ class ImageRegistrationProblem(Problem):
         for energy in self.energies:
             ener_ = dolfin.assemble(
                 energy.ener_form)
-            self.printer.print_var("ener_"+ener.name,ener_)
+            self.printer.print_var("ener_"+energy.name,ener_)
             ener += energy.w * ener_
         #self.printer.print_var("ener",ener)
 
