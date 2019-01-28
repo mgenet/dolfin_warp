@@ -181,13 +181,21 @@ class ImageRegistrationProblem(Problem):
 
     def assemble_ener(self):
 
-        ener_form = 0.
+        ener = 0.
         for energy in self.energies:
-            ener_form += dolfin.Constant(energy.w) * energy.ener_form
-
-        ener = dolfin.assemble(
-            ener_form)
+            ener_ = dolfin.assemble(
+                energy.ener_form)
+            self.printer.print_var("ener_"+ener.name,ener_)
+            ener += energy.w * ener_
         #self.printer.print_var("ener",ener)
+
+        # ener_form = 0.
+        # for energy in self.energies:
+        #     ener_form += dolfin.Constant(energy.w) * energy.ener_form
+        #
+        # ener = dolfin.assemble(
+        #     ener_form)
+        # #self.printer.print_var("ener",ener)
 
         return ener
 
