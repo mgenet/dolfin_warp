@@ -319,7 +319,7 @@ class NonlinearSolver():
                 self.printer.print_var("dener_min",dener_min)
                 relax_err = dener_min/ener_list[0]
                 self.printer.print_var("relax_err",relax_err)
-                if (relax_min != 0.) and (relax_err < self.relax_tol):
+                if (relax_min != 0.) and (abs(relax_err) < self.relax_tol):
                     break
             if (relax_k == self.relax_n_iter_max):
                 break
