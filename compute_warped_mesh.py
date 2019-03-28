@@ -72,7 +72,7 @@ def compute_warped_mesh(
         myvtk.addStrainsFromDisplacements(
             mesh=mesh,
             disp_array_name="displacement",
-            ref_mesh=ref_mesh,
+            mesh_w_local_basis=ref_mesh,
             verbose=verbose-1)
 
         myvtk.writeUGrid(
