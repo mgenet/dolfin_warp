@@ -68,7 +68,7 @@ class ImageRegistrationProblem(Problem):
             self.mesh_filebasename = self.mesh_folder+"/"+self.mesh_basename
             self.mesh_filename = self.mesh_filebasename+"."+"xml"
             assert (os.path.exists(self.mesh_filename)),\
-                "No mesh in "+mesh_filename+". Aborting."
+                "No mesh in "+self.mesh_filename+". Aborting."
             self.mesh = dolfin.Mesh(self.mesh_filename)
         else:
             self.mesh = mesh
