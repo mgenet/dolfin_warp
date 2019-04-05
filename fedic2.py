@@ -28,6 +28,7 @@ def fedic2(
         images_quadrature_from="points_count", # points_count, integral
         images_expressions_type="cpp", # cpp, py
         images_dynamic_scaling=1,
+        images_is_cone=0,
         mesh=None,
         mesh_folder=None,
         mesh_basename=None,
@@ -113,7 +114,8 @@ def fedic2(
         quadrature_degree=images_quadrature,
         w=1.-regul_level,
         ref_frame=images_ref_frame,
-        dynamic_scaling=images_dynamic_scaling)
+        dynamic_scaling=images_dynamic_scaling,
+        im_is_cone=images_is_cone)
     problem.add_image_energy(warped_image_energy)
 
     regularization_energy = ddic.RegularizationEnergy(

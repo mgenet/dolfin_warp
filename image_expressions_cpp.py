@@ -245,11 +245,16 @@ public:
 
 def get_ExprCharFuncIm_cpp(
         im_dim,
+        im_is_def=0,
+        im_is_cone=0,
         verbose=0):
 
     assert (im_dim in (2,3))
+    if (im_is_cone):
+        assert (im_dim == 3)
 
     ExprCharFuncIm_cpp = '''\
+#include <math.h>
 #include <string.h>
 
 #include <vtkSmartPointer.h>
@@ -262,13 +267,35 @@ namespace dolfin
 class MyExpr : public Expression
 {
     double xmin, xmax, ymin, ymax, zmin, zmax;
+    mutable Array<double> UX;
+    mutable Array<double> x;'''+('''
+    Function* U;''')*(im_is_def)+('''
+    Array<double> O;
+    Array<double> n1;
+    Array<double> n2;
+    Array<double> n3;
+    Array<double> n4;
+    mutable double d1, d2, d3, d4;''')*(im_is_cone)+'''
 
 public:
 
     MyExpr():
-        Expression()
+        Expression(),
+        UX('''+str(im_dim)+'''),
+        x('''+str(im_dim)+''')'''+(''',
+        O(3),
+        n1(3),
+        n2(3),
+        n3(3),
+        n4(3)''')*(im_is_cone)+'''
     {
-    }
+    }'''+('''
+
+    void init_disp(
+        Function* UU)
+    {
+        U = UU;
+    }''')*(im_is_def)+'''
 
     void init_image(
         const char* filename)
@@ -291,16 +318,71 @@ public:
         std::cout << "ymin = " << ymin << std::endl;
         std::cout << "ymax = " << ymax << std::endl;
         std::cout << "zmin = " << zmin << std::endl;
-        std::cout << "zmax = " << zmax << std::endl;''')*(verbose)+'''
+        std::cout << "zmax = " << zmax << std::endl;''')*(verbose)+('''
+
+        O[0] = (xmin+xmax)/2;
+        O[1] = (ymin+ymax)/2;
+        O[2] = zmax;
+
+        n1[0] = +cos(35. * M_PI/180.);
+        n1[1] = 0.;
+        n1[2] = -sin(35. * M_PI/180.);
+
+        n2[0] = -cos(35. * M_PI/180.);
+        n2[1] = 0.;
+        n2[2] = -sin(35. * M_PI/180.);
+
+        n3[0] = 0.;
+        n3[1] = +cos(40. * M_PI/180.);
+        n3[2] = -sin(40. * M_PI/180.);
+
+        n4[0] = 0.;
+        n4[1] = -cos(40. * M_PI/180.);
+        n4[2] = -sin(40. * M_PI/180.);''')*(im_is_cone)+'''
     }
 
     void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
         std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
 
-        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax))''')*(im_dim==2)+('''
+        U->eval(UX, X);''')*(im_is_def)+('''
+        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
 
-        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax) && (X[2] >= zmin) && (X[2] <= zmax))''')*(im_dim==3)+'''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];
+        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+(('''
+
+        if ((x[0] >= xmin)
+         && (x[0] <= xmax)
+         && (x[1] >= ymin)
+         && (x[1] <= ymax))''')*(im_dim==2)+('''
+        if ((x[0] >= xmin)
+         && (x[0] <= xmax)
+         && (x[1] >= ymin)
+         && (x[1] <= ymax)
+         && (x[2] >= zmin)
+         && (x[2] <= zmax))''')*(im_dim==3))*(not im_is_cone)+('''
+
+        d1 = (x[0]-O[0])*n1[0]
+           + (x[1]-O[1])*n1[1]
+           + (x[2]-O[2])*n1[2];
+        d2 = (x[0]-O[0])*n2[0]
+           + (x[1]-O[1])*n2[1]
+           + (x[2]-O[2])*n2[2];
+        d3 = (x[0]-O[0])*n3[0]
+           + (x[1]-O[1])*n3[1]
+           + (x[2]-O[2])*n3[2];
+        d4 = (x[0]-O[0])*n4[0]
+           + (x[1]-O[1])*n4[1]
+           + (x[2]-O[2])*n4[2];
+
+        if ((d1 >= 0.)
+         && (d2 >= 0.)
+         && (d3 >= 0.)
+         && (d4 >= 0.))''')*(im_is_cone)+'''
         {
             expr[0] = 1.;
         }
@@ -313,5 +395,5 @@ public:
 };
 
 }'''
-    #print ExprCharFuncIm_cpp
+    # print ExprCharFuncIm_cpp
     return ExprCharFuncIm_cpp
