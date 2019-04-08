@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2018                                       ###
+### Created by Martin Genet, 2016-2019                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -28,6 +28,7 @@ def fedic2(
         images_quadrature_from="points_count", # points_count, integral
         images_expressions_type="cpp", # cpp, py
         images_dynamic_scaling=1,
+        images_is_cone=0,
         mesh=None,
         mesh_folder=None,
         mesh_basename=None,
@@ -41,6 +42,11 @@ def fedic2(
         residual_type="Iref", # Iref, Iold, Iref-then-Iold
         relax_type="gss", # constant, aitken, gss
         relax_init=1.0,
+        initialize_U_from_file=0,
+        initialize_U_folder=None,
+        initialize_U_basename=None,
+        initialize_U_ext="vtu",
+        initialize_U_array_name="displacement",
         initialize_DU_with_DUold=0,
         tol_res=None,
         tol_res_rel=None,
@@ -59,6 +65,8 @@ def fedic2(
         "residual_type must be \"Iref\". Aborting."
     assert (relax_init == 1.),\
         "relax_init must be 1. Aborting."
+    assert (not ((initialize_U_from_file) and (initialize_DU_with_DUold))),\
+        "Cannot initialize U from file and DU with DUold together. Aborting."
     assert (tol_res is None),\
         "tol_res is deprecated. Aborting."
     assert (tol_im is None),\
@@ -83,6 +91,8 @@ def fedic2(
         ext=images_ext)
 
     if (images_quadrature is None):
+        problem.printer.print_str("Computing quadrature degree…")
+        problem.printer.inc()
         if (images_quadrature_from == "points_count"):
             images_quadrature = ddic.compute_quadrature_degree_from_points_count(
                 image_filename=image_series.get_image_filename(images_ref_frame),
@@ -95,6 +105,8 @@ def fedic2(
                 verbose=1)
         else:
             assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
+        problem.printer.print_var("images_quadrature",images_quadrature)
+        problem.printer.dec()
 
     warped_image_energy = ddic.WarpedImageEnergy(
         problem=problem,
@@ -102,7 +114,8 @@ def fedic2(
         quadrature_degree=images_quadrature,
         w=1.-regul_level,
         ref_frame=images_ref_frame,
-        dynamic_scaling=images_dynamic_scaling)
+        dynamic_scaling=images_dynamic_scaling,
+        im_is_cone=images_is_cone)
     problem.add_image_energy(warped_image_energy)
 
     regularization_energy = ddic.RegularizationEnergy(
@@ -131,6 +144,11 @@ def fedic2(
         parameters={
             "working_folder":working_folder,
             "working_basename":working_basename,
+            "initialize_U_from_file":initialize_U_from_file,
+            "initialize_U_folder":initialize_U_folder,
+            "initialize_U_basename":initialize_U_basename,
+            "initialize_U_ext":initialize_U_ext,
+            "initialize_U_array_name":initialize_U_array_name,
             "initialize_DU_with_DUold":initialize_DU_with_DUold})
 
     image_iterator.iterate()

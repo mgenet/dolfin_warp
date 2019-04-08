@@ -2,10 +2,10 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2012-2016                               ###
+### Created by Martin Genet, 2012-2019                                       ###
 ###                                                                          ###
-### University of California at San Francisco (UCSF), USA            ###
-### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland ###
+### University of California at San Francisco (UCSF), USA                    ###
+### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
 ################################################################################
@@ -72,7 +72,7 @@ def compute_warped_mesh(
         myvtk.addStrainsFromDisplacements(
             mesh=mesh,
             disp_array_name="displacement",
-            ref_mesh=ref_mesh,
+            mesh_w_local_basis=ref_mesh,
             verbose=verbose-1)
 
         myvtk.writeUGrid(

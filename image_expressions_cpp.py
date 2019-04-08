@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2018                                       ###
+### Created by Martin Genet, 2016-2019                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -15,6 +15,7 @@ def get_ExprIm_cpp(
         im_type="im",
         im_is_def=0,
         disp_type="fenics", # "vtk"
+        u_is_vtk=0,
         verbose=0):
 
     assert (im_dim in (2,3))
@@ -29,6 +30,12 @@ def get_ExprIm_cpp(
 #include <vtkImageData.h>'''+('''
 #include <vtkImageGradient.h>''')*(im_type=="grad")+'''
 #include <vtkImageInterpolator.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkProbeFilter.h>
+#include <vtkPointData.h>
+#include <vtkPolyData.h>
+
 
 double getStaticScalingFactor(const char* scalar_type_as_string)
 {
@@ -50,8 +57,11 @@ class MyExpr : public Expression
     double static_scaling;'''+('''
     Array<double>* dynamic_scaling; // does not work
     double dynamic_scaling_a;       // should not be needed
-    double dynamic_scaling_b;       // should not be needed
-    Function* U;
+    double dynamic_scaling_b;       // should not be needed'''+('''
+    Function* U;''')*(not u_is_vtk)+('''
+    vtkSmartPointer<vtkProbeFilter> probe_filter;
+    vtkSmartPointer<vtkPoints> probe_points;
+    vtkSmartPointer<vtkPolyData> probe_polydata;''')*(u_is_vtk)+'''
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
     mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
@@ -65,7 +75,10 @@ public:
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
         X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
-    {
+    {'''+('''
+        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
+        probe_points = vtkSmartPointer<vtkPoints>::New();
+        probe_polydata = vtkSmartPointer<vtkPolyData>::New();''')*(u_is_vtk)+'''
     }'''+('''
 
     void init_dynamic_scaling(
@@ -84,11 +97,23 @@ public:
         dynamic_scaling_b = scaling[1]; // should not be needed
     }                                   // should not be needed
 
+    '''+('''
     void init_disp(
         Function* UU)
     {
         U = UU;
-    }''')*(im_is_def)+'''
+    }''')*(not u_is_vtk)+('''
+    void init_disp(
+        const char* mesh_filename)
+    {
+        vtkSmartPointer<vtkXMLUnstructuredGridReader> reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+        reader->SetFileName(mesh_filename);
+        reader->Update();
+
+        vtkSmartPointer<vtkUnstructuredGrid> mesh = reader->GetOutput();
+
+        probe_filter->SetSourceData(mesh);
+    }''')*(u_is_vtk))*(im_is_def)+'''
 
     void init_image(
         const char* filename,
@@ -140,9 +165,18 @@ public:
 
     void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
+        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+(('''
 
-        U->eval(UX, X);'''+('''
+        U->eval(UX, X);''')*(not u_is_vtk)+('''
+
+        probe_points->SetNumberOfPoints(1);
+        probe_points->SetPoint(0,X.data());
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
+        probe_filter->Update();
+        probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
+
+        ''')*(u_is_vtk)+('''
         std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
         x[0] = X[0] + UX[0];
         x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
@@ -209,13 +243,19 @@ public:
     #print ExprIm_cpp
     return ExprIm_cpp
 
+
 def get_ExprCharFuncIm_cpp(
         im_dim,
+        im_is_def=0,
+        im_is_cone=0,
         verbose=0):
 
     assert (im_dim in (2,3))
+    if (im_is_cone):
+        assert (im_dim == 3)
 
     ExprCharFuncIm_cpp = '''\
+#include <math.h>
 #include <string.h>
 
 #include <vtkSmartPointer.h>
@@ -228,13 +268,35 @@ namespace dolfin
 class MyExpr : public Expression
 {
     double xmin, xmax, ymin, ymax, zmin, zmax;
+    mutable Array<double> UX;
+    mutable Array<double> x;'''+('''
+    Function* U;''')*(im_is_def)+('''
+    Array<double> O;
+    Array<double> n1;
+    Array<double> n2;
+    Array<double> n3;
+    Array<double> n4;
+    mutable double d1, d2, d3, d4;''')*(im_is_cone)+'''
 
 public:
 
     MyExpr():
-        Expression()
+        Expression(),
+        UX('''+str(im_dim)+'''),
+        x('''+str(im_dim)+''')'''+(''',
+        O(3),
+        n1(3),
+        n2(3),
+        n3(3),
+        n4(3)''')*(im_is_cone)+'''
     {
-    }
+    }'''+('''
+
+    void init_disp(
+        Function* UU)
+    {
+        U = UU;
+    }''')*(im_is_def)+'''
 
     void init_image(
         const char* filename)
@@ -257,16 +319,71 @@ public:
         std::cout << "ymin = " << ymin << std::endl;
         std::cout << "ymax = " << ymax << std::endl;
         std::cout << "zmin = " << zmin << std::endl;
-        std::cout << "zmax = " << zmax << std::endl;''')*(verbose)+'''
+        std::cout << "zmax = " << zmax << std::endl;''')*(verbose)+('''
+
+        O[0] = (xmin+xmax)/2;
+        O[1] = (ymin+ymax)/2;
+        O[2] = zmax;
+
+        n1[0] = +cos(35. * M_PI/180.);
+        n1[1] = 0.;
+        n1[2] = -sin(35. * M_PI/180.);
+
+        n2[0] = -cos(35. * M_PI/180.);
+        n2[1] = 0.;
+        n2[2] = -sin(35. * M_PI/180.);
+
+        n3[0] = 0.;
+        n3[1] = +cos(40. * M_PI/180.);
+        n3[2] = -sin(40. * M_PI/180.);
+
+        n4[0] = 0.;
+        n4[1] = -cos(40. * M_PI/180.);
+        n4[2] = -sin(40. * M_PI/180.);''')*(im_is_cone)+'''
     }
 
     void eval(Array<double>& expr, const Array<double>& X) const
     {'''+('''
         std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
 
-        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax))''')*(im_dim==2)+('''
+        U->eval(UX, X);''')*(im_is_def)+('''
+        std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
 
-        if ((X[0] >= xmin) && (X[0] <= xmax) && (X[1] >= ymin) && (X[1] <= ymax) && (X[2] >= zmin) && (X[2] <= zmax))''')*(im_dim==3)+'''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X[0] + UX[0];
+        x[1] = X[1] + UX[1];
+        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+(('''
+
+        if ((x[0] >= xmin)
+         && (x[0] <= xmax)
+         && (x[1] >= ymin)
+         && (x[1] <= ymax))''')*(im_dim==2)+('''
+        if ((x[0] >= xmin)
+         && (x[0] <= xmax)
+         && (x[1] >= ymin)
+         && (x[1] <= ymax)
+         && (x[2] >= zmin)
+         && (x[2] <= zmax))''')*(im_dim==3))*(not im_is_cone)+('''
+
+        d1 = (x[0]-O[0])*n1[0]
+           + (x[1]-O[1])*n1[1]
+           + (x[2]-O[2])*n1[2];
+        d2 = (x[0]-O[0])*n2[0]
+           + (x[1]-O[1])*n2[1]
+           + (x[2]-O[2])*n2[2];
+        d3 = (x[0]-O[0])*n3[0]
+           + (x[1]-O[1])*n3[1]
+           + (x[2]-O[2])*n3[2];
+        d4 = (x[0]-O[0])*n4[0]
+           + (x[1]-O[1])*n4[1]
+           + (x[2]-O[2])*n4[2];
+
+        if ((d1 >= 0.)
+         && (d2 >= 0.)
+         && (d3 >= 0.)
+         && (d4 >= 0.))''')*(im_is_cone)+'''
         {
             expr[0] = 1.;
         }
@@ -279,5 +396,5 @@ public:
 };
 
 }'''
-    #print ExprCharFuncIm_cpp
+    # print ExprCharFuncIm_cpp
     return ExprCharFuncIm_cpp

@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2018                                       ###
+### Created by Martin Genet, 2016-2019                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -30,6 +30,7 @@ class WarpedImageEnergy(Energy):
             name="im",
             w=1.,
             ref_frame=0,
+            im_is_cone=0,
             dynamic_scaling=False):
 
         self.problem           = problem
@@ -182,20 +183,32 @@ class WarpedImageEnergy(Energy):
         # Phi_ref
         self.Phi_Iref = dolfin.Expression(
             cppcode=ddic.get_ExprCharFuncIm_cpp(
-                im_dim=self.image_series.dimension),
+                im_dim=self.image_series.dimension,
+                im_is_def=0,
+                im_is_cone=im_is_cone),
             element=self.fe)
         self.Phi_Iref.init_image(self.ref_image_filename)
 
+        # Phi_def
+        self.Phi_Idef = dolfin.Expression(
+            cppcode=ddic.get_ExprCharFuncIm_cpp(
+                im_dim=self.image_series.dimension,
+                im_is_def=1,
+                im_is_cone=im_is_cone),
+            element=self.fe)
+        self.Phi_Idef.init_image(self.ref_image_filename)
+        self.Phi_Idef.init_disp(self.problem.U)
+
         # Psi_c
-        self.Psi_c  = self.Phi_Iref * (self.Idef - self.Iref)**2/2
-        self.DPsi_c = self.Phi_Iref * (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.Psi_c  = self.Phi_Idef * self.Phi_Iref * (self.Idef - self.Iref)**2/2
+        self.DPsi_c = self.Phi_Idef * self.Phi_Iref * (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
-        self.DDPsi_c     = self.Phi_Iref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c_old = self.Phi_Iref * dolfin.dot(self.DIold, self.problem.dU_trial) * dolfin.dot(self.DIold, self.problem.dU_test)
-        self.DDPsi_c_ref = self.Phi_Iref * dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
+        self.DDPsi_c     = self.Phi_Idef * self.Phi_Iref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.DDPsi_c_old = self.Phi_Idef * self.Phi_Iref * dolfin.dot(self.DIold, self.problem.dU_trial) * dolfin.dot(self.DIold, self.problem.dU_test)
+        self.DDPsi_c_ref = self.Phi_Idef * self.Phi_Iref * dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
 
-        self.Psi_c_old   = self.Phi_Iref * (self.Idef - self.Iold)**2/2
-        self.DPsi_c_old  = self.Phi_Iref * (self.Idef - self.Iold) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.Psi_c_old   = self.Phi_Idef * self.Phi_Iref * (self.Idef - self.Iold)**2/2
+        self.DPsi_c_old  = self.Phi_Idef * self.Phi_Iref * (self.Idef - self.Iold) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
         # forms
         self.ener_form = self.Psi_c   * self.dV

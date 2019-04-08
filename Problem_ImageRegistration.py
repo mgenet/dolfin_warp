@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2018                                       ###
+### Created by Martin Genet, 2016-2019                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -68,7 +68,7 @@ class ImageRegistrationProblem(Problem):
             self.mesh_filebasename = self.mesh_folder+"/"+self.mesh_basename
             self.mesh_filename = self.mesh_filebasename+"."+"xml"
             assert (os.path.exists(self.mesh_filename)),\
-                "No mesh in "+mesh_filename+". Aborting."
+                "No mesh in "+self.mesh_filename+". Aborting."
             self.mesh = dolfin.Mesh(self.mesh_filename)
         else:
             self.mesh = mesh
@@ -192,13 +192,21 @@ class ImageRegistrationProblem(Problem):
 
     def assemble_ener(self):
 
-        ener_form = 0.
+        ener = 0.
         for energy in self.energies:
-            ener_form += dolfin.Constant(energy.w) * energy.ener_form
-
-        ener = dolfin.assemble(
-            ener_form)
+            ener_ = dolfin.assemble(
+                energy.ener_form)
+            self.printer.print_var("ener_"+energy.name,ener_)
+            ener += energy.w * ener_
         #self.printer.print_var("ener",ener)
+
+        # ener_form = 0.
+        # for energy in self.energies:
+        #     ener_form += dolfin.Constant(energy.w) * energy.ener_form
+        #
+        # ener = dolfin.assemble(
+        #     ener_form)
+        # #self.printer.print_var("ener",ener)
 
         return ener
 

@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2018                                       ###
+### Created by Martin Genet, 2016-2019                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -103,6 +103,10 @@ class Image():
         # structure
         if (structure["type"] == "no"):
             self.I0_structure = self.I0_structure_no
+        elif (structure["type"] == "box"):
+            self.I0_structure = self.I0_structure_box
+            self.Xmin = structure["Xmin"]
+            self.Xmax = structure["Xmax"]
         elif (structure["type"] == "heart"):
             if (images["n_dim"] == 2):
                 self.I0_structure = self.I0_structure_heart_2
@@ -200,6 +204,13 @@ class Image():
     def I0_structure_no(self, X, i, g=None):
         i[0] = 1.
         if (g is not None): g[:] = 1. # MG 20180806: gradient is given by texture; here it is just indicator function
+
+    def I0_structure_box(self, X, i, g=None):
+        if all(numpy.greater_equal(X, self.Xmin)) and all(numpy.less_equal(X, self.Xmax)):
+            i[0] = 1.
+        else:
+            i[0] = 0.
+        if (g is not None): g[:] = 0. # MG 20180806: gradient is given by texture; here it is just indicator function
 
     def I0_structure_heart_2(self, X, i, g=None):
         self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
@@ -437,9 +448,10 @@ class Mapping:
         pass
 
     def init_t_translation(self, t):
-        self.D[0] = self.deformation["Dx"]*self.phi(t) if ("Dx" in self.deformation.keys()) else 0.
-        self.D[1] = self.deformation["Dy"]*self.phi(t) if ("Dy" in self.deformation.keys()) else 0.
-        self.D[2] = self.deformation["Dz"]*self.phi(t) if ("Dz" in self.deformation.keys()) else 0.
+        self.D[0] = self.deformation["Dx"] if ("Dx" in self.deformation.keys()) else 0.
+        self.D[1] = self.deformation["Dy"] if ("Dy" in self.deformation.keys()) else 0.
+        self.D[2] = self.deformation["Dz"] if ("Dz" in self.deformation.keys()) else 0.
+        self.D *= self.phi(t)
 
     def init_t_rotation(self, t):
         self.C[0] = self.deformation["Cx"] if ("Cx" in self.deformation.keys()) else 0.
@@ -461,23 +473,31 @@ class Mapping:
         self.Rinv[:,:] = numpy.linalg.inv(self.R)
 
     def init_t_homogeneous(self, t):
-        Exx = self.deformation["Exx"]*self.phi(t) if ("Exx" in self.deformation.keys()) else 0.
-        Eyy = self.deformation["Eyy"]*self.phi(t) if ("Eyy" in self.deformation.keys()) else 0.
-        Ezz = self.deformation["Ezz"]*self.phi(t) if ("Ezz" in self.deformation.keys()) else 0.
-        Exy = self.deformation["Exy"]*self.phi(t) if ("Exy" in self.deformation.keys()) else 0.
-        Eyx = self.deformation["Eyx"]*self.phi(t) if ("Eyx" in self.deformation.keys()) else 0.
-        Exz = self.deformation["Exz"]*self.phi(t) if ("Exz" in self.deformation.keys()) else 0.
-        Ezx = self.deformation["Ezx"]*self.phi(t) if ("Ezx" in self.deformation.keys()) else 0.
-        Eyz = self.deformation["Eyz"]*self.phi(t) if ("Eyz" in self.deformation.keys()) else 0.
-        Ezy = self.deformation["Ezy"]*self.phi(t) if ("Ezy" in self.deformation.keys()) else 0.
-        self.F = numpy.array([[Exx, Exy, Exz],
-                              [Eyx, Eyy, Eyz],
-                              [Ezx, Ezy, Ezz]])
-        self.F *= 2
-        self.F += numpy.eye(3)
-        w, v = numpy.linalg.eig(self.F)
-        #assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
-        self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
+        if (any(E in self.deformation.keys() for E in ("Exx", "Eyy", "Ezz"))): # build F from E
+            Exx = self.deformation["Exx"] if ("Exx" in self.deformation.keys()) else 0.
+            Eyy = self.deformation["Eyy"] if ("Eyy" in self.deformation.keys()) else 0.
+            Ezz = self.deformation["Ezz"] if ("Ezz" in self.deformation.keys()) else 0.
+            self.F = numpy.array([[Exx,  0.,  0.],
+                                  [ 0., Eyy,  0.],
+                                  [ 0.,  0., Ezz]])*self.phi(t)
+            self.F *= 2
+            self.F += numpy.eye(3)
+            w, v = numpy.linalg.eig(self.F)
+            # assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
+            self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
+        else:
+            Fxx = self.deformation["Fxx"] if ("Fxx" in self.deformation.keys()) else 0.
+            Fyy = self.deformation["Fyy"] if ("Fyy" in self.deformation.keys()) else 0.
+            Fzz = self.deformation["Fzz"] if ("Fzz" in self.deformation.keys()) else 0.
+            Fxy = self.deformation["Fxy"] if ("Fxy" in self.deformation.keys()) else 0.
+            Fyx = self.deformation["Fyx"] if ("Fyx" in self.deformation.keys()) else 0.
+            Fyz = self.deformation["Fyz"] if ("Fyz" in self.deformation.keys()) else 0.
+            Fzy = self.deformation["Fzy"] if ("Fzy" in self.deformation.keys()) else 0.
+            Fzx = self.deformation["Fzx"] if ("Fzx" in self.deformation.keys()) else 0.
+            Fxz = self.deformation["Fxz"] if ("Fxz" in self.deformation.keys()) else 0.
+            self.F = numpy.eye(3) + (numpy.array([[Fxx, Fxy, Fxz],
+                                                  [Fyx, Fyy, Fyz],
+                                                  [Fzx, Fzy, Fzz]])-numpy.eye(3))*self.phi(t)
         self.Finv = numpy.linalg.inv(self.F)
 
     def init_t_heart(self, t):
