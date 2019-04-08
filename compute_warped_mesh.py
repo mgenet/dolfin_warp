@@ -18,6 +18,7 @@ import myPythonLibrary as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
+from generate_images import *
 
 ################################################################################
 
