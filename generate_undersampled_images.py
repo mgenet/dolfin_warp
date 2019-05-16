@@ -35,7 +35,7 @@ def generateUndersampledImages(
     images_n_voxels = images["n_voxels"][:]
 
     images["n_voxels"][1] /= undersampling_level
-    if (images["n_dim"] >= 3):
+    if (images["n_dim"] == 3):
         images["n_voxels"][2] /= undersampling_level
     images["basename"] = images_basename+"-X"
     texture["type"] = "taggX"
@@ -47,11 +47,11 @@ def generateUndersampledImages(
         deformation=deformation,
         evolution=evolution,
         verbose=verbose-1)
-    images["n_voxels"] = images_n_voxels[:]
+    images["n_voxels"][:] = images_n_voxels[:]
     images["basename"] = images_basename
 
     images["n_voxels"][0] /= undersampling_level
-    if (images["n_dim"] >= 3):
+    if (images["n_dim"] == 3):
         images["n_voxels"][2] /= undersampling_level
     images["basename"] = images_basename+"-Y"
     texture["type"] = "taggY"
@@ -63,10 +63,10 @@ def generateUndersampledImages(
         deformation=deformation,
         evolution=evolution,
         verbose=verbose-1)
-    images["n_voxels"] = images_n_voxels[:]
+    images["n_voxels"][:] = images_n_voxels[:]
     images["basename"] = images_basename
 
-    if (images["n_dim"] >= 3):
+    if (images["n_dim"] == 3):
         images["n_voxels"][0] /= undersampling_level
         images["n_voxels"][1] /= undersampling_level
         images["basename"] = images_basename+"-Z"
@@ -79,7 +79,7 @@ def generateUndersampledImages(
             deformation=deformation,
             evolution=evolution,
             verbose=verbose-1)
-        images["n_voxels"] = images_n_voxels
+        images["n_voxels"][:] = images_n_voxels[:]
         images["basename"] = images_basename
 
     if ("zfill" not in images.keys()):
