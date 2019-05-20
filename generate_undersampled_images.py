@@ -39,7 +39,7 @@ def generateUndersampledImages(
         images["n_voxels"][2] /= undersampling_level
     images["basename"] = images_basename+"-X"
     texture["type"] = "taggX"
-    fedic.generateImages(
+    ddic.generate_images(
         images=images,
         structure=structure,
         texture=texture,
@@ -55,7 +55,7 @@ def generateUndersampledImages(
         images["n_voxels"][2] /= undersampling_level
     images["basename"] = images_basename+"-Y"
     texture["type"] = "taggY"
-    fedic.generateImages(
+    ddic.generate_images(
         images=images,
         structure=structure,
         texture=texture,
@@ -71,7 +71,7 @@ def generateUndersampledImages(
         images["n_voxels"][1] /= undersampling_level
         images["basename"] = images_basename+"-Z"
         texture["type"] = "taggZ"
-        fedic.generateImages(
+        ddic.generate_images(
             images=images,
             structure=structure,
             texture=texture,

@@ -26,7 +26,10 @@ def normalize_images(
         images_folder,
         images_basename,
         images_datatype,
-        images_ext="vti"):
+        images_ext="vti",
+        verbose=0):
+
+    mypy.my_print(verbose, "*** normalize_images ***")
 
     images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
     images_nframes = len(images_filenames)
@@ -49,19 +52,19 @@ def normalize_images(
 
     global_min = float("+Inf")
     global_max = float("-Inf")
-    I = numpy.empty(2)
     for k_frame in xrange(images_nframes):
         reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
         reader.Update()
 
         image_scalars = reader.GetOutput().GetPointData().GetScalars()
+        I = numpy.empty(image_scalars.GetNumberOfComponents())
         for k_point in xrange(images_npoints):
             image_scalars.GetTuple(k_point, I)
 
             global_min = min(global_min, I[0])
             global_max = max(global_max, I[0])
-    print "global_min = "+str(global_min)
-    print "global_max = "+str(global_max)
+    mypy.my_print(verbose, "global_min = "+str(global_min))
+    mypy.my_print(verbose, "global_max = "+str(global_max))
 
     shifter = vtk.vtkImageShiftScale()
     shifter.SetInputConnection(reader.GetOutputPort())
@@ -85,11 +88,8 @@ def normalize_images(
     writer.SetInputConnection(shifter.GetOutputPort())
 
     for k_frame in xrange(images_nframes):
-        reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-        reader.Update()
+        mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        shifter.Update()
-
+        reader.SetFileName(images_folder+"/"+images_basename              +"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
         writer.SetFileName(images_folder+"/"+images_basename+"_normalized"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-        writer.Update()
         writer.Write()

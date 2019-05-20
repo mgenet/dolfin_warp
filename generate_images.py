@@ -52,7 +52,7 @@ def set_I_wGrad(
     G = numpy.dot(G, Finv)
     vtk_gradient_vectors.SetTuple(k_point, G)
 
-def generateImages(
+def generate_images(
         images,
         structure,
         texture,
@@ -62,13 +62,13 @@ def generateImages(
         generate_image_gradient=False,
         verbose=0):
 
-    mypy.my_print(verbose, "*** generateImages ***")
+    mypy.my_print(verbose, "*** generate_images ***")
 
     assert ("n_integration" not in images),\
-        "\"n_integration\" has been deprecated. Use \"resampling\" instead. Aborting."
+        "\"n_integration\" has been deprecated. Use \"upsampling\" instead. Aborting."
 
-    if ("resampling_factors" not in images):
-        images["resampling_factors"] = [1]*images["n_dim"]
+    if ("upsampling_factors" not in images):
+        images["upsampling_factors"] = [1]*images["n_dim"]
     if ("zfill" not in images):
         images["zfill"] = len(str(images["n_frames"]))
     if ("ext" not in images):
@@ -92,30 +92,37 @@ def generateImages(
 
     vtk_image = vtk.vtkImageData()
 
-    if   (images["n_dim"] == 1):
-        vtk_image.SetExtent([0, images["n_voxels"][0]*images["resampling_factors"][0]-1, 0,                                               0, 0,                                               0])
-    elif (images["n_dim"] == 2):
-        vtk_image.SetExtent([0, images["n_voxels"][0]*images["resampling_factors"][0]-1, 0, images["n_voxels"][1]*images["resampling_factors"][1]-1, 0,                                               0])
-    elif (images["n_dim"] == 3):
-        vtk_image.SetExtent([0, images["n_voxels"][0]*images["resampling_factors"][0]-1, 0, images["n_voxels"][1]*images["resampling_factors"][1]-1, 0, images["n_voxels"][2]*images["resampling_factors"][2]-1])
-    else:
-        assert (0), "n_dim must be \"1\", \"2\" or \"3\". Aborting."
+    delta = numpy.array(images["L"])/numpy.array(images["n_voxels"])
+
+    images["n_voxels_upsampled"] = numpy.array(images["n_voxels"])*numpy.array(images["upsampling_factors"])
+    delta_upsampled = numpy.array(images["L"])/numpy.array(images["n_voxels_upsampled"])
 
     if   (images["n_dim"] == 1):
-        spacing = numpy.array([images["L"][0]/images["n_voxels"][0]/images["resampling_factors"][0],                                                           1.,                                                           1.])
+        extent = [0, images["n_voxels_upsampled"][0]-1, 0,                                 0, 0,                                 0]
     elif (images["n_dim"] == 2):
-        spacing = numpy.array([images["L"][0]/images["n_voxels"][0]/images["resampling_factors"][0], images["L"][1]/images["n_voxels"][1]/images["resampling_factors"][1],                                                           1.])
+        extent = [0, images["n_voxels_upsampled"][0]-1, 0, images["n_voxels_upsampled"][1]-1, 0,                                 0]
     elif (images["n_dim"] == 3):
-        spacing = numpy.array([images["L"][0]/images["n_voxels"][0]/images["resampling_factors"][0], images["L"][1]/images["n_voxels"][1]/images["resampling_factors"][1], images["L"][2]/images["n_voxels"][2]/images["resampling_factors"][2]])
+        extent = [0, images["n_voxels_upsampled"][0]-1, 0, images["n_voxels_upsampled"][1]-1, 0, images["n_voxels_upsampled"][2]-1]
+    vtk_image.SetExtent(extent)
+    mypy.my_print(verbose, "extent = "+str(extent))
+
+    if   (images["n_dim"] == 1):
+        spacing = [delta_upsampled[0],                 1.,                 1.]
+    elif (images["n_dim"] == 2):
+        spacing = [delta_upsampled[0], delta_upsampled[1],                 1.]
+    elif (images["n_dim"] == 3):
+        spacing = [delta_upsampled[0], delta_upsampled[1], delta_upsampled[2]]
     vtk_image.SetSpacing(spacing)
+    mypy.my_print(verbose, "spacing = "+str(spacing))
 
     if   (images["n_dim"] == 1):
-        origin = numpy.array([spacing[0]/2,           0.,           0.])
+        origin = [delta[0]/2,         0.,         0.]
     elif (images["n_dim"] == 2):
-        origin = numpy.array([spacing[0]/2, spacing[1]/2,           0.])
+        origin = [delta[0]/2, delta[1]/2,         0.]
     elif (images["n_dim"] == 3):
-        origin = numpy.array([spacing[0]/2, spacing[1]/2, spacing[2]/2])
+        origin = [delta[0]/2, delta[1]/2, delta[2]/2]
     vtk_image.SetOrigin(origin)
+    mypy.my_print(verbose, "origin = "+str(origin))
 
     n_points = vtk_image.GetNumberOfPoints()
     vtk_image_scalars = myvtk.createFloatArray(
@@ -155,7 +162,7 @@ def generateImages(
 
     for k_frame in xrange(images["n_frames"]):
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
-        print "t = "+str(t)
+        mypy.my_print(verbose, "t = "+str(t))
         mapping.init_t(t)
         for k_point in xrange(n_points):
             vtk_image.GetPoint(k_point, x)
@@ -176,23 +183,26 @@ def generateImages(
                 image=vtk_gradient,
                 filename=images["folder"]+"/"+images["basename"]+"-grad"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                 verbose=verbose-1)
-    print "global_min = "+str(global_min)
-    print "global_max = "+str(global_max)
+    # mypy.my_print(verbose, "global_min = "+str(global_min))
+    # mypy.my_print(verbose, "global_max = "+str(global_max))
 
-    if (images["resampling_factors"] == [1]*images["n_dim"]):
-        resampling = False
+    if (images["upsampling_factors"] == [1]*images["n_dim"]):
+        downsampling = False
     else:
-        resampling = True
-        ddic.resample_images(
+        downsampling = True
+        ddic.downsample_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
-            resampling_factors=images["resampling_factors"],
-            write_temp_images=1)
+            downsampling_factors=images["upsampling_factors"],
+            keep_resolution=0,
+            write_temp_images=0,
+            verbose=verbose)
 
     if (images["data_type"] in ("float")):
         pass
     elif (images["data_type"] in ("unsigned char", "unsigned short", "unsigned int", "unsigned long", "unsigned float", "uint8", "uint16", "uint32", "uint64", "ufloat")):
         ddic.normalize_images(
             images_folder=images["folder"],
-            images_basename=images["basename"]+("_resampled"*(resampling)),
-            images_datatype=images["data_type"])
+            images_basename=images["basename"]+("_downsampled"*(downsampling)),
+            images_datatype=images["data_type"],
+            verbose=verbose)
