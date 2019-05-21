@@ -43,25 +43,28 @@ def downsample_images(
     images_ndim = myvtk.getImageDimensionality(
         image=image,
         verbose=0)
+    mypy.my_print(verbose, "images_ndim = "+str(images_ndim))
     images_spacing = image.GetSpacing()
-    images_origin = image.GetOrigin()
+    mypy.my_print(verbose, "images_spacing = "+str(images_spacing))
+    images_delta = images_spacing[0:images_ndim]
+    mypy.my_print(verbose, "images_delta = "+str(images_delta))
     images_nvoxels = myvtk.getImageDimensions(
         image=image,
         verbose=0)
     mypy.my_print(verbose, "images_nvoxels = "+str(images_nvoxels))
-    assert (len(images_nvoxels) == images_ndim)
     images_npoints = numpy.prod(images_nvoxels)
-    # mypy.my_print(verbose, "images_npoints = "+str(images_npoints))
-    assert (images_npoints == image.GetNumberOfPoints())
+    mypy.my_print(verbose, "images_npoints = "+str(images_npoints))
 
     images_downsampled_nvoxels = numpy.array(images_nvoxels)/numpy.array(downsampling_factors)
     images_downsampled_nvoxels = numpy.ceil(images_downsampled_nvoxels)
     images_downsampled_nvoxels = [int(n) for n in images_downsampled_nvoxels]
     mypy.my_print(verbose, "images_downsampled_nvoxels = "+str(images_downsampled_nvoxels))
-    downsampling_factors = numpy.array(images_nvoxels)/numpy.array(images_downsampled_nvoxels)
+    downsampling_factors = list(numpy.array(images_nvoxels)/numpy.array(images_downsampled_nvoxels))
     mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
     downsampling_factor = numpy.prod(downsampling_factors)
     mypy.my_print(verbose, "downsampling_factor = "+str(downsampling_factor))
+    images_downsampled_delta = list(numpy.array(images_delta)*numpy.array(downsampling_factors))
+    # mypy.my_print(verbose, "images_downsampled_delta = "+str(images_downsampled_delta))
     images_downsampled_npoints = numpy.prod(images_downsampled_nvoxels)
     # mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
 
@@ -149,32 +152,18 @@ def downsample_images(
     else:
         image_downsampled = vtk.vtkImageData()
 
-        if   (images_ndim == 1):
-            extent = [0, images_downsampled_nvoxels[0]-1, 0,                               0, 0,                               0]
-        elif (images_ndim == 2):
-            extent = [0, images_downsampled_nvoxels[0]-1, 0, images_downsampled_nvoxels[1]-1, 0,                               0]
-        elif (images_ndim == 3):
-            extent = [0, images_downsampled_nvoxels[0]-1, 0, images_downsampled_nvoxels[1]-1, 0, images_downsampled_nvoxels[2]-1]
-        image_downsampled.SetExtent(extent)
-        mypy.my_print(verbose, "extent = "+str(extent))
+        dimensions_downsampled = images_downsampled_nvoxels+[1]*(3-images_ndim)
+        mypy.my_print(verbose, "dimensions_downsampled = "+str(dimensions_downsampled))
+        image_downsampled.SetDimensions(dimensions_downsampled)
 
-        if   (images_ndim == 1):
-            spacing = [images_spacing[0]*downsampling_factors[0],                                        1.,                                        1.]
-        elif (images_ndim == 2):
-            spacing = [images_spacing[0]*downsampling_factors[0], images_spacing[1]*downsampling_factors[1],                                        1.]
-        elif (images_ndim == 3):
-            spacing = [images_spacing[0]*downsampling_factors[0], images_spacing[1]*downsampling_factors[1], images_spacing[2]*downsampling_factors[2]]
-        image_downsampled.SetSpacing(spacing)
-        mypy.my_print(verbose, "spacing = "+str(spacing))
+        spacing_downsampled = images_downsampled_delta+[1.]*(3-images_ndim)
+        mypy.my_print(verbose, "spacing_downsampled = "+str(spacing_downsampled))
+        image_downsampled.SetSpacing(spacing_downsampled)
 
-        if   (images_ndim == 1):
-            origin = [spacing[0]/2,           0.,           0.]
-        elif (images_ndim == 2):
-            origin = [spacing[0]/2, spacing[1]/2,           0.]
-        elif (images_ndim == 3):
-            origin = [spacing[0]/2, spacing[1]/2, spacing[2]/2]
-        image_downsampled.SetOrigin(origin)
-        mypy.my_print(verbose, "origin = "+str(origin))
+        origin_downsampled = list(numpy.array(images_downsampled_delta)/2)
+        origin_downsampled = origin_downsampled+[0.]*(3-images_ndim)
+        mypy.my_print(verbose, "origin_downsampled = "+str(origin_downsampled))
+        image_downsampled.SetOrigin(origin_downsampled)
 
         image_downsampled_scalars = myvtk.createDoubleArray(
             name="ImageScalars",

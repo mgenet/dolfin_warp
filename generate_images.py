@@ -28,29 +28,29 @@ def set_I_woGrad(
         image,
         X,
         I,
-        vtk_image_scalars,
+        image_upsampled_scalars,
         k_point,
         G=None,
         Finv=None,
-        vtk_gradient_vectors=None):
+        image_gradient_upsampled_vectors=None):
 
     image.I0(X, I)
-    vtk_image_scalars.SetTuple(k_point, I)
+    image_upsampled_scalars.SetTuple(k_point, I)
 
 def set_I_wGrad(
         image,
         X,
         I,
-        vtk_image_scalars,
+        image_upsampled_scalars,
         k_point,
         G,
         Finv,
-        vtk_gradient_vectors):
+        image_gradient_upsampled_vectors):
 
     image.I0_wGrad(X, I, G)
-    vtk_image_scalars.SetTuple(k_point, I)
+    image_upsampled_scalars.SetTuple(k_point, I)
     G = numpy.dot(G, Finv)
-    vtk_gradient_vectors.SetTuple(k_point, G)
+    image_gradient_upsampled_vectors.SetTuple(k_point, G)
 
 def generate_images(
         images,
@@ -90,61 +90,47 @@ def generate_images(
         evolution,
         generate_image_gradient)
 
-    vtk_image = vtk.vtkImageData()
+    image_upsampled = vtk.vtkImageData()
 
-    delta = numpy.array(images["L"])/numpy.array(images["n_voxels"])
+    n_voxels_upsampled = list(numpy.array(images["n_voxels"])*numpy.array(images["upsampling_factors"]))
 
-    images["n_voxels_upsampled"] = numpy.array(images["n_voxels"])*numpy.array(images["upsampling_factors"])
-    delta_upsampled = numpy.array(images["L"])/numpy.array(images["n_voxels_upsampled"])
+    dimensions_upsampled = n_voxels_upsampled+[1]*(3-images["n_dim"])
+    mypy.my_print(verbose, "dimensions_upsampled = "+str(dimensions_upsampled))
+    image_upsampled.SetDimensions(dimensions_upsampled)
 
-    if   (images["n_dim"] == 1):
-        extent = [0, images["n_voxels_upsampled"][0]-1, 0,                                 0, 0,                                 0]
-    elif (images["n_dim"] == 2):
-        extent = [0, images["n_voxels_upsampled"][0]-1, 0, images["n_voxels_upsampled"][1]-1, 0,                                 0]
-    elif (images["n_dim"] == 3):
-        extent = [0, images["n_voxels_upsampled"][0]-1, 0, images["n_voxels_upsampled"][1]-1, 0, images["n_voxels_upsampled"][2]-1]
-    vtk_image.SetExtent(extent)
-    mypy.my_print(verbose, "extent = "+str(extent))
+    delta = list(numpy.array(images["L"])/numpy.array(images["n_voxels"]))
+    delta_upsampled = list(numpy.array(delta)/numpy.array(images["upsampling_factors"]))
 
-    if   (images["n_dim"] == 1):
-        spacing = [delta_upsampled[0],                 1.,                 1.]
-    elif (images["n_dim"] == 2):
-        spacing = [delta_upsampled[0], delta_upsampled[1],                 1.]
-    elif (images["n_dim"] == 3):
-        spacing = [delta_upsampled[0], delta_upsampled[1], delta_upsampled[2]]
-    vtk_image.SetSpacing(spacing)
-    mypy.my_print(verbose, "spacing = "+str(spacing))
+    spacing_upsampled = delta_upsampled+[1.]*(3-images["n_dim"])
+    mypy.my_print(verbose, "spacing_upsampled = "+str(spacing_upsampled))
+    image_upsampled.SetSpacing(spacing_upsampled)
 
-    if   (images["n_dim"] == 1):
-        origin = [delta[0]/2,         0.,         0.]
-    elif (images["n_dim"] == 2):
-        origin = [delta[0]/2, delta[1]/2,         0.]
-    elif (images["n_dim"] == 3):
-        origin = [delta[0]/2, delta[1]/2, delta[2]/2]
-    vtk_image.SetOrigin(origin)
-    mypy.my_print(verbose, "origin = "+str(origin))
+    origin_upsampled = list(numpy.array(delta_upsampled)/2)
+    origin_upsampled = origin_upsampled+[0.]*(3-images["n_dim"])
+    mypy.my_print(verbose, "origin_upsampled = "+str(origin_upsampled))
+    image_upsampled.SetOrigin(origin_upsampled)
 
-    n_points = vtk_image.GetNumberOfPoints()
-    vtk_image_scalars = myvtk.createFloatArray(
+    n_points_upsampled = image_upsampled.GetNumberOfPoints()
+    image_upsampled_scalars = myvtk.createFloatArray(
         name="ImageScalars",
         n_components=1,
-        n_tuples=n_points,
+        n_tuples=n_points_upsampled,
         verbose=verbose-1)
-    vtk_image.GetPointData().SetScalars(vtk_image_scalars)
+    image_upsampled.GetPointData().SetScalars(image_upsampled_scalars)
 
     if (generate_image_gradient):
-        vtk_gradient = vtk.vtkImageData()
-        vtk_gradient.DeepCopy(vtk_image)
+        image_gradient_upsampled = vtk.vtkImageData()
+        image_gradient_upsampled.DeepCopy(image_upsampled)
 
-        vtk_gradient_vectors = myvtk.createFloatArray(
+        image_gradient_upsampled_vectors = myvtk.createFloatArray(
             name="ImageScalarsGradient",
             n_components=3,
-            n_tuples=n_points,
+            n_tuples=n_points_upsampled,
             verbose=verbose-1)
-        vtk_gradient.GetPointData().SetScalars(vtk_gradient_vectors)
+        image_gradient_upsampled.GetPointData().SetScalars(image_gradient_upsampled_vectors)
     else:
-        vtk_gradient         = None
-        vtk_gradient_vectors = None
+        image_gradient_upsampled         = None
+        image_gradient_upsampled_vectors = None
 
     x = numpy.empty(3)
     X = numpy.empty(3)
@@ -164,23 +150,23 @@ def generate_images(
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
         mypy.my_print(verbose, "t = "+str(t))
         mapping.init_t(t)
-        for k_point in xrange(n_points):
-            vtk_image.GetPoint(k_point, x)
+        for k_point in xrange(n_points_upsampled):
+            image_upsampled.GetPoint(k_point, x)
             #print "x0 = "+str(x)
             mapping.X(x, X, Finv)
             #print "X = "+str(X)
-            set_I(image, X, I, vtk_image_scalars, k_point, G, Finv, vtk_gradient_vectors)
+            set_I(image, X, I, image_upsampled_scalars, k_point, G, Finv, image_gradient_upsampled_vectors)
             global_min = min(global_min, I[0])
             global_max = max(global_max, I[0])
-        #print vtk_image
+        #print image_upsampled
         myvtk.writeImage(
-            image=vtk_image,
+            image=image_upsampled,
             filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
             verbose=verbose-1)
         if (generate_image_gradient):
-            #print vtk_gradient
+            #print image_gradient_upsampled
             myvtk.writeImage(
-                image=vtk_gradient,
+                image=image_gradient_upsampled,
                 filename=images["folder"]+"/"+images["basename"]+"-grad"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                 verbose=verbose-1)
     # mypy.my_print(verbose, "global_min = "+str(global_min))
@@ -190,6 +176,7 @@ def generate_images(
         downsampling = False
     else:
         downsampling = True
+
         ddic.downsample_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
@@ -199,8 +186,10 @@ def generate_images(
             verbose=verbose)
 
     if (images["data_type"] in ("float")):
-        pass
+        normalizing = False
     elif (images["data_type"] in ("unsigned char", "unsigned short", "unsigned int", "unsigned long", "unsigned float", "uint8", "uint16", "uint32", "uint64", "ufloat")):
+        normalizing = True
+
         ddic.normalize_images(
             images_folder=images["folder"],
             images_basename=images["basename"]+("_downsampled"*(downsampling)),
