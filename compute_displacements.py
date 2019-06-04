@@ -56,7 +56,11 @@ def compute_displacements(
             filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
             verbose=verbose)
         cur_disp_farray = cur_mesh.GetPointData().GetVectors()
-        [warped_disp_farray.SetTuple(k_point, numpy.array(cur_disp_farray.GetTuple(k_point)) - numpy.array(ref_disp_farray.GetTuple(k_point))) for k_point in xrange(n_points)]
+        [warped_disp_farray.SetTuple(
+            k_point,
+            numpy.substract(
+                cur_disp_farray.GetTuple(k_point),
+                ref_disp_farray.GetTuple(k_point))) for k_point in xrange(n_points)]
         myvtk.writeUGrid(
             ugrid=warped_mesh,
             filename=working_folder+"/"+working_basename+("-"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
