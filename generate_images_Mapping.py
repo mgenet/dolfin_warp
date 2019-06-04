@@ -24,7 +24,13 @@ import dolfin_dic as ddic
 
 class Mapping:
 
-    def __init__(self, images, structure, deformation, evolution, generate_image_gradient):
+    def __init__(
+            self,
+            images,
+            structure,
+            deformation,
+            evolution,
+            generate_image_gradient):
 
         self.deformation = deformation
         if (self.deformation["type"] == "no"):
@@ -119,9 +125,9 @@ class Mapping:
             # assert (numpy.diag(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v)) == w).all(), str(numpy.dot(numpy.dot(numpy.transpose(v), self.F), v))+" ≠ "+str(numpy.diag(w))+". Aborting."
             self.F = numpy.dot(numpy.dot(v, numpy.diag(numpy.sqrt(w))), numpy.transpose(v))
         else:
-            Fxx = self.deformation["Fxx"] if ("Fxx" in self.deformation) else 0.
-            Fyy = self.deformation["Fyy"] if ("Fyy" in self.deformation) else 0.
-            Fzz = self.deformation["Fzz"] if ("Fzz" in self.deformation) else 0.
+            Fxx = self.deformation["Fxx"] if ("Fxx" in self.deformation) else 1.
+            Fyy = self.deformation["Fyy"] if ("Fyy" in self.deformation) else 1.
+            Fzz = self.deformation["Fzz"] if ("Fzz" in self.deformation) else 1.
             Fxy = self.deformation["Fxy"] if ("Fxy" in self.deformation) else 0.
             Fyx = self.deformation["Fyx"] if ("Fyx" in self.deformation) else 0.
             Fyz = self.deformation["Fyz"] if ("Fyz" in self.deformation) else 0.
