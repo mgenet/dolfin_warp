@@ -24,7 +24,13 @@ import dolfin_dic as ddic
 
 class Image():
 
-    def __init__(self, images, structure, texture, noise, generate_image_gradient=False):
+    def __init__(
+            self,
+            images,
+            structure,
+            texture,
+            noise,
+            generate_image_gradient=False):
 
         self.L = images["L"]
 
@@ -33,8 +39,8 @@ class Image():
             self.I0_structure = self.I0_structure_no_wGrad if (generate_image_gradient) else self.I0_structure_no
         elif (structure["type"] == "box"):
             self.I0_structure = self.I0_structure_box_wGrad if (generate_image_gradient) else self.I0_structure_box
-            self.Xmin = structure["Xmin"]
-            self.Xmax = structure["Xmax"]
+            self.Xmin = structure["Xmin"]+[float("-Inf")]*(3-images["n_dim"])
+            self.Xmax = structure["Xmax"]+[float("+Inf")]*(3-images["n_dim"])
         elif (structure["type"] == "heart"):
             if (images["n_dim"] == 2):
                 self.I0_structure = self.I0_structure_heart_2_wGrad if (generate_image_gradient) else self.I0_structure_heart_2
