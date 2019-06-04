@@ -77,6 +77,9 @@ def generate_images(
     if not os.path.exists(images["folder"]):
         os.mkdir(images["folder"])
 
+    for filename in glob.glob(images["folder"]+"/"+images["basename"]+"_*.*"):
+        os.remove(filename)
+
     image = Image(
         images,
         structure,
@@ -185,6 +188,14 @@ def generate_images(
             write_temp_images=0,
             verbose=verbose)
 
+        for k_frame in xrange(images["n_frames"]):
+            os.rename(
+                images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+            os.rename(
+                images["folder"]+"/"+images["basename"]+"_downsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+
     if (images["data_type"] in ("float")):
         normalizing = False
     elif (images["data_type"] in ("unsigned char", "unsigned short", "unsigned int", "unsigned long", "unsigned float", "uint8", "uint16", "uint32", "uint64", "ufloat")):
@@ -192,6 +203,14 @@ def generate_images(
 
         ddic.normalize_images(
             images_folder=images["folder"],
-            images_basename=images["basename"]+("_downsampled"*(downsampling)),
+            images_basename=images["basename"],
             images_datatype=images["data_type"],
             verbose=verbose)
+
+        for k_frame in xrange(images["n_frames"]):
+            os.rename(
+                src=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+            os.rename(
+                src=images["folder"]+"/"+images["basename"]+"_normalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                dst=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
