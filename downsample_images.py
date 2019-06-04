@@ -69,30 +69,27 @@ def downsample_images(
     # mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
 
     if   (images_ext == "vtk"):
-        reader = vtk.vtkImageReader()
-        writer = vtk.vtkImageWriter()
-        if (write_temp_images):
-            writer_fft  = vtk.vtkImageWriter()
-            if (keep_resolution):
-                writer_mul = vtk.vtkImageWriter()
-            else:
-                writer_sel = vtk.vtkImageWriter()
+        reader_constr = vtk.vtkImageReader
+        writer_constr = vtk.vtkImageWriter
     elif (images_ext == "vti"):
-        reader = vtk.vtkXMLImageDataReader()
-        writer = vtk.vtkXMLImageDataWriter()
-        if (write_temp_images):
-            writer_fft  = vtk.vtkXMLImageDataWriter()
-            if (keep_resolution):
-                writer_mul = vtk.vtkXMLImageDataWriter()
-            else:
-                writer_sel = vtk.vtkXMLImageDataWriter()
+        reader_constr = vtk.vtkXMLImageDataReader
+        writer_constr = vtk.vtkXMLImageDataWriter
     else:
         assert 0, "\"ext\" must be \".vtk\" or \".vti\". Aborting."
+    reader = reader_constr()
+    writer = writer_constr()
+    if (write_temp_images):
+        writer_fft  = writer_constr()
+        if (keep_resolution):
+            writer_mul = writer_constr()
+        else:
+            writer_sel = writer_constr()
 
     fft = vtk.vtkImageFFT()
     fft.SetDimensionality(images_ndim)
     fft.SetInputConnection(reader.GetOutputPort())
-    if (write_temp_images): writer_fft.SetInputConnection(fft.GetOutputPort())
+    if (write_temp_images):
+        writer_fft.SetInputConnection(fft.GetOutputPort())
 
     if (keep_resolution):
         image_filename = images_folder+"/"+images_basename+"_"+str(0).zfill(images_zfill)+"."+images_ext
@@ -139,16 +136,18 @@ def downsample_images(
                             mask_scalars.SetTuple(k_point, [0, 0])
                         else:
                             mask_scalars.SetTuple(k_point, [1, 1])
-        if (write_temp_images): myvtk.writeImage(
-            image=mask_image,
-            filename=images_folder+"/"+images_basename+"_mask"+"."+images_ext,
-            verbose=0)
+        if (write_temp_images):
+            myvtk.writeImage(
+                image=mask_image,
+                filename=images_folder+"/"+images_basename+"_mask"+"."+images_ext,
+                verbose=0)
 
         mult = vtk.vtkImageMathematics()
         mult.SetOperationToMultiply()
         mult.SetInputConnection(0, fft.GetOutputPort())
         mult.SetInputData(1, mask_image)
-        if (write_temp_images): writer_mul.SetInputConnection(mult.GetOutputPort())
+        if (write_temp_images):
+            writer_mul.SetInputConnection(mult.GetOutputPort())
     else:
         image_downsampled = vtk.vtkImageData()
 
@@ -250,7 +249,6 @@ def downsample_images(
             # print "image_downsampled_scalars = "+str(image_downsampled_scalars)
 
             if (write_temp_images):
-                # writer_sel.SetInputData(image_downsampled)
                 writer_sel.SetFileName(images_folder+"/"+images_basename+"_sel"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_sel.Write()
 
