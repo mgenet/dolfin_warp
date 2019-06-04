@@ -92,20 +92,20 @@ def generate_images(
 
     image_upsampled = vtk.vtkImageData()
 
-    n_voxels_upsampled = list(numpy.array(images["n_voxels"])*numpy.array(images["upsampling_factors"]))
+    n_voxels_upsampled = list(numpy.multiply(images["n_voxels"], images["upsampling_factors"]))
 
     dimensions_upsampled = n_voxels_upsampled+[1]*(3-images["n_dim"])
     mypy.my_print(verbose, "dimensions_upsampled = "+str(dimensions_upsampled))
     image_upsampled.SetDimensions(dimensions_upsampled)
 
-    delta = list(numpy.array(images["L"])/numpy.array(images["n_voxels"]))
-    delta_upsampled = list(numpy.array(delta)/numpy.array(images["upsampling_factors"]))
+    delta = list(numpy.divide(images["L"], images["n_voxels"]))
+    delta_upsampled = list(numpy.divide(delta, images["upsampling_factors"]))
 
     spacing_upsampled = delta_upsampled+[1.]*(3-images["n_dim"])
     mypy.my_print(verbose, "spacing_upsampled = "+str(spacing_upsampled))
     image_upsampled.SetSpacing(spacing_upsampled)
 
-    origin_upsampled = list(numpy.array(delta_upsampled)/2)
+    origin_upsampled = list(numpy.divide(delta, 2))
     origin_upsampled = origin_upsampled+[0.]*(3-images["n_dim"])
     mypy.my_print(verbose, "origin_upsampled = "+str(origin_upsampled))
     image_upsampled.SetOrigin(origin_upsampled)

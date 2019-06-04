@@ -55,15 +55,15 @@ def downsample_images(
     images_npoints = numpy.prod(images_nvoxels)
     mypy.my_print(verbose, "images_npoints = "+str(images_npoints))
 
-    images_downsampled_nvoxels = numpy.array(images_nvoxels)/numpy.array(downsampling_factors)
+    images_downsampled_nvoxels = numpy.divide(images_nvoxels, downsampling_factors)
     images_downsampled_nvoxels = numpy.ceil(images_downsampled_nvoxels)
     images_downsampled_nvoxels = [int(n) for n in images_downsampled_nvoxels]
     mypy.my_print(verbose, "images_downsampled_nvoxels = "+str(images_downsampled_nvoxels))
-    downsampling_factors = list(numpy.array(images_nvoxels)/numpy.array(images_downsampled_nvoxels))
+    downsampling_factors = list(numpy.divide(images_nvoxels, images_downsampled_nvoxels))
     mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
     downsampling_factor = numpy.prod(downsampling_factors)
     mypy.my_print(verbose, "downsampling_factor = "+str(downsampling_factor))
-    images_downsampled_delta = list(numpy.array(images_delta)*numpy.array(downsampling_factors))
+    images_downsampled_delta = list(numpy.multiply(images_delta, downsampling_factors))
     # mypy.my_print(verbose, "images_downsampled_delta = "+str(images_downsampled_delta))
     images_downsampled_npoints = numpy.prod(images_downsampled_nvoxels)
     # mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
@@ -160,7 +160,7 @@ def downsample_images(
         mypy.my_print(verbose, "spacing_downsampled = "+str(spacing_downsampled))
         image_downsampled.SetSpacing(spacing_downsampled)
 
-        origin_downsampled = list(numpy.array(images_downsampled_delta)/2)
+        origin_downsampled = list(numpy.divide(images_downsampled_delta, 2))
         origin_downsampled = origin_downsampled+[0.]*(3-images_ndim)
         mypy.my_print(verbose, "origin_downsampled = "+str(origin_downsampled))
         image_downsampled.SetOrigin(origin_downsampled)
