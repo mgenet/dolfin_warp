@@ -91,15 +91,15 @@ def compute_strains(
         binned_strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (ref_frame is not None):
-        ref_mesh_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
-        ref_mesh = myvtk.readUGrid(
-            filename=ref_mesh_filename,
+        mesh_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
+        mesh = myvtk.readUGrid(
+            filename=mesh_filename,
             verbose=verbose)
         myvtk.addDeformationGradients(
-            mesh=ref_mesh,
+            mesh=mesh,
             disp_array_name=disp_array_name,
             verbose=verbose)
-        farray_F0 = ref_mesh.GetCellData().GetArray(defo_grad_array_name)
+        farray_F0 = mesh.GetCellData().GetArray(defo_grad_array_name)
 
     for k_frame in xrange(n_frames):
         print "k_frame = "+str(k_frame)
