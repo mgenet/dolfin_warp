@@ -23,11 +23,11 @@ def compute_strains(
         working_folder,
         working_basename,
         working_ext="vtu",
-        ref_frame=None,
+        ref_frame=None,                             # MG20190612: Reference configuration.
         disp_array_name="displacement",
         defo_grad_array_name="DeformationGradient",
         strain_array_name="Strain",
-        ref_mesh_folder=None,
+        ref_mesh_folder=None,                       # MG20190612: Mesh with sectors/parts/etc.
         ref_mesh_basename=None,
         ref_mesh_ext="vtk",
         CYL_or_PPS="PPS",
@@ -41,8 +41,9 @@ def compute_strains(
         verbose=1):
 
     if (ref_mesh_folder is not None) and (ref_mesh_basename is not None):
+        ref_mesh_filename = ref_mesh_folder+"/"+ref_mesh_basename+"."+ref_mesh_ext
         ref_mesh = myvtk.readUGrid(
-            filename=ref_mesh_folder+"/"+ref_mesh_basename+"."+ref_mesh_ext,
+            filename=ref_mesh_filename,
             verbose=verbose)
         ref_mesh_n_cells = ref_mesh.GetNumberOfCells()
         if (verbose): print "ref_mesh_n_cells = " + str(ref_mesh_n_cells)
@@ -61,9 +62,9 @@ def compute_strains(
             n_sector_ids = 0
 
         if (ref_mesh.GetCellData().HasArray("part_id")):
-            part_id_array = ref_mesh.GetCellData().GetArray("part_id")
+            iarray_part_id = ref_mesh.GetCellData().GetArray("part_id")
         else:
-            part_id_array = None
+            iarray_part_id = None
 
     else:
         ref_mesh = None
@@ -91,15 +92,15 @@ def compute_strains(
         binned_strain_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (ref_frame is not None):
-        mesh_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
-        mesh = myvtk.readUGrid(
-            filename=mesh_filename,
+        mesh0_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
+        mesh0 = myvtk.readUGrid(
+            filename=mesh0_filename,
             verbose=verbose)
         myvtk.addDeformationGradients(
-            mesh=mesh,
+            mesh=mesh0,
             disp_array_name=disp_array_name,
             verbose=verbose)
-        farray_F0 = mesh.GetCellData().GetArray(defo_grad_array_name)
+        farray_F0 = mesh0.GetCellData().GetArray(defo_grad_array_name)
 
     for k_frame in xrange(n_frames):
         print "k_frame = "+str(k_frame)
@@ -111,8 +112,8 @@ def compute_strains(
         n_cells = mesh.GetNumberOfCells()
         if (ref_mesh is not None):
             assert (n_cells == ref_mesh_n_cells), "ref_mesh_n_cells ("+str(ref_mesh_n_cells)+") ≠ n_cells ("+str(n_cells)+"). Aborting."
-            if (part_id_array is not None):
-                mesh.GetCellData().AddArray(part_id_array)
+            if (iarray_part_id is not None):
+                mesh.GetCellData().AddArray(iarray_part_id)
             if (iarray_sector_id is not None):
                 mesh.GetCellData().AddArray(iarray_sector_id)
         myvtk.addDeformationGradients(
