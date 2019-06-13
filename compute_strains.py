@@ -30,6 +30,7 @@ def compute_strains(
         ref_mesh_folder=None,                       # MG20190612: Mesh with sectors/parts/etc.
         ref_mesh_basename=None,
         ref_mesh_ext="vtk",
+        remove_boundary_layer=True,
         CYL_or_PPS="PPS",
         write_strains=1,
         temporal_offset=None,
@@ -134,6 +135,13 @@ def compute_strains(
             strain_array_name=strain_array_name,
             mesh_w_local_basis=ref_mesh,
             verbose=verbose)
+        if (remove_boundary_layer):
+            mesh = myvtk.getThresholdedUGrid(
+                ugrid=mesh,
+                field_support="cells",
+                field_name="part_id",
+                threshold_value=0.5,
+                threshold_by_upper_or_lower="lower")
         myvtk.writeUGrid(
             ugrid=mesh,
             filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
