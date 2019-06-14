@@ -40,6 +40,7 @@ set key off
 
 set grid
 
+set xlabel "beta (deg)"
 xrange = '''+str(beta_range)+'''
 set xrange [-xrange:+xrange]
 
@@ -49,20 +50,11 @@ set ytics("apex" 0, "base" 1)
 
 # f(x) = a*x + b
 
-g(x) = x/c - d/c
-h(x) = c*x + d
+# g(x) = x/c - d/c
+# h(x) = c*x + d
 
-# g(x) = c*x + d
-# h(x) = x/c - d/c
-
-# a = 1.
-# b = 0.5
-
-c = 1.
-d = 0.5
-
-# c = 1.
-# d = -0.5*c
+g(x) = c*x + d
+h(x) = x/c - d/c
 
 # FIT_MAXITER = 10
 
@@ -71,6 +63,15 @@ datafile = "'''+working_folder+'''/'''+working_basename+'''-twist_vs_height.dat"
 ''')
     for k_frame in xrange(n_frames):
         plotfile.write('''\
+# a = 1.
+# b = 0.5
+
+# c = 1.
+# d = 0.5
+
+c = 1.
+d = -0.5*c
+
 set title "index '''+str(k_frame)+'''"
 # fit f(x) datafile using 3:2 index '''+str(k_frame)+''' via a,b
 '''+('''# ''')*(k_frame==0)+'''fit g(x) datafile using 2:3 index '''+str(k_frame)+''' via c,d
