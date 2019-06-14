@@ -33,8 +33,8 @@ def compute_strains(
         ref_mesh_basename=None,
         ref_mesh_ext="vtk",
         CYL_or_PPS="PPS",
-        remove_boundary_layer=True,
-        in_place=True,
+        remove_boundary_layer=1,
+        in_place=1,
         write_strains=1,
         temporal_offset=None,
         temporal_resolution=None,
@@ -122,7 +122,7 @@ def compute_strains(
 
     if (write_twist_vs_height):
         twist_vs_height_file = open(working_folder+"/"+working_basename+"-twist_vs_height.dat", "w")
-        twist_vs_height_file.write("#t zz beta\n")
+        twist_vs_height_file.write("#t z beta\n")
 
     if (ref_frame is not None):
         mesh0_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
@@ -159,6 +159,7 @@ def compute_strains(
                 mesh.GetCellData().AddArray(ref_mesh.GetCellData().GetArray("rr"))
             if (write_twist_vs_height):
                 assert (ref_mesh.GetPointData().HasArray("ll"))
+                mesh.GetPointData().AddArray(ref_mesh.GetPointData().GetArray("r"))
                 mesh.GetPointData().AddArray(ref_mesh.GetPointData().GetArray("ll"))
         myvtk.addDeformationGradients(
             mesh=mesh,
@@ -281,29 +282,30 @@ def compute_strains(
                 verbose=verbose)
             C = points_AB.GetPoint(0)
 
+            farray_r  = mesh.GetPointData().GetArray("r")
             farray_ll = mesh.GetPointData().GetArray("ll")
-            farray_U = mesh.GetPointData().GetArray(disp_array_name)
-            # farray_Theta = myvtk.createFloatArray(
-            #     name="Theta",
-            #     n_components=1,
-            #     n_tuples=n_points)
-            # farray_theta = myvtk.createFloatArray(
-            #     name="theta",
-            #     n_components=1,
-            #     n_tuples=n_points)
+            farray_U  = mesh.GetPointData().GetArray(disp_array_name)
+            farray_Theta = myvtk.createFloatArray(
+                name="Theta",
+                n_components=1,
+                n_tuples=n_points)
+            farray_theta = myvtk.createFloatArray(
+                name="theta",
+                n_components=1,
+                n_tuples=n_points)
             farray_beta = myvtk.createFloatArray(
                 name="beta",
                 n_components=1,
                 n_tuples=n_points)
-            # mesh.GetPointData().AddArray(farray_Theta)
-            # mesh.GetPointData().AddArray(farray_theta)
+            mesh.GetPointData().AddArray(farray_Theta)
+            mesh.GetPointData().AddArray(farray_theta)
             mesh.GetPointData().AddArray(farray_beta)
             X = numpy.empty(3)
             U = numpy.empty(3)
             x = numpy.empty(3)
             for k_point in xrange(n_points):
+                r  = farray_r.GetTuple1(k_point)
                 ll = farray_ll.GetTuple1(k_point)
-                if (ll < 1./3): continue
                 mesh.GetPoint(k_point, X)
                 X -= C
                 Theta = math.degrees(math.atan2(X[1], X[0]))
@@ -313,9 +315,11 @@ def compute_strains(
                 beta = theta - Theta
                 if (beta > +180.): beta -= 360.
                 if (beta < -180.): beta += 360.
-                # farray_Theta.SetTuple1(k_point, Theta)
-                # farray_theta.SetTuple1(k_point, theta)
+                farray_Theta.SetTuple1(k_point, Theta)
+                farray_theta.SetTuple1(k_point, theta)
                 farray_beta.SetTuple1(k_point, beta)
+                if (r < 15.): continue
+                # if (ll < 1./3): continue
                 twist_vs_height_file.write(" ".join([str(val) for val in [k_frame, ll, beta]]) + "\n")
             mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
             myvtk.writeUGrid(
@@ -368,6 +372,6 @@ def compute_strains(
         if (plot_twist_vs_height):
             ddic.plot_twist_vs_height(
                 working_folder=working_folder,
-                working_basenames=[working_basename],
+                working_basename=working_basename,
                 suffix=None,
                 verbose=verbose)
