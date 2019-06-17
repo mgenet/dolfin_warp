@@ -20,7 +20,7 @@ import dolfin_dic as ddic
 
 ################################################################################
 
-def compute_displacements(
+def compute_displacements_from_ref(
         working_folder,
         working_basename,
         ref_frame,

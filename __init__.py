@@ -28,7 +28,7 @@ from fedic2 import *
 from generated_grad_expressions_cpp import *
 from plot_displacement_error import *
 from Problem import *
-from compute_displacements import *
+from compute_displacements_from_ref import *
 from generate_images import *
 from ImageSeries import *
 from compute_displacement_error import *
