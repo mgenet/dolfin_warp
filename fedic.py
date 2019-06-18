@@ -145,7 +145,7 @@ def fedic(
         if (images_quadrature_from == "points_count"):
             images_quadrature = ddic.compute_quadrature_degree_from_points_count(
                 image_filename=ref_image_filename,
-                mesh_filebasename=mesh_filebasename,
+                mesh=mesh,
                 verbose=1)
         elif (images_quadrature_from == "integral"):
             images_quadrature = ddic.compute_quadrature_degree_from_integral(

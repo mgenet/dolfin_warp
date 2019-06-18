@@ -9,6 +9,7 @@ from generated_image_expressions_cpp import *
 from plot_strains_vs_radius import *
 from Energy_GeneratedImage import *
 from compute_unwarped_images import *
+from mesh2ugrid import *
 from Problem_ImageRegistration import *
 from compute_quadrature_degree import *
 from Energy_Regularization import *

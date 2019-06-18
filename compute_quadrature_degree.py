@@ -20,8 +20,7 @@ import dolfin_dic as ddic
 
 def compute_quadrature_degree_from_points_count(
         image_filename,
-        mesh_filebasename,
-        mesh_ext="vtk",
+        mesh,
         compute_n_quad=False,
         deg_min=1,
         deg_max=20,
@@ -30,15 +29,13 @@ def compute_quadrature_degree_from_points_count(
     image = myvtk.readImage(
         filename=image_filename,
         verbose=verbose-1)
-    n_points = image.GetNumberOfPoints()
+    image_n_points = image.GetNumberOfPoints()
     image_dimension = myvtk.getImageDimensionality(
         image=image,
         verbose=verbose-1)
 
-    mesh = myvtk.readUGrid(
-        filename=mesh_filebasename+"."+mesh_ext,
-        verbose=verbose-1)
-    n_cells = mesh.GetNumberOfCells()
+    ugrid = ddic.mesh2ugrid(mesh)
+    n_cells = ugrid.GetNumberOfCells()
 
     (cell_locator,
      closest_point,
@@ -46,12 +43,12 @@ def compute_quadrature_degree_from_points_count(
      k_cell,
      subId,
      dist) = myvtk.getCellLocator(
-        mesh=mesh,
+        mesh=ugrid,
         verbose=verbose-1)
 
     point = numpy.empty(3)
     n_pixels_per_cell = numpy.zeros(n_cells)
-    for k_point in xrange(n_points):
+    for k_point in xrange(image_n_points):
         image.GetPoint(k_point, point)
 
         k_cell = cell_locator.FindCell(point)
@@ -66,7 +63,6 @@ def compute_quadrature_degree_from_points_count(
     #if (verbose): print "n_pixels_per_cell_avg = "+str(n_pixels_per_cell_avg)
 
     if (compute_n_quad):
-        mesh = dolfin.Mesh(mesh_filebasename+"."+"xml")
         #n_quads = []
         for degree in xrange(deg_min,deg_max+1):
             if (verbose): print "degree = "+str(degree)
@@ -96,8 +92,7 @@ def compute_quadrature_degree_from_points_count(
 
 def compute_quadrature_degree_from_integral(
         image_filename,
-        mesh=None,
-        mesh_filebasename=None,
+        mesh,
         deg_min=1,
         deg_max=10,
         tol=1e-2,
@@ -110,10 +105,10 @@ def compute_quadrature_degree_from_integral(
     image_dimension = myvtk.getImageDimensionality(
         image=image,
         verbose=verbose-1)
+    assert (image_dimension in (2,3)),\
+        "image_dimension must be 2 or 3. Aborting."
     if (verbose): print "image_dimension = " + str(image_dimension)
 
-    if (mesh is None):
-        mesh = dolfin.Mesh(mesh_filebasename+"."+"xml")
     dX = dolfin.dx(mesh)
 
     first_time = True
@@ -125,7 +120,7 @@ def compute_quadrature_degree_from_integral(
             cell=mesh.ufl_cell(),
             degree=degree,
             quad_scheme="default")
-        if (image_dimension == 2):
+        if   (image_dimension == 2):
             I0 = ddic.ExprIm2(
                 filename=image_filename,
                 element=fe)
@@ -133,8 +128,6 @@ def compute_quadrature_degree_from_integral(
             I0 = ddic.ExprIm3(
                 filename=image_filename,
                 element=fe)
-        else:
-            assert (0), "image_dimension must be 2 or 3. Aborting."
         if not (first_time):
             I0_norm_old = I0_norm
         I0_norm = dolfin.assemble(I0**2 * dX, form_compiler_parameters={'quadrature_degree':degree})**(1./2)
