@@ -21,6 +21,7 @@ def get_ExprIm_cpp(
         im_default_interpol_out_value="0.",
         grad_default_interpol_mode="linear", # linear, nearest
         grad_default_interpol_out_value="0.",
+        static_scaling_factor=0,
         verbose=0):
 
     assert (im_dim in (2,3))
@@ -121,9 +122,10 @@ public:
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
         reader->SetFileName(filename);
-        reader->Update();
+        reader->Update();'''+('''
 
-        static_scaling = getStaticScalingFactor(reader->GetOutput()->GetScalarTypeAsString());'''+('''
+        static_scaling = getStaticScalingFactor(reader->GetOutput()->GetScalarTypeAsString());''')*(not static_scaling_factor)+('''
+        static_scaling = '''+str(static_scaling_factor)+''';''')*(static_scaling_factor)+('''
 
         vtkSmartPointer<vtkImageGradient> gradient = vtkSmartPointer<vtkImageGradient>::New();
 #if VTK_MAJOR_VERSION >= 6

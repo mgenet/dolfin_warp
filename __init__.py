@@ -16,6 +16,7 @@ from Energy_Regularization import *
 from compute_warped_images import *
 from plot_strains import *
 from image_expressions_cpp import *
+from plot_twist_vs_height import *
 from Energy import *
 from compute_warped_mesh import *
 from Energy_WarpedImage import *

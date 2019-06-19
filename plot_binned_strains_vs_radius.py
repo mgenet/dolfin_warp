@@ -23,10 +23,10 @@ def plot_binned_strains_vs_radius(
         verbose=1):
 
     if (ref_folder is not None) and (ref_basename is not None):
-        lines = open(ref_folder+"/"+ref_basename+"-strains.dat").readlines()
+        lines = open(ref_folder+"/"+ref_basename+"-strains.dat").readlines()[1:]
     else:
-        lines = open(working_folder+"/"+working_basenames[0]+"-strains.dat").readlines()
-    n_frames = len(lines)-1
+        lines = open(working_folder+"/"+working_basenames[0]+"-strains.dat").readlines()[1:]
+    n_frames = len(lines)
 
     assert (components in ("all", "circ-long", "rad-circ"))
     if (components == "all"):
