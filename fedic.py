@@ -274,7 +274,7 @@ def fedic(
     if (print_refined_mesh):
         U.set_allow_extrapolation(True)
         U_for_plot = dolfin.interpolate(U, function_space_for_plot)
-        U_for_plot.rename("displacement", "a Function")
+        U_for_plot.rename("displacement", "displacement")
         file_pvd = dolfin.File(pvd_basename+"-refined__.pvd")
         file_pvd << (U_for_plot, float(images_ref_frame))
         os.remove(
@@ -932,7 +932,7 @@ def fedic(
 
             if (print_refined_mesh):
                 U_for_plot = dolfin.interpolate(U, function_space_for_plot)
-                U_for_plot.rename("displacement", "a Function")
+                U_for_plot.rename("displacement", "displacement")
                 file_pvd = dolfin.File(pvd_basename+"-refined__.pvd")
                 file_pvd << (U_for_plot, float(k_frame))
                 os.remove(
