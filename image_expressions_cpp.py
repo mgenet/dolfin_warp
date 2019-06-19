@@ -8,14 +8,19 @@
 ###                                                                          ###
 ################################################################################
 
+import dolfin_dic as ddic
+
 ################################################################################
 
 def get_ExprIm_cpp(
-        im_dim,
-        im_type="im",
+        im_dim, # 2, 3
+        im_type="im", # im, grad, grad_no_deriv
         im_is_def=0,
-        disp_type="fenics", # "vtk"
         u_is_vtk=0,
+        im_default_interpol_mode="linear", # linear, nearest
+        im_default_interpol_out_value="0.",
+        grad_default_interpol_mode="linear", # linear, nearest
+        grad_default_interpol_out_value="0.",
         verbose=0):
 
     assert (im_dim in (2,3))
@@ -25,28 +30,16 @@ def get_ExprIm_cpp(
 #include <string.h>
 
 #include <vtkSmartPointer.h>
-#include <vtkStructuredPointsReader.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkImageData.h>'''+('''
 #include <vtkImageGradient.h>''')*(im_type=="grad")+'''
-#include <vtkImageInterpolator.h>
+#include <vtkImageInterpolator.h>'''+('''
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkProbeFilter.h>
-#include <vtkPointData.h>
-#include <vtkPolyData.h>
+#include <vtkPolyData.h>''')*(im_is_def)*(u_is_vtk)+'''
 
-
-double getStaticScalingFactor(const char* scalar_type_as_string)
-{
-    if (strcmp(scalar_type_as_string, "unsigned char" ) == 0) return pow(2,  8)-1;
-    if (strcmp(scalar_type_as_string, "unsigned short") == 0) return pow(2, 16)-1;
-    if (strcmp(scalar_type_as_string, "unsigned int"  ) == 0) return pow(2, 32)-1;
-    if (strcmp(scalar_type_as_string, "unsigned long" ) == 0) return pow(2, 64)-1;
-    if (strcmp(scalar_type_as_string, "float"         ) == 0) return 1.;
-    if (strcmp(scalar_type_as_string, "double"        ) == 0) return 1.;
-    assert (0);
-}
+'''+ddic.get_StaticScaling_cpp()+'''\
 
 namespace dolfin
 {
@@ -54,14 +47,19 @@ namespace dolfin
 class MyExpr : public Expression
 {
     vtkSmartPointer<vtkImageInterpolator> interpolator;
+
     double static_scaling;'''+('''
-    Array<double>* dynamic_scaling; // does not work
-    double dynamic_scaling_a;       // should not be needed
-    double dynamic_scaling_b;       // should not be needed'''+('''
-    Function* U;''')*(not u_is_vtk)+('''
+
+    // std::shared_ptr<Array<double>> dynamic_scaling; // MG20160719: does not work
+    double dynamic_scaling_a;                          // MG20160719: should not be needed
+    double dynamic_scaling_b;                          // MG20160719: should not be needed'''+('''
+
     vtkSmartPointer<vtkProbeFilter> probe_filter;
     vtkSmartPointer<vtkPoints> probe_points;
-    vtkSmartPointer<vtkPolyData> probe_polydata;''')*(u_is_vtk)+'''
+    vtkSmartPointer<vtkPolyData> probe_polydata;''')*(u_is_vtk)+('''
+
+    std::shared_ptr<Function> U;''')*(not u_is_vtk)+'''
+
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
     mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
@@ -70,8 +68,8 @@ public:
 
     MyExpr():
         Expression('''+str(im_dim)*(im_type in ("grad", "grad_no_deriv"))+''')'''+(''',
-        dynamic_scaling_a(1.), // should not be needed
-        dynamic_scaling_b(0.), // should not be needed
+        dynamic_scaling_a(1.), // MG20160719: should not be needed
+        dynamic_scaling_b(0.), // MG20160719: should not be needed
         UX('''+str(im_dim)+'''),
         x(3)''')*(im_is_def)+(''',
         X3D(3)''')*(not im_is_def)*(im_dim==2)+'''
@@ -84,24 +82,24 @@ public:
     void init_dynamic_scaling(
         const Array<double> &scaling)
     {
-        //dynamic_scaling = scaling;                                                  // does not work
-        // std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl; // does not work
-        dynamic_scaling_a = scaling[0];                                               // should not be needed
-        dynamic_scaling_b = scaling[1];                                               // should not be needed
+        // dynamic_scaling = scaling;                                                  // MG20160719: does not work
+        // std::cout << "dynamic_scaling = " << dynamic_scaling->str(1) << std::endl; // MG20160719: does not work
+        dynamic_scaling_a = scaling[0];                                               // MG20160719: should not be needed
+        dynamic_scaling_b = scaling[1];                                               // MG20160719: should not be needed
     }
 
-    void update_dynamic_scaling(        // should not be needed
-        const Array<double> &scaling)   // should not be needed
-    {                                   // should not be needed
-        dynamic_scaling_a = scaling[0]; // should not be needed
-        dynamic_scaling_b = scaling[1]; // should not be needed
-    }                                   // should not be needed
+    void update_dynamic_scaling(        // MG20160719: should not be needed
+        const Array<double> &scaling)   // MG20160719: should not be needed
+    {                                   // MG20160719: should not be needed
+        dynamic_scaling_a = scaling[0]; // MG20160719: should not be needed
+        dynamic_scaling_b = scaling[1]; // MG20160719: should not be needed
+    }                                   // MG20160719: should not be needed
 
     '''+('''
     void init_disp(
-        Function* UU)
+        std::shared_ptr<Function> U_)
     {
-        U = UU;
+        U = U_;
     }''')*(not u_is_vtk)+('''
     void init_disp(
         const char* mesh_filename)
@@ -117,8 +115,8 @@ public:
 
     void init_image(
         const char* filename,
-        const char* interpol_mode="'''+('''linear''')*(im_type=="im")+('''linear''')*(im_type in ("grad", "grad_no_deriv"))+'''",
-        const double &interpol_out_value='''+('''0.''')*(im_type=="im")+('''0.''')*(im_type in ("grad", "grad_no_deriv"))+(''',
+        const char* interpol_mode="'''+(im_default_interpol_mode)*(im_type=="im")+(grad_default_interpol_mode)*(im_type in ("grad", "grad_no_deriv"))+'''",
+        const double &interpol_out_value='''+(im_default_interpol_out_value)*(im_type=="im")+(grad_default_interpol_out_value)*(im_type in ("grad", "grad_no_deriv"))+(''',
         const double &Z=0.''')*(im_dim==2)+''')
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
@@ -155,43 +153,43 @@ public:
             assert(0);
         }
         interpolator->SetOutValue(interpol_out_value);
-        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');
-        interpolator->Update();'''+('''
+        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');'''+('''
 
         x[2] = Z;''')*(im_is_def)*(im_dim==2)+('''
 
         X3D[2] = Z;''')*(not im_is_def)*(im_dim==2)+'''
     }
 
-    void eval(Array<double>& expr, const Array<double>& X) const
+    void eval(
+              Array<double>& expr,
+        const Array<double>& X_  ) const
     {'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+(('''
+        std::cout << "X_ = " << X_.str(1) << std::endl;''')*(verbose)+(('''
 
-        U->eval(UX, X);''')*(not u_is_vtk)+('''
+        U->eval(UX, X_);''')*(not u_is_vtk)+('''
 
         probe_points->SetNumberOfPoints(1);
-        probe_points->SetPoint(0,X.data());
+        probe_points->SetPoint(0,X_.data());
         probe_polydata->SetPoints(probe_points);
         probe_filter->SetInputData(probe_polydata);
-        probe_filter->Update();
         probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
 
         ''')*(u_is_vtk)+('''
         std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];
-        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        x[0] = X_[0] + UX[0];
+        x[1] = X_[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X_[0] + UX[0];
+        x[1] = X_[1] + UX[1];
+        x[2] = X_[2] + UX[2];''')*(im_dim==3)+('''
         std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+'''
         interpolator->Interpolate(x.data(), expr.data());''')*(im_is_def)+('''
 
-        X3D[0] = X[0];
-        X3D[1] = X[1];'''+('''
+        X3D[0] = X_[0];
+        X3D[1] = X_[1];'''+('''
         std::cout << "X3D = " << X3D.str(1) << std::endl;''')*(verbose)+'''
         interpolator->Interpolate(X3D.data(), expr.data());''')*(not im_is_def)*(im_dim==2)+('''
 
-        interpolator->Interpolate(X.data(), expr.data());''')*(not im_is_def)*(im_dim==3)+('''
+        interpolator->Interpolate(X_.data(), expr.data());''')*(not im_is_def)*(im_dim==3)+('''
 
         std::cout << "expr = " << expr.str(1) << std::endl;''')*(verbose)+('''
 
@@ -208,30 +206,30 @@ public:
 
         // std::cout << "in (im)" << std::endl;
         // std::cout << "expr = " << expr.str(1) << std::endl;
-        // expr[0] *= (*dynamic_scaling)[0]; // does not work
-        // expr[0] += (*dynamic_scaling)[1]; // does not work
-        expr[0] *= dynamic_scaling_a;        // should not be needed
-        expr[0] += dynamic_scaling_b;        // should not be needed
+        // expr[0] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        // expr[0] += (*dynamic_scaling)[1]; // MG20160719: does not work
+        expr[0] *= dynamic_scaling_a;        // MG20160719: should not be needed
+        expr[0] += dynamic_scaling_b;        // MG20160719: should not be needed
         // std::cout << "expr = " << expr.str(1) << std::endl;
         // std::cout << "out (im)" << std::endl;''')*(im_type=="im")+('''
 
         // std::cout << "in (grad)" << std::endl;
         // std::cout << "expr = " << expr.str(1) << std::endl;
-        // expr[0] *= (*dynamic_scaling)[0]; // does not work
-        // expr[1] *= (*dynamic_scaling)[0]; // does not work
-        expr[0] *= dynamic_scaling_a;        // should not be needed
-        expr[1] *= dynamic_scaling_a;        // should not be needed
+        // expr[0] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        // expr[1] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        expr[0] *= dynamic_scaling_a;        // MG20160719: should not be needed
+        expr[1] *= dynamic_scaling_a;        // MG20160719: should not be needed
         // std::cout << "expr = " << expr.str(1) << std::endl;
         // std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==2)+('''
 
         // std::cout << "in (grad)" << std::endl;
         // std::cout << "expr = " << expr.str(1) << std::endl;
-        // expr[0] *= (*dynamic_scaling)[0]; // does not work
-        // expr[1] *= (*dynamic_scaling)[0]; // does not work
-        // expr[2] *= (*dynamic_scaling)[0]; // does not work
-        expr[0] *= dynamic_scaling_a;        // should not be needed
-        expr[1] *= dynamic_scaling_a;        // should not be needed
-        expr[2] *= dynamic_scaling_a;        // should not be needed
+        // expr[0] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        // expr[1] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        // expr[2] *= (*dynamic_scaling)[0]; // MG20160719: does not work
+        expr[0] *= dynamic_scaling_a;        // MG20160719: should not be needed
+        expr[1] *= dynamic_scaling_a;        // MG20160719: should not be needed
+        expr[2] *= dynamic_scaling_a;        // MG20160719: should not be needed
         // std::cout << "expr = " << expr.str(1) << std::endl;
         // std::cout << "out (grad)" << std::endl;''')*(im_type=="grad")*(im_dim==3)+('''
 
@@ -293,9 +291,9 @@ public:
     }'''+('''
 
     void init_disp(
-        Function* UU)
+        Function* U_)
     {
-        U = UU;
+        U = U_;
     }''')*(im_is_def)+'''
 
     void init_image(
@@ -342,18 +340,20 @@ public:
         n4[2] = -sin(40. * M_PI/180.);''')*(im_is_cone)+'''
     }
 
-    void eval(Array<double>& expr, const Array<double>& X) const
+    void eval(
+              Array<double>& expr,
+        const Array<double>& X_  ) const
     {'''+('''
-        std::cout << "X = " << X.str(1) << std::endl;''')*(verbose)+('''
+        std::cout << "X_ = " << X_.str(1) << std::endl;''')*(verbose)+('''
 
-        U->eval(UX, X);''')*(im_is_def)+('''
+        U->eval(UX, X_);''')*(im_is_def)+('''
         std::cout << "UX = " << UX.str(1) << std::endl;''')*(verbose)+('''
 
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];
-        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        x[0] = X_[0] + UX[0];
+        x[1] = X_[1] + UX[1];''')*(im_dim==2)+('''
+        x[0] = X_[0] + UX[0];
+        x[1] = X_[1] + UX[1];
+        x[2] = X_[2] + UX[2];''')*(im_dim==3)+('''
         std::cout << "x = " << x.str(1) << std::endl;''')*(verbose)+(('''
 
         if ((x[0] >= xmin)
