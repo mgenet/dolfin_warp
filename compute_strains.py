@@ -36,8 +36,8 @@ def compute_strains(
         remove_boundary_layer=1,
         in_place=1,
         write_strains=1,
-        temporal_offset=None,
-        temporal_resolution=None,
+        temporal_offset=0,
+        temporal_resolution=1,
         plot_strains=1,
         plot_regional_strains=0,
         write_strains_vs_radius=0,
@@ -233,11 +233,7 @@ def compute_strains(
                         if (sector_id < 0): continue
                         strains_per_sector[sector_id].append(farray_strain.GetTuple(k_cell))
 
-            if  (temporal_offset     is not None)\
-            and (temporal_resolution is not None):
-                strain_file.write(str(temporal_offset + k_frame*temporal_resolution))
-            else:
-                strain_file.write(str(k_frame))
+            strain_file.write(str(temporal_offset+k_frame*temporal_resolution))
             strains_all_avg = numpy.mean(strains_all, 0)
             strains_all_std = numpy.std(strains_all, 0)
             strain_file.write("".join([" " + str(strains_all_avg[k_comp]) + " " + str(strains_all_std[k_comp]) for k_comp in xrange(6)]))
@@ -251,7 +247,7 @@ def compute_strains(
         if (write_strains_vs_radius):
             farray_rr = mesh.GetCellData().GetArray("rr")
             for k_cell in xrange(n_cells):
-                strains_vs_radius_file.write(" ".join([str(val) for val in [k_frame, farray_rr.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
+                strains_vs_radius_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, farray_rr.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
             strains_vs_radius_file.write("\n")
             strains_vs_radius_file.write("\n")
 
@@ -271,7 +267,7 @@ def compute_strains(
             #print binned_strains_avg
             #print binned_strains_std
             for k_r in xrange(n_r):
-                binned_strains_vs_radius_file.write(" ".join([str(val) for val in [k_frame, (k_r+0.5)/n_r]+[val for k_comp in xrange(6) for val in [binned_strains_avg[k_r][k_comp], binned_strains_std[k_r][k_comp]]]]) + "\n")
+                binned_strains_vs_radius_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, (k_r+0.5)/n_r]+[val for k_comp in xrange(6) for val in [binned_strains_avg[k_r][k_comp], binned_strains_std[k_r][k_comp]]]]) + "\n")
             binned_strains_vs_radius_file.write("\n")
             binned_strains_vs_radius_file.write("\n")
 
@@ -320,7 +316,7 @@ def compute_strains(
                 farray_beta.SetTuple1(k_point, beta)
                 if (r < 15.): continue
                 # if (ll < 1./3): continue
-                twist_vs_height_file.write(" ".join([str(val) for val in [k_frame, ll, beta]]) + "\n")
+                twist_vs_height_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, ll, beta]]) + "\n")
             mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
             myvtk.writeUGrid(
                 ugrid=mesh,
