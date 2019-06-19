@@ -144,10 +144,19 @@ class WarpedImageEnergy(Energy):
             element=self.fe)
         self.Phi_Iref.init_image(self.ref_image_filename)
 
+        # Phi_def
+        self.Phi_Idef = dolfin.Expression(
+            cppcode=ddic.get_ExprCharFuncIm_cpp(
+                im_dim=self.image_series.dimension,
+                im_is_def=1),
+            element=self.fe)
+        self.Phi_Idef.init_image(self.ref_image_filename)
+        self.Phi_Idef.init_disp(self.problem.U)
+
         # Psi_c
-        self.Psi_c   = self.Phi_Iref * (self.Igen - self.Idef)**2/2
-        self.DPsi_c  = self.Phi_Iref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
-        self.DDPsi_c = self.Phi_Iref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+        self.Psi_c   = self.Phi_Idef * self.Phi_Iref * (self.Igen - self.Idef)**2/2
+        self.DPsi_c  = self.Phi_Idef * self.Phi_Iref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+        self.DDPsi_c = self.Phi_Idef * self.Phi_Iref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
 
         # forms
         self.ener_form = self.Psi_c   * self.dV
@@ -165,7 +174,7 @@ class WarpedImageEnergy(Energy):
 
 
     def call_before_assembly(self):
-        
+
         self.Igen.generate_image()
         self.DIgen.generate_image()
 
