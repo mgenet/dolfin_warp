@@ -47,20 +47,19 @@ class MyExpr : public Expression
     unsigned int k_point;
     unsigned int image_n_points;
 
+    mutable Array<double>  X;
     mutable Array<double> UX; // MG20190521: these guys cannot be public for some reason
-    mutable Array<double> x;  // MG20190521: these guys cannot be public for some reason
+    mutable Array<double>  x; // MG20190521: these guys cannot be public for some reason
+    mutable Array<double> ux;
 
     double static_scaling;
-    mutable Array<double> X;
-    // double x[3];
-    double ux['''+str(im_dim)+'''];
     double m[1];
     double I[1];
 
     vtkSmartPointer<vtkXMLImageDataReader> reader;
     vtkSmartPointer<vtkImageData> image;
     vtkSmartPointer<vtkDataArray> array_image_scalars;
-    vtkSmartPointer<vtkImageData> image_probed;
+    // vtkSmartPointer<vtkImageData> image_probed; // MG20190607: does not work for some reason
     vtkSmartPointer<vtkDataArray> array_probed_mask;
     vtkSmartPointer<vtkDataArray> array_probed_disp;
     vtkSmartPointer<vtkImageInterpolator> interpolator;
@@ -75,13 +74,14 @@ public:
 
     MyExpr():
         Expression(),
+        X(3),
+        UX('''+str(im_dim)+'''),
+        x(3),
+        ux('''+str(im_dim)+'''),
         reader(vtkSmartPointer<vtkXMLImageDataReader>::New()),
         interpolator(vtkSmartPointer<vtkImageInterpolator>::New()),
         warp(vtkSmartPointer<vtkWarpVector>::New()),
-        probe(vtkSmartPointer<vtkProbeFilter>::New()),
-        X(3),
-        UX('''+str(im_dim)+'''),
-        x(3)
+        probe(vtkSmartPointer<vtkProbeFilter>::New())
     {
     }
 
@@ -153,6 +153,9 @@ public:
 
     void generate_image()
     {
+        // std::cout << "n_points = " << ugrid->GetNumberOfPoints() << std::endl;
+        // std::cout << "n_cells  = " << ugrid->GetNumberOfCells()  << std::endl;
+
         warp->SetInputData(ugrid);
         warp->Update();
 
@@ -174,8 +177,7 @@ public:
             else
             {
                 image->GetPoint(k_point, x.data());
-                // image->GetPoint(k_point, x);
-                array_probed_disp->GetTuple(k_point, ux);'''+('''
+                array_probed_disp->GetTuple(k_point, ux.data());'''+('''
                 X[0] = x[0] - ux[0];
                 X[1] = x[1] - ux[1];''')*(im_dim==2)+('''
                 X[0] = x[0] - ux[0];
