@@ -72,7 +72,7 @@ def mesh2ugrid(
     # print("n_nodes_per_cell = "+str(n_nodes_per_cell))
     np_connectivity = numpy.empty(
         [n_cells, n_nodes_per_cell+1],
-        dtype=int)
+        dtype=numpy.int)
     for i in range(n_cells):
         np_connectivity[i, 0] = n_nodes_per_cell
         np_connectivity[i,1:] = fs.dofmap().cell_dofs(i)
