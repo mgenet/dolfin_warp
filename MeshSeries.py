@@ -10,6 +10,7 @@
 
 from builtins import *
 
+import dolfin
 import glob
 
 import myPythonLibrary    as mypy
@@ -45,7 +46,7 @@ class MeshSeries():
         self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
         assert (len(self.filenames) >= 1),\
             "Not enough meshes ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
-            
+
         if (self.n_frames is None):
             self.n_frames = len(self.filenames)
         else:

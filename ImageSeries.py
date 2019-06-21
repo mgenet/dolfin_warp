@@ -10,6 +10,7 @@
 
 from builtins import *
 
+import dolfin
 import glob
 
 import myPythonLibrary    as mypy

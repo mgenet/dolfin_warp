@@ -12,6 +12,7 @@
 
 from builtins import *
 
+import dolfin
 import glob
 import numpy
 import vtk

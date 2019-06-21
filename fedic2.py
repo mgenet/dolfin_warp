@@ -10,6 +10,8 @@
 
 from builtins import *
 
+import dolfin
+
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 

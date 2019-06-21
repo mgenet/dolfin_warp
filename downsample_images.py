@@ -10,6 +10,7 @@
 
 from builtins import *
 
+import dolfin
 import math
 import numpy
 import os
