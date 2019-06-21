@@ -11,6 +11,7 @@
 from builtins import *
 
 import dolfin
+import glob
 import math
 import numpy
 import os
