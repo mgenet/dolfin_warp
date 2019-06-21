@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin
 import glob
 import math
@@ -15,7 +17,7 @@ import numpy
 import os
 import time
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -271,7 +273,7 @@ class NonlinearSolver():
 
         phi = (1 + math.sqrt(5)) / 2
         relax_a = (1-phi)/(2-phi)
-        relax_b = 1/(2-phi)
+        relax_b = 1./(2-phi)
         need_update_c = True
         need_update_d = True
         relax_cur = 0.
@@ -347,7 +349,7 @@ class NonlinearSolver():
         if (self.write_iterations):
             self.iter_filebasename = self.frame_filebasename+"-iter="+str(self.k_iter).zfill(3)
             file_dat_iter = open(self.iter_filebasename+".dat","w")
-            file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], ener_list[relax_k]]]) for relax_k in xrange(len(relax_list))]))
+            file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], ener_list[relax_k]]]) for relax_k in range(len(relax_list))]))
             file_dat_iter.close()
             commandline  = "gnuplot -e \"set terminal pdf;"
             commandline += " set output '"+self.iter_filebasename+".pdf';"

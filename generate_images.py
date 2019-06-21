@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import glob
 import math
 import numpy
@@ -15,12 +17,12 @@ import os
 import random
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
-from generate_images_Image import Image
-from generate_images_Mapping import Mapping
+from .generate_images_Image   import Image
+from .generate_images_Mapping import Mapping
 
 ################################################################################
 
@@ -149,25 +151,25 @@ def generate_images(
         Finv  = None
         set_I = set_I_woGrad
 
-    for k_frame in xrange(images["n_frames"]):
+    for k_frame in range(images["n_frames"]):
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
         mypy.my_print(verbose, "t = "+str(t))
         mapping.init_t(t)
-        for k_point in xrange(n_points_upsampled):
+        for k_point in range(n_points_upsampled):
             image_upsampled.GetPoint(k_point, x)
-            #print "x0 = "+str(x)
+            #print("x0 = "+str(x))
             mapping.X(x, X, Finv)
-            #print "X = "+str(X)
+            #print("X = "+str(X))
             set_I(image, X, I, image_upsampled_scalars, k_point, G, Finv, image_gradient_upsampled_vectors)
             global_min = min(global_min, I[0])
             global_max = max(global_max, I[0])
-        #print image_upsampled
+        #print(image_upsampled)
         myvtk.writeImage(
             image=image_upsampled,
             filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
             verbose=verbose-1)
         if (generate_image_gradient):
-            #print image_gradient_upsampled
+            #print(image_gradient_upsampled)
             myvtk.writeImage(
                 image=image_gradient_upsampled,
                 filename=images["folder"]+"/"+images["basename"]+"-grad"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
@@ -188,7 +190,7 @@ def generate_images(
             write_temp_images=0,
             verbose=verbose)
 
-        for k_frame in xrange(images["n_frames"]):
+        for k_frame in range(images["n_frames"]):
             os.rename(
                 images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                 images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
@@ -207,7 +209,7 @@ def generate_images(
             images_datatype=images["data_type"],
             verbose=verbose)
 
-        for k_frame in xrange(images["n_frames"]):
+        for k_frame in range(images["n_frames"]):
             os.rename(
                 src=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                 dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])

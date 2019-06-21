@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin
 import glob
 import numpy
@@ -15,7 +17,7 @@ import os
 import time
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -129,11 +131,11 @@ class ImageIterator():
                     mesh = mesh_series.get_mesh(k_frame)
                     array_U = mesh.GetPointData().GetArray(self.initialize_U_array_name)
                     array_U = vtk.util.numpy_support.vtk_to_numpy(array_U)[:,:self.problem.mesh_dimension]
-                    # print array_U
+                    # print(array_U)
                     # array_U = array_U.astype(float)
-                    # print array_U
+                    # print(array_U)
                     array_U = numpy.reshape(array_U, array_U.size)
-                    # print array_U
+                    # print(array_U)
                     self.problem.U.vector()[:] = array_U[dof_to_vertex_map]
 
                 elif (self.initialize_DU_with_DUold):
@@ -189,7 +191,7 @@ class ImageIterator():
         commandline  = "gnuplot -e \"set terminal pdf;"
         commandline += " set output '"+qoi_filebasename+".pdf';"
         commandline += " set grid;"
-        for k_qoi in xrange(1,len(qoi_names)):
+        for k_qoi in range(1,len(qoi_names)):
             commandline += " plot '"+qoi_filebasename+".dat' u 1:"+str(1+k_qoi)+" lw 3 title '"+qoi_names[k_qoi]+"';"
         commandline += "\""
         os.system(commandline)

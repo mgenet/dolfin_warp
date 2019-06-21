@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import glob
 import math
 import numpy
@@ -15,7 +17,7 @@ import os
 import random
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -52,13 +54,13 @@ def normalize_images(
 
     global_min = float("+Inf")
     global_max = float("-Inf")
-    for k_frame in xrange(images_nframes):
+    for k_frame in range(images_nframes):
         reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
         reader.Update()
 
         image_scalars = reader.GetOutput().GetPointData().GetScalars()
         I = numpy.empty(image_scalars.GetNumberOfComponents())
-        for k_point in xrange(images_npoints):
+        for k_point in range(images_npoints):
             image_scalars.GetTuple(k_point, I)
 
             global_min = min(global_min, I[0])
@@ -87,7 +89,7 @@ def normalize_images(
 
     writer.SetInputConnection(shifter.GetOutputPort())
 
-    for k_frame in xrange(images_nframes):
+    for k_frame in range(images_nframes):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
         reader.SetFileName(images_folder+"/"+images_basename              +"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)

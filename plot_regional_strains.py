@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import math
 import matplotlib.pyplot
 import numpy
@@ -44,21 +46,21 @@ def plot_regional_strains(
 
     n_frames = len(strains_all)
     if (k_frame is None):
-        #k_frame = n_frames/2
+        #k_frame = n_frames//2
         k_frame = numpy.argmin(strains_all[:,2])
 
     strains_es = strains_all[k_frame]
-    #print "len(strains_es) = "+str(len(strains_es))
+    #print("len(strains_es) = "+str(len(strains_es)))
 
     n_sectors = n_sectors_l * n_sectors_c
-    assert (len(strains_es)/2 == (1+n_sectors)*n_comp), "Number of strain components ("+str(len(strains_es)/2)+") inconsistent with number of sectors (n_sectors_c="+str(n_sectors_c)+", n_sectors_l="+str(n_sectors_l)+"). Aborting."
+    assert (len(strains_es)//2 == (1+n_sectors)*n_comp), "Number of strain components ("+str(len(strains_es)//2)+") inconsistent with number of sectors (n_sectors_c="+str(n_sectors_c)+", n_sectors_l="+str(n_sectors_l)+"). Aborting."
 
-    strains_es_avg = [[strains_es[(k_sector+1)*2*n_comp+2*k_comp] for k_sector in xrange(n_sectors)] for k_comp in xrange(n_comp)]
+    strains_es_avg = [[strains_es[(k_sector+1)*2*n_comp+2*k_comp] for k_sector in range(n_sectors)] for k_comp in range(n_comp)]
 
     size = 4
     fig = matplotlib.pyplot.figure(figsize=(n_cols*size,n_rows*size))
 
-    for k_comp in xrange(n_comp):
+    for k_comp in range(n_comp):
 
         subplot = fig.add_subplot(n_rows, n_cols, k_comp+1, projection='polar')
         subplot.set_title(comp_names[k_comp]+" strain (%)")
@@ -94,8 +96,8 @@ def plot_regional_strains(
         cbar.solids.set_edgecolor("face")
 
         k_sector = 0
-        for k_l in xrange(n_sectors_l):
-            for k_c in xrange(n_sectors_c):
+        for k_l in range(n_sectors_l):
+            for k_c in range(n_sectors_c):
                 subplot.bar(
                     left = k_c * 2*math.pi/n_sectors_c,
                     height = 1./n_sectors_l,

@@ -21,6 +21,8 @@ FROM quay.io/fenicsproject/stable:2017.2.0
 RUN apt-get update; apt-get -y install libvtk6-dev; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CPATH="/usr/include/vtk-6.2":$CPATH
 
+RUN pip install future vtk; pip3 install vtk
+
 RUN apt-get update; apt-get -y install gnuplot git; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 WORKDIR /home/fenics
 RUN git clone https://github.com/aschn/gnuplot-colorbrewer.git

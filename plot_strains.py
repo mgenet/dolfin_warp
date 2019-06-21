@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import os
 
 ################################################################################
@@ -33,9 +35,9 @@ def plot_strains(
     else:
         lines = open(working_folder+"/"+working_basenames[0]+"-strains.dat").readlines()[1:]
     n_frames = len(lines)
-    n_sectors = (len(lines[0].split(" "))-1)/12
-    #print "n_frames = " + str(n_frames)
-    #print "n_sectors = " + str(n_sectors)
+    n_sectors = (len(lines[0].split(" "))-1)//12
+    #print("n_frames = " + str(n_frames))
+    #print("n_sectors = " + str(n_sectors))
 
     comp_names = ["radial", "circumferential", "longitudinal", "radial-circumferential", "radial-longitudinal", "circumferential-longitudinal"]
     assert (components in ("all", "circ-long", "rad-circ"))

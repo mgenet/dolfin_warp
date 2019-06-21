@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import glob
 import math
 import numpy
@@ -15,14 +17,14 @@ import os
 import random
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
 
 ################################################################################
 
-class Mapping:
+class Mapping():
 
     def __init__(
             self,
@@ -167,19 +169,19 @@ class Mapping:
         if (Finv is not None): Finv[:,:] = self.Finv
 
     def X_heart(self, x, X, Finv=None):
-        #print "x = "+str(x)
+        #print("x = "+str(x))
         self.x_inplane[0] = x[0] - self.L[0]/2
         self.x_inplane[1] = x[1] - self.L[1]/2
-        #print "x_inplane = "+str(self.x_inplane)
+        #print("x_inplane = "+str(self.x_inplane))
         self.rt[0] = numpy.linalg.norm(self.x_inplane)
         self.rt[1] = math.atan2(self.x_inplane[1], self.x_inplane[0])
-        #print "rt = "+str(self.rt)
+        #print("rt = "+str(self.rt))
         self.RT[:] = numpy.dot(self.Ainv, self.rt-self.B)
-        #print "RT = "+str(self.RT)
+        #print("RT = "+str(self.RT))
         X[0] = self.RT[0] * math.cos(self.RT[1]) + self.L[0]/2
         X[1] = self.RT[0] * math.sin(self.RT[1]) + self.L[1]/2
         X[2] = x[2]
-        #print "X = "+str(X)
+        #print("X = "+str(X))
         if (Finv is not None):
             Finv[0,0] = 1.+(self.dRe-self.dRi)/(self.Re-self.Ri)
             Finv[0,1] = 0.
@@ -190,9 +192,9 @@ class Mapping:
             Finv[2,0] = 0.
             Finv[2,1] = 0.
             Finv[2,2] = 1.
-            #print "F = "+str(Finv)
+            #print("F = "+str(Finv))
             Finv[:,:] = numpy.linalg.inv(Finv)
-            #print "Finv = "+str(Finv)
+            #print("Finv = "+str(Finv))
             self.R[0,0] = +math.cos(self.RT[1])
             self.R[0,1] = +math.sin(self.RT[1])
             self.R[0,2] = 0.
@@ -202,9 +204,9 @@ class Mapping:
             self.R[2,0] = 0.
             self.R[2,1] = 0.
             self.R[2,2] = 1.
-            #print "R = "+str(self.R)
+            #print("R = "+str(self.R))
             Finv[:] = numpy.dot(numpy.transpose(self.R), numpy.dot(Finv, self.R))
-            #print "Finv = "+str(Finv)
+            #print("Finv = "+str(Finv))
 
     def x_no(self, X, x, F=None):
         x[:] = X
@@ -223,19 +225,19 @@ class Mapping:
         if (F is not None): F[:,:] = self.F
 
     def x_heart(self, X, x, F=None):
-        #print "X = "+str(X)
+        #print("X = "+str(X))
         self.X_inplane[0] = X[0] - self.L[0]/2
         self.X_inplane[1] = X[1] - self.L[1]/2
-        #print "X_inplane = "+str(self.X_inplane)
+        #print("X_inplane = "+str(self.X_inplane))
         self.RT[0] = numpy.linalg.norm(self.X_inplane)
         self.RT[1] = math.atan2(self.X_inplane[1], self.X_inplane[0])
-        #print "RT = "+str(self.RT)
+        #print("RT = "+str(self.RT))
         self.rt[:] = numpy.dot(self.A, self.RT) + self.B
-        #print "rt = "+str(self.rt)
+        #print("rt = "+str(self.rt))
         x[0] = self.rt[0] * math.cos(self.rt[1]) + self.L[0]/2
         x[1] = self.rt[0] * math.sin(self.rt[1]) + self.L[1]/2
         x[2] = X[2]
-        #print "x = "+str(x)
+        #print("x = "+str(x))
         if (F is not None):
             F[0,0] = 1.+(self.dRe-self.dRi)/(self.Re-self.Ri)
             F[0,1] = 0.
@@ -246,7 +248,7 @@ class Mapping:
             F[2,0] = 0.
             F[2,1] = 0.
             F[2,2] = 1.
-            #print "F = "+str(F)
+            #print("F = "+str(F))
             self.R[0,0] = +math.cos(self.RT[1])
             self.R[0,1] = +math.sin(self.RT[1])
             self.R[0,2] = 0.
@@ -257,4 +259,4 @@ class Mapping:
             self.R[2,1] = 0.
             self.R[2,2] = 1.
             F[:] = numpy.dot(numpy.transpose(self.R), numpy.dot(F, self.R))
-            #print "F = "+str(F)
+            #print("F = "+str(F))

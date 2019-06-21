@@ -8,10 +8,12 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import numpy
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -84,7 +86,7 @@ def generateUndersampledImages(
 
     if ("zfill" not in images.keys()):
         images["zfill"] = len(str(images["n_frames"]))
-    for k_frame in xrange(images["n_frames"]):
+    for k_frame in range(images["n_frames"]):
         imageX = myvtk.readImage(
             filename=images["folder"]+"/"+images["basename"]+"-X_"+str(k_frame).zfill(images["zfill"])+".vti",
             verbose=verbose-1)
@@ -114,7 +116,7 @@ def generateUndersampledImages(
                 imageXY.AllocateScalars()
             scalars = imageXY.GetPointData().GetScalars()
             x = numpy.empty(3)
-            for k_point in xrange(imageXY.GetNumberOfPoints()):
+            for k_point in range(imageXY.GetNumberOfPoints()):
                 imageXY.GetPoint(k_point, x)
                 interpolatorX.Interpolate(x, iX)
                 interpolatorY.Interpolate(x, iY)
@@ -148,7 +150,7 @@ def generateUndersampledImages(
                 imageXYZ.AllocateScalars()
             scalars = imageXYZ.GetPointData().GetScalars()
             x = numpy.empty(3)
-            for k_point in xrange(imageXYZ.GetNumberOfPoints()):
+            for k_point in range(imageXYZ.GetNumberOfPoints()):
                 imageXYZ.GetPoint(k_point, x)
                 interpolatorX.Interpolate(x, iX)
                 interpolatorY.Interpolate(x, iY)

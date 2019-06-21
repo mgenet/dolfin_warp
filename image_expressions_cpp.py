@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin_dic as ddic
 
 ################################################################################
@@ -240,7 +242,7 @@ public:
 };
 
 }'''
-    #print ExprIm_cpp
+    #print(ExprIm_cpp)
     return ExprIm_cpp
 
 
@@ -398,5 +400,5 @@ public:
 };
 
 }'''
-    # print ExprCharFuncIm_cpp
+    # print(ExprCharFuncIm_cpp)
     return ExprCharFuncIm_cpp

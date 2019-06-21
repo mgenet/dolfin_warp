@@ -12,10 +12,12 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin
 import numpy
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic

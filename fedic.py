@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin
 import glob
 import math
@@ -16,7 +18,7 @@ import os
 import shutil
 import time
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -748,7 +750,7 @@ def fedic(
                 elif (relax_type == "gss"):
                     phi = (1 + math.sqrt(5)) / 2
                     relax_a = (1-phi)/(2-phi)
-                    relax_b = 1/(2-phi)
+                    relax_b = 1./(2-phi)
                     need_update_c = True
                     need_update_d = True
                     relax_cur = 0.
@@ -828,7 +830,7 @@ def fedic(
                     if (print_iterations):
                         iter_basename = frame_basename+"-iter="+str(k_iter).zfill(3)
                         file_dat_iter = open(iter_basename+".dat","w")
-                        file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], relax_vals[relax_k]]]) for relax_k in xrange(len(relax_list))]))
+                        file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], relax_vals[relax_k]]]) for relax_k in range(len(relax_list))]))
                         file_dat_iter.close()
                         os.system("gnuplot -e \"set terminal pdf; set output '"+iter_basename+".pdf'; plot '"+iter_basename+".dat' using 1:2 with points title 'psi_int'; plot '"+iter_basename+".dat' using (\$2=='inf'?\$1:1/0):(GPVAL_Y_MIN+(0.8)*(GPVAL_Y_MAX-GPVAL_Y_MIN)):(0):((0.2)*(GPVAL_Y_MAX-GPVAL_Y_MIN)) with vectors notitle, '"+iter_basename+".dat' u 1:2 with points title 'psi_int'\"")
 

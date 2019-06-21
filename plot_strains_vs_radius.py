@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import os
 
 ################################################################################
@@ -63,7 +65,7 @@ set key box textcolor variable width +0
 set grid
 
 ''')
-    for k_frame in xrange(n_frames):
+    for k_frame in range(n_frames):
         plotfile.write('''\
 set multiplot layout '''+str(n_rows)+''','''+str(n_cols)+'''
 

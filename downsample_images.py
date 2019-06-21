@@ -8,14 +8,15 @@
 ###                                                                          ###
 ################################################################################
 
-import glob
+from builtins import *
+
 import math
 import numpy
 import os
 import random
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -102,37 +103,37 @@ def downsample_images(
             n_tuples=images_npoints,
             verbose=0)
         mask_image.GetPointData().SetScalars(mask_scalars)
-        # print mask_image.GetScalarType()
-        # print mask_image.GetPointData().GetScalars()
+        # print(mask_image.GetScalarType())
+        # print(mask_image.GetPointData().GetScalars())
         if (images_ndim == 1):
-            for k_x in xrange(images_nvoxels[0]):
-                if ((k_x >                     images_downsampled_nvoxels[0]/2) \
-                and (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]/2)):
+            for k_x in range(images_nvoxels[0]):
+                if ((k_x >                     images_downsampled_nvoxels[0]//2) \
+                and (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)):
                     mask_scalars.SetTuple(k_x, [0, 0])
                 else:
                     mask_scalars.SetTuple(k_x, [1, 1])
         if (images_ndim == 2):
-            for k_y in xrange(images_nvoxels[1]):
-                for k_x in xrange(images_nvoxels[0]):
+            for k_y in range(images_nvoxels[1]):
+                for k_x in range(images_nvoxels[0]):
                     k_point = k_y*images_nvoxels[0] + k_x
-                    if (((k_x >                     images_downsampled_nvoxels[0]/2)  \
-                    and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]/2)) \
-                    or  ((k_y >                     images_downsampled_nvoxels[1]/2)  \
-                    and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]/2))):
+                    if (((k_x >                     images_downsampled_nvoxels[0]//2)  \
+                    and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)) \
+                    or  ((k_y >                     images_downsampled_nvoxels[1]//2)  \
+                    and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]//2))):
                         mask_scalars.SetTuple(k_point, [0, 0])
                     else:
                         mask_scalars.SetTuple(k_point, [1, 1])
         if (images_ndim == 3):
-            for k_z in xrange(images_nvoxels[2]):
-                for k_y in xrange(images_nvoxels[1]):
-                    for k_x in xrange(images_nvoxels[0]):
+            for k_z in range(images_nvoxels[2]):
+                for k_y in range(images_nvoxels[1]):
+                    for k_x in range(images_nvoxels[0]):
                         k_point = k_z*images_nvoxels[1]*images_nvoxels[0] + k_y*images_nvoxels[0] + k_x
-                        if (((k_x >                     images_downsampled_nvoxels[0]/2)  \
-                        and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]/2)) \
-                        or  ((k_y >                     images_downsampled_nvoxels[1]/2)  \
-                        and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]/2)) \
-                        or  ((k_z >                     images_downsampled_nvoxels[2]/2)  \
-                        and  (k_z < images_nvoxels[2] - images_downsampled_nvoxels[2]/2))):
+                        if (((k_x >                     images_downsampled_nvoxels[0]//2)  \
+                        and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)) \
+                        or  ((k_y >                     images_downsampled_nvoxels[1]//2)  \
+                        and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]//2)) \
+                        or  ((k_z >                     images_downsampled_nvoxels[2]//2)  \
+                        and  (k_z < images_nvoxels[2] - images_downsampled_nvoxels[2]//2))):
                             mask_scalars.SetTuple(k_point, [0, 0])
                         else:
                             mask_scalars.SetTuple(k_point, [1, 1])
@@ -185,7 +186,7 @@ def downsample_images(
     writer.SetInputConnection(rfft.GetOutputPort())
 
     if (keep_resolution):
-        for k_frame in xrange(images_nframes):
+        for k_frame in range(images_nframes):
             mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
             reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
@@ -201,52 +202,52 @@ def downsample_images(
             writer.SetFileName(images_folder+"/"+images_basename+"_downsampled"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
             writer.Write()
     else:
-        for k_frame in xrange(images_nframes):
+        for k_frame in range(images_nframes):
             mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
             reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
             reader.Update()
-            # print "reader.GetOutput() = "+str(reader.GetOutput())
+            # print("reader.GetOutput() = "+str(reader.GetOutput()))
 
             fft.Update()
             if (write_temp_images):
                 writer_fft.SetFileName(images_folder+"/"+images_basename+"_fft"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_fft.Write()
-            # print "fft.GetOutput() = "+str(fft.GetOutput())
-            # print "fft.GetOutput().GetScalarType() = "+str(fft.GetOutput().GetScalarType())
-            # print "fft.GetOutput().GetPointData().GetScalars() = "+str(fft.GetOutput().GetPointData().GetScalars())
+            # print("fft.GetOutput() = "+str(fft.GetOutput()))
+            # print("fft.GetOutput().GetScalarType() = "+str(fft.GetOutput().GetScalarType()))
+            # print("fft.GetOutput().GetPointData().GetScalars() = "+str(fft.GetOutput().GetPointData().GetScalars()))
 
             image_scalars = fft.GetOutput().GetPointData().GetScalars()
             if (images_ndim == 1):
-                for k_x_downsampled in xrange(images_downsampled_nvoxels[0]):
-                    k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]/2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
+                for k_x_downsampled in range(images_downsampled_nvoxels[0]):
+                    k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
                     image_scalars.GetTuple(k_x, I)
                     I /= downsampling_factor
                     image_downsampled_scalars.SetTuple(k_x_downsampled, I)
             if (images_ndim == 2):
-                for k_y_downsampled in xrange(images_downsampled_nvoxels[1]):
-                    k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]/2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
-                    for k_x_downsampled in xrange(images_downsampled_nvoxels[0]):
-                        k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]/2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
+                for k_y_downsampled in range(images_downsampled_nvoxels[1]):
+                    k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]//2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
+                    for k_x_downsampled in range(images_downsampled_nvoxels[0]):
+                        k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
                         k_point_downsampled = k_y_downsampled*images_downsampled_nvoxels[0] + k_x_downsampled
                         k_point             = k_y            *images_nvoxels[0]             + k_x
                         image_scalars.GetTuple(k_point, I)
                         I /= downsampling_factor
                         image_downsampled_scalars.SetTuple(k_point_downsampled, I)
             if (images_ndim == 3):
-                for k_z_downsampled in xrange(images_downsampled_nvoxels[2]):
-                    k_z = k_z_downsampled if (k_z_downsampled <= images_downsampled_nvoxels[2]/2) else k_z_downsampled+(images_nvoxels[2]-images_downsampled_nvoxels[2])
-                    for k_y_downsampled in xrange(images_downsampled_nvoxels[1]):
-                        k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]/2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
-                        for k_x_downsampled in xrange(images_downsampled_nvoxels[0]):
-                            k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]/2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
+                for k_z_downsampled in range(images_downsampled_nvoxels[2]):
+                    k_z = k_z_downsampled if (k_z_downsampled <= images_downsampled_nvoxels[2]//2) else k_z_downsampled+(images_nvoxels[2]-images_downsampled_nvoxels[2])
+                    for k_y_downsampled in range(images_downsampled_nvoxels[1]):
+                        k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]//2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
+                        for k_x_downsampled in range(images_downsampled_nvoxels[0]):
+                            k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
                             k_point_downsampled = k_z_downsampled*images_downsampled_nvoxels[1]*images_downsampled_nvoxels[0] + k_y_downsampled*images_downsampled_nvoxels[0] + k_x_downsampled
                             k_point             = k_z            *images_nvoxels[1]            *images_nvoxels[0]             + k_y            *images_nvoxels[0]             + k_x
                             image_scalars.GetTuple(k_point, I)
                             I /= downsampling_factor
                             image_downsampled_scalars.SetTuple(k_point_downsampled, I)
-            # print "image_downsampled = "+str(image_downsampled)
-            # print "image_downsampled_scalars = "+str(image_downsampled_scalars)
+            # print("image_downsampled = "+str(image_downsampled))
+            # print("image_downsampled_scalars = "+str(image_downsampled_scalars))
 
             if (write_temp_images):
                 writer_sel.SetFileName(images_folder+"/"+images_basename+"_sel"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)

@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin_dic as ddic
 
 ################################################################################
@@ -226,5 +228,5 @@ public:
 '''+ddic.get_ImagingModel_cpp()+''' // MG20190617: Cannot be defined before expression for some reason
 
 '''
-    # print ExprGenIm_cpp
+    # print(ExprGenIm_cpp)
     return ExprGenIm_cpp

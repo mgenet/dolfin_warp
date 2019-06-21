@@ -8,10 +8,12 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import dolfin
 import numpy
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -46,13 +48,13 @@ class ExprIm2(dolfin.Expression):
             verbose=0)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.X[0:2] = X[0:2]
-        #print "    X = " + str(self.X)
+        #print("    X = " + str(self.X))
         self.interpolator.Interpolate(self.X, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprIm3(dolfin.Expression):
     def __init__(self, filename=None, **kwargs):
@@ -72,11 +74,11 @@ class ExprIm3(dolfin.Expression):
             verbose=0)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.interpolator.Interpolate(X, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprGradIm2(dolfin.Expression):
     def __init__(self, filename=None, Z=0., **kwargs):
@@ -103,11 +105,11 @@ class ExprGradIm2(dolfin.Expression):
         return (2,)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.X[0:2] = X[0:2]
-        #print "    X = " + str(self.X)
+        #print("    X = " + str(self.X))
         self.interpolator.Interpolate(self.X, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
 
 class ExprGradIm3(dolfin.Expression):
@@ -134,9 +136,9 @@ class ExprGradIm3(dolfin.Expression):
         return (3,)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.interpolator.Interpolate(X, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
 
 class ExprHessIm2(dolfin.Expression):
@@ -217,18 +219,18 @@ class ExprDefIm2(dolfin.Expression):
             verbose=0)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.U.eval(self.UX, X)
-        #print "    UX = " + str(self.UX)
+        #print("    UX = " + str(self.UX))
         self.x[0:2] = X[0:2] + self.UX[0:2]
-        #print "    x = " + str(self.x)
+        #print("    x = " + str(self.x))
         self.interpolator.Interpolate(self.x, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr *= self.scaling[0]
         Expr += self.scaling[1]
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprDefIm3(dolfin.Expression):
     def __init__(self, U, filename=None, scaling=[1.,0.], **kwargs):
@@ -252,18 +254,18 @@ class ExprDefIm3(dolfin.Expression):
             verbose=0)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.U.eval(self.UX, X)
-        #print "    UX = " + str(self.UX)
+        #print("    UX = " + str(self.UX))
         self.x[:] = X + self.UX
-        #print "    x = " + str(self.x)
+        #print("    x = " + str(self.x))
         self.interpolator.Interpolate(self.x, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr *= self.scaling[0]
         Expr += self.scaling[1]
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprGradDefIm2(dolfin.Expression):
     def __init__(self, U, filename=None, scaling=[1.,0.], Z=0., **kwargs):
@@ -293,17 +295,17 @@ class ExprGradDefIm2(dolfin.Expression):
         return (2,)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.U.eval(self.UX, X)
-        #print "    UX = " + str(self.UX)
+        #print("    UX = " + str(self.UX))
         self.x[0:2] = X[0:2] + self.UX[0:2]
-        #print "    x = " + str(self.x)
+        #print("    x = " + str(self.x))
         self.interpolator.Interpolate(self.x, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr *= self.scaling[0]
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprGradDefIm3(dolfin.Expression):
     def __init__(self, U, filename=None, scaling=[1.,0.], **kwargs):
@@ -333,17 +335,17 @@ class ExprGradDefIm3(dolfin.Expression):
         return (3,)
 
     def eval(self, Expr, X):
-        #print "    X = " + str(X)
+        #print("    X = " + str(X))
         self.U.eval(self.UX, X)
-        #print "    UX = " + str(self.UX)
+        #print("    UX = " + str(self.UX))
         self.x[:] = X + self.UX
-        #print "    x = " + str(self.x)
+        #print("    x = " + str(self.x))
         self.interpolator.Interpolate(self.x, Expr)
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr /= self.s
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
         Expr *= self.scaling[0]
-        #print "    Expr = " + str(Expr)
+        #print("    Expr = " + str(Expr))
 
 class ExprHessDefIm2(dolfin.Expression):
     def __init__(self, U, filename=None, scaling=[1.,0.], Z=0., **kwargs):

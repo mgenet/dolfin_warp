@@ -8,6 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import glob
 import math
 import numpy
@@ -15,7 +17,7 @@ import os
 import random
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -361,4 +363,4 @@ class Image():
 
     def I0_noise_normal_wGrad(self, I, G):
         self.I0_noise_normal(I)
-        G[:] += [2*random.normalvariate(self.avg, self.std) for k in xrange(len(G))]
+        G[:] += [2*random.normalvariate(self.avg, self.std) for k in range(len(G))]

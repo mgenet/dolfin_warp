@@ -10,11 +10,13 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import glob
 import numpy
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
@@ -55,7 +57,7 @@ def compute_unwarped_images(
     x = numpy.empty(3)
     I = numpy.empty(1)
     m = numpy.empty(1)
-    for k_frame in xrange(n_frames):
+    for k_frame in range(n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
         def_image = myvtk.readImage(
@@ -79,7 +81,7 @@ def compute_unwarped_images(
         scalars_mask = probed_image.GetPointData().GetArray("vtkValidPointMask")
         scalars_U = probed_image.GetPointData().GetArray("displacement")
 
-        for k_point in xrange(image.GetNumberOfPoints()):
+        for k_point in range(image.GetNumberOfPoints()):
             scalars_mask.GetTuple(k_point, m)
             if (m[0] == 0):
                 I[0] = 0.

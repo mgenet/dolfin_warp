@@ -10,15 +10,17 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import *
+
 import numpy
 import os
 import vtk
 
-import myPythonLibrary as mypy
+import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_dic as ddic
-from generate_images import *
+from .generate_images import *
 
 ################################################################################
 
@@ -60,11 +62,11 @@ def compute_warped_mesh(
     U = numpy.empty(3)
     if ("zfill" not in images.keys()):
         images["zfill"] = len(str(images["n_frames"]))
-    for k_frame in xrange(images["n_frames"]):
+    for k_frame in range(images["n_frames"]):
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
         mapping.init_t(t)
 
-        for k_point in xrange(n_points):
+        for k_point in range(n_points):
             mesh.GetPoint(k_point, X)
             mapping.x(X, x)
             U = x - X
