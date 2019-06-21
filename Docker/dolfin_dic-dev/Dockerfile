@@ -1,27 +1,9 @@
-#FROM ubuntu:latest
-#FROM quay.io/fenicsproject/stable:2016.1.0
-#FROM quay.io/fenicsproject/stable:2016.2.0
-#FROM quay.io/fenicsproject/stable:2017.1.0
-FROM quay.io/fenicsproject/stable:2017.2.0
-#FROM quay.io/fenicsproject/stable:current
-#FROM quay.io/fenicsproject/stable:latest
+FROM quay.io/fenicsproject/stable:2019.1.0.r3
 
-#USER root
+RUN apt-get update; apt-get -y install python-future python-numpy; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-#RUN apt-get update; apt-get -y upgrade; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-#RUN apt-get update; apt-get install -y software-properties-common
-#RUN add-apt-repository -y ppa:fenics-packages/fenics-2016.1.0
-#RUN add-apt-repository -y ppa:fenics-packages/fenics-2016.2.0
-#RUN add-apt-repository -y ppa:fenics-packages/fenics-2017.1.0
-#RUN add-apt-repository -y ppa:fenics-packages/fenics-2017.2.0
-#RUN add-apt-repository -y ppa:fenics-packages/fenics
-#RUN apt-get update; apt-get install -y fenics; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN apt-get update; apt-get -y install libvtk6-dev; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV CPATH="/usr/include/vtk-6.2":$CPATH
-
-RUN pip install future vtk; pip3 install vtk
+RUN apt-get update; apt-get -y install libvtk7-dev python-vtk6 python3-vtk7; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV CPATH="/usr/include/vtk-7.1":$CPATH
 
 RUN apt-get update; apt-get -y install gnuplot git; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 WORKDIR /home/fenics
@@ -32,5 +14,3 @@ WORKDIR /home/fenics
 RUN mkdir code
 ENV PYTHONPATH=/home/fenics/code:$PYTHONPATH
 ENV PATH=/home/fenics/code/myPythonLibrary:/home/fenics/code/myVTKPythonLibrary:/home/fenics/code/vtkpython_cbl:$PATH
-
-#USER root
