@@ -181,22 +181,22 @@ def compute_strains(
             strain_array_name=strain_array_name,
             mesh_w_local_basis=ref_mesh,
             verbose=verbose)
-        if  (ref_mesh           is not None)\
-        and (iarray_ref_part_id is not None)\
-        and (remove_boundary_layer         ):
-            mesh = myvtk.getThresholdedUGrid(
-                ugrid=mesh,
-                field_support="cells",
-                field_name="part_id",
-                threshold_value=0.5,
-                threshold_by_upper_or_lower="lower")
-            n_points = mesh.GetNumberOfPoints()
-            n_cells = mesh.GetNumberOfCells()
-            n_part_ids = 0
-            if (iarray_ref_sector_id is not None):
-                iarray_sector_id = mesh.GetCellData().GetArray("sector_id")
-        else:
-            iarray_sector_id = iarray_ref_sector_id
+        if (ref_mesh is not None):
+            if  (iarray_ref_part_id is not None)\
+            and (remove_boundary_layer         ):
+                mesh = myvtk.getThresholdedUGrid(
+                    ugrid=mesh,
+                    field_support="cells",
+                    field_name="part_id",
+                    threshold_value=0.5,
+                    threshold_by_upper_or_lower="lower")
+                n_points = mesh.GetNumberOfPoints()
+                n_cells = mesh.GetNumberOfCells()
+                n_part_ids = 0
+                if (iarray_ref_sector_id is not None):
+                    iarray_sector_id = mesh.GetCellData().GetArray("sector_id")
+            else:
+                iarray_sector_id = iarray_ref_sector_id
         mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
         myvtk.writeUGrid(
             ugrid=mesh,
