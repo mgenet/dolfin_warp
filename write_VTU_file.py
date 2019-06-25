@@ -8,8 +8,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import *
-
 import dolfin
 import os
 import shutil

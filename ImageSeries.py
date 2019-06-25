@@ -8,7 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import *
+# from builtins     import *
+# from future.utils import native_str
 
 import dolfin
 import glob
@@ -83,6 +84,7 @@ class ImageSeries():
     def get_image_filename(self,
             k_frame):
 
+        # return native_str(self.folder+"/"+self.basename+"_"+str(k_frame).zfill(self.zfill)+"."+self.ext)
         return self.folder+"/"+self.basename+"_"+str(k_frame).zfill(self.zfill)+"."+self.ext
 
 
@@ -90,6 +92,10 @@ class ImageSeries():
     def get_image_grad_filename(self,
             k_frame):
 
+        # if (self.grad_basename is None):
+        #     return native_str(self.get_image_filename(k_frame))
+        # else:
+        #     return native_str(self.grad_folder+"/"+self.grad_basename+"_"+str(k_frame).zfill(self.zfill)+"."+self.ext)
         if (self.grad_basename is None):
             return self.get_image_filename(k_frame)
         else:

@@ -8,7 +8,7 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import *
+from builtins import range
 
 import math
 import matplotlib.pyplot

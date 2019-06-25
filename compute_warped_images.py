@@ -10,7 +10,7 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import *
+from builtins import range
 
 import dolfin
 import glob

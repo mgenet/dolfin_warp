@@ -8,7 +8,7 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import *
+# from future.utils import native_str
 
 import dolfin_dic as ddic
 
@@ -242,9 +242,13 @@ public:
 };
 
 }'''
-    #print(ExprIm_cpp)
+    # print(ExprIm_cpp)
+    # print(type(ExprIm_cpp))
+    # print(type(native_str(ExprIm_cpp)))
+    # return native_str(ExprIm_cpp)
     return ExprIm_cpp
 
+################################################################################
 
 def get_ExprCharFuncIm_cpp(
         im_dim,
@@ -401,4 +405,5 @@ public:
 
 }'''
     # print(ExprCharFuncIm_cpp)
+    # return native_str(ExprCharFuncIm_cpp)
     return ExprCharFuncIm_cpp
