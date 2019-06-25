@@ -98,7 +98,7 @@ class WarpedImageEnergy(Energy):
 
         # Iref
         self.Iref = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=0),
@@ -116,7 +116,7 @@ class WarpedImageEnergy(Energy):
 
         # DIref
         self.DIref = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=0),
@@ -134,7 +134,7 @@ class WarpedImageEnergy(Energy):
 
         # Idef
         self.Idef = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=1),
@@ -145,7 +145,7 @@ class WarpedImageEnergy(Energy):
 
         # DIdef
         self.DIdef = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
@@ -158,7 +158,7 @@ class WarpedImageEnergy(Energy):
 
         # Iold
         self.Iold = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=1),
@@ -169,7 +169,7 @@ class WarpedImageEnergy(Energy):
 
         # DIold
         self.DIold = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            ddic.get_ExprIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
@@ -182,7 +182,7 @@ class WarpedImageEnergy(Energy):
 
         # Phi_ref
         self.Phi_Iref = dolfin.Expression(
-            cppcode=ddic.get_ExprCharFuncIm_cpp(
+            ddic.get_ExprCharFuncIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_is_def=0,
                 im_is_cone=im_is_cone),
@@ -191,7 +191,7 @@ class WarpedImageEnergy(Energy):
 
         # Phi_def
         self.Phi_Idef = dolfin.Expression(
-            cppcode=ddic.get_ExprCharFuncIm_cpp(
+            ddic.get_ExprCharFuncIm_cpp(
                 im_dim=self.image_series.dimension,
                 im_is_def=1,
                 im_is_cone=im_is_cone),
