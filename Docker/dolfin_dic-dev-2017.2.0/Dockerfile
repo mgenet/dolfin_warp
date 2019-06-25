@@ -18,10 +18,9 @@ FROM quay.io/fenicsproject/stable:2017.2.0
 #RUN add-apt-repository -y ppa:fenics-packages/fenics
 #RUN apt-get update; apt-get install -y fenics; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN apt-get update; apt-get -y install python-future; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update; apt-get -y install python-future python-numpy; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN apt-get update; apt-get -y install libvtk6-dev python-vtk6; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN pip3 install vtk; rm -rf ~/.cache/pip
 ENV CPATH="/usr/include/vtk-6.2":$CPATH
 
 RUN apt-get update; apt-get -y install gnuplot git; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
