@@ -26,7 +26,7 @@ def compute_quadrature_degree_from_points_count(
         compute_n_quad=False,
         deg_min=1,
         deg_max=20,
-        verbose=1):
+        verbose=0):
 
     image = myvtk.readImage(
         filename=image_filename,
@@ -38,6 +38,7 @@ def compute_quadrature_degree_from_points_count(
 
     ugrid = ddic.mesh2ugrid(mesh)
     n_cells = ugrid.GetNumberOfCells()
+    if (verbose): print("n_cells = "+str(n_cells))
 
     (cell_locator,
      closest_point,
@@ -51,9 +52,11 @@ def compute_quadrature_degree_from_points_count(
     point = numpy.empty(3)
     n_pixels_per_cell = numpy.zeros(n_cells, dtype=int)
     for k_point in range(image_n_points):
+        # if (verbose): print("k_point = "+str(k_point))
         image.GetPoint(k_point, point)
 
         k_cell = cell_locator.FindCell(point)
+        # if (verbose): print("k_cell = "+str(k_cell))
         if (k_cell == -1): continue
         else: n_pixels_per_cell[k_cell] += 1
     n_pixels_per_cell_max = max(n_pixels_per_cell)
@@ -85,8 +88,8 @@ def compute_quadrature_degree_from_points_count(
             n_quads = [1, 3, 6, 6, 7, 12, 16, 25, 25, 36, 36, 49, 49, 64, 64, 81, 81, 100, 100, 121]
         elif (image_dimension == 3):
             n_quads = [1, 4, 5, 14, 15, 24, 64, 125, 125, 216, 216, 343, 343, 512, 512, 729, 729]
-        #degree = numpy.searchsorted(n_quads, n_pixels_per_cell_max)+1
-        degree = numpy.searchsorted(n_quads, n_pixels_per_cell_avg)+1
+        #degree = int(numpy.searchsorted(n_quads, n_pixels_per_cell_max)+1)
+        degree = int(numpy.searchsorted(n_quads, n_pixels_per_cell_avg)+1)
 
     return degree
 
