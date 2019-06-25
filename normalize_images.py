@@ -30,6 +30,7 @@ def normalize_images(
         images_basename,
         images_datatype,
         images_ext="vti",
+        overwrite_orig_images=1,
         verbose=0):
 
     mypy.my_print(verbose, "*** normalize_images ***")
@@ -94,5 +95,5 @@ def normalize_images(
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
         reader.SetFileName(images_folder+"/"+images_basename              +"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-        writer.SetFileName(images_folder+"/"+images_basename+"_normalized"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        writer.SetFileName(images_folder+"/"+images_basename+("_normalized")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
         writer.Write()

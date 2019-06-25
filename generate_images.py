@@ -62,7 +62,8 @@ def generate_images(
         noise,
         deformation,
         evolution,
-        generate_image_gradient=False,
+        generate_image_gradient=0,
+        keep_temp_images=0,
         verbose=0):
 
     mypy.my_print(verbose, "*** generate_images ***")
@@ -188,16 +189,18 @@ def generate_images(
             images_basename=images["basename"],
             downsampling_factors=images["upsampling_factors"],
             keep_resolution=0,
+            overwrite_orig_images=(not keep_temp_images),
             write_temp_images=0,
             verbose=verbose)
 
-        for k_frame in range(images["n_frames"]):
-            os.rename(
-                images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
-                images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
-            os.rename(
-                images["folder"]+"/"+images["basename"]+"_downsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
-                images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+        if (keep_temp_images):
+            for k_frame in range(images["n_frames"]):
+                os.rename(
+                    images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+                os.rename(
+                    images["folder"]+"/"+images["basename"]+"_downsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
     if (images["data_type"] in ("float")):
         normalizing = False
@@ -208,12 +211,14 @@ def generate_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             images_datatype=images["data_type"],
+            overwrite_orig_images=(not keep_temp_images),
             verbose=verbose)
 
-        for k_frame in range(images["n_frames"]):
-            os.rename(
-                src=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
-                dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
-            os.rename(
-                src=images["folder"]+"/"+images["basename"]+"_normalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
-                dst=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+        if (keep_temp_images):
+            for k_frame in range(images["n_frames"]):
+                os.rename(
+                    src=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
+                os.rename(
+                    src=images["folder"]+"/"+images["basename"]+"_normalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    dst=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])

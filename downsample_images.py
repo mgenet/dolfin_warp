@@ -31,6 +31,7 @@ def downsample_images(
         downsampling_factors,
         images_ext="vti",
         keep_resolution=0,
+        overwrite_orig_images=1,
         write_temp_images=0,
         verbose=0):
 
@@ -185,7 +186,11 @@ def downsample_images(
     else:
         rfft.SetInputData(image_downsampled) # MG20190520: Not sure why this does not work.
 
-    writer.SetInputConnection(rfft.GetOutputPort())
+    extract = vtk.vtkImageExtractComponents()
+    extract.SetInputConnection(rfft.GetOutputPort())
+    extract.SetComponents(0)
+
+    writer.SetInputConnection(extract.GetOutputPort())
 
     if (keep_resolution):
         for k_frame in range(images_nframes):
@@ -201,7 +206,7 @@ def downsample_images(
                 writer_mul.SetFileName(images_folder+"/"+images_basename+"_mul"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_mul.Write()
 
-            writer.SetFileName(images_folder+"/"+images_basename+"_downsampled"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            writer.SetFileName(images_folder+"/"+images_basename+("_downsampled")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
             writer.Write()
     else:
         for k_frame in range(images_nframes):
@@ -255,11 +260,16 @@ def downsample_images(
                 writer_sel.SetFileName(images_folder+"/"+images_basename+"_sel"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_sel.Write()
 
-            rfft = vtk.vtkImageRFFT()             # MG20190520: Not sure why this is needed.
-            rfft.SetDimensionality(images_ndim)   # MG20190520: Not sure why this is needed.
-            rfft.SetInputData(image_downsampled)  # MG20190520: Not sure why this is needed.
+            rfft = vtk.vtkImageRFFT()                 # MG20190520: Not sure why this is needed.
+            rfft.SetDimensionality(images_ndim)       # MG20190520: Not sure why this is needed.
+            rfft.SetInputData(image_downsampled)      # MG20190520: Not sure why this is needed.
             rfft.Update()
 
-            writer.SetInputData(rfft.GetOutput()) # MG20190520: Not sure why this is needed.
-            writer.SetFileName(images_folder+"/"+images_basename+"_downsampled"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            extract = vtk.vtkImageExtractComponents() # MG20190520: Not sure why this is needed.
+            extract.SetInputData(rfft.GetOutput())    # MG20190520: Not sure why this is needed.
+            extract.SetComponents(0)                  # MG20190520: Not sure why this is needed.
+            extract.Update()                          # MG20190520: Not sure why this is needed.
+
+            writer.SetInputData(extract.GetOutput())  # MG20190520: Not sure why this is needed.
+            writer.SetFileName(images_folder+"/"+images_basename+("_downsampled")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
             writer.Write()
