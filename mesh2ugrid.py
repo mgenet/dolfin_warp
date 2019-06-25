@@ -53,6 +53,7 @@ def mesh2ugrid(
     n_nodes = fs.dim()
     assert (n_nodes == n_verts)
     if (verbose): print("n_nodes = "+str(n_nodes))
+    global np_coordinates # MG20190621: if it disappears the vtk objects is broken
     np_coordinates = fs.tabulate_dof_coordinates().reshape([n_nodes, n_dim])
     # if (verbose): print("np_coordinates = "+str(np_coordinates))
 
@@ -74,6 +75,7 @@ def mesh2ugrid(
     elif (n_dim == 3):
         n_nodes_per_cell = 4
     if (verbose): print("n_nodes_per_cell = "+str(n_nodes_per_cell))
+    global np_connectivity # MG20190621: if it disappears the vtk objects is broken
     np_connectivity = numpy.empty(
         [n_cells, 1+n_nodes_per_cell],
         dtype=numpy.int)
@@ -121,6 +123,7 @@ def add_function_to_ugrid(
     if (verbose): print("n_dim = "+str(n_dim))
     assert (n_dofs//n_dim == ugrid.GetNumberOfPoints()),\
         "Only CG1 functions can be converted to VTK. Aborting."
+    global np_array # MG20190621: if it disappears the vtk objects is broken
     np_array = function.vector().get_local()
     if (verbose): print("np_array = "+str(np_array))
     np_array = np_array.reshape([n_dofs//n_dim, n_dim])
