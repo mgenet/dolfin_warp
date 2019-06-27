@@ -10,11 +10,29 @@
 
 # from future.utils import native_str
 
+import dolfin
+
 import dolfin_dic as ddic
 
 ################################################################################
 
 def get_ExprIm_cpp(
+        *args,
+        **kwargs):
+
+    if (int(dolfin.dolfin_version().split('.')[0]) >= 2018):
+        return get_ExprIm_cpp_pybind(
+            *args,
+            **kwargs)
+    else:
+        return get_ExprIm_cpp_swig(
+            *args,
+            **kwargs)
+
+
+################################################################################
+
+def get_ExprIm_cpp_swig(
         im_dim, # 2, 3
         im_type="im", # im, grad, grad_no_deriv
         im_is_def=0,

@@ -184,7 +184,7 @@ def generate_images(
     else:
         downsampling = True
 
-        ddic.downsample_images(
+        ddic.compute_downsampled_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             downsampling_factors=images["upsampling_factors"],
@@ -207,7 +207,7 @@ def generate_images(
     elif (images["data_type"] in ("unsigned char", "unsigned short", "unsigned int", "unsigned long", "unsigned float", "uint8", "uint16", "uint32", "uint64", "ufloat")):
         normalizing = True
 
-        ddic.normalize_images(
+        ddic.compute_normalized_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             images_datatype=images["data_type"],

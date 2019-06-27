@@ -25,7 +25,7 @@ import dolfin_dic as ddic
 
 ################################################################################
 
-def downsample_images(
+def compute_downsampled_images(
         images_folder,
         images_basename,
         downsampling_factors,
@@ -35,7 +35,7 @@ def downsample_images(
         write_temp_images=0,
         verbose=0):
 
-    mypy.my_print(verbose, "*** downsample_images ***")
+    mypy.my_print(verbose, "*** compute_downsampled_images ***")
 
     images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
     images_nframes = len(images_filenames)

@@ -25,7 +25,7 @@ import dolfin_dic as ddic
 
 ################################################################################
 
-def normalize_images(
+def compute_normalized_images(
         images_folder,
         images_basename,
         images_datatype,
@@ -33,7 +33,7 @@ def normalize_images(
         overwrite_orig_images=1,
         verbose=0):
 
-    mypy.my_print(verbose, "*** normalize_images ***")
+    mypy.my_print(verbose, "*** compute_normalized_images ***")
 
     images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
     images_nframes = len(images_filenames)

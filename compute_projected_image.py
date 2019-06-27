@@ -22,7 +22,7 @@ import dolfin_dic as ddic
 
 ################################################################################
 
-def project(
+def compute_projected_image(
         mesh,
         image_filename,
         image_field_name="displacement",
