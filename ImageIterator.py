@@ -67,6 +67,7 @@ class ImageIterator():
             filename=qoi_filebasename+".dat")
 
         if not (self.register_ref_frame):
+            self.printer.dec()
             self.printer.print_str("Writing initial solution…")
             self.printer.inc()
 
@@ -83,8 +84,7 @@ class ImageIterator():
             qoi_printer.write_line(
                 values=qoi_values)
 
-            self.printer.dec()
-
+        self.printer.dec()
         self.printer.print_str("Looping over frames…")
 
         if (self.initialize_U_from_file):

@@ -45,8 +45,8 @@ class NonlinearSolver():
             self.jac_mat,
             self.linear_solver_name)
         self.linear_solver.parameters['report']               = bool(0)
-        self.linear_solver.parameters['reuse_factorization']  = bool(0)
-        self.linear_solver.parameters['same_nonzero_pattern'] = bool(1)
+        # self.linear_solver.parameters['reuse_factorization']  = bool(0)
+        # self.linear_solver.parameters['same_nonzero_pattern'] = bool(1)
         self.linear_solver.parameters['symmetric']            = bool(1)
         self.linear_solver.parameters['verbose']              = bool(0)
 
@@ -316,14 +316,14 @@ class NonlinearSolver():
             if (relax_k > 1):
                 ener_min_old = ener_min
             relax_min = relax_list[numpy.argmin(ener_list)]
-            # self.printer.print_var("relax_min",relax_min)
+            # self.printer.print_sci("relax_min",relax_min)
             ener_min = min(ener_list)
-            # self.printer.print_var("ener_min",ener_min)
+            # self.printer.print_sci("ener_min",ener_min)
             if (relax_k > 1):
                 dener_min = ener_min-ener_min_old
-                self.printer.print_var("dener_min",dener_min)
+                self.printer.print_sci("dener_min",dener_min)
                 relax_err = dener_min/ener_list[0]
-                self.printer.print_var("relax_err",relax_err)
+                self.printer.print_sci("relax_err",relax_err)
                 if (relax_min != 0.) and (abs(relax_err) < self.relax_tol):
                     break
             if (relax_k == self.relax_n_iter_max):

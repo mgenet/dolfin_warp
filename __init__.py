@@ -30,6 +30,7 @@ from .generate_undersampled_images import *
 from .plot_regional_strains import *
 from .compute_displacements_from_ref import *
 from .ImageIterator import *
+from .expressions_char_func_cpp import *
 from .fedic2 import *
 from .plot_displacement_error import *
 from .expressions_generated_images_cpp import *
