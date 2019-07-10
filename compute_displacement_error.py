@@ -49,15 +49,16 @@ def compute_displacement_error(
 
     err_int = numpy.empty(n_frames)
     ref_int = numpy.empty(n_frames)
+    ref_max = float("-Inf")
     for k_frame in range(n_frames):
         ref = myvtk.readUGrid(
             filename=ref_folder+"/"+ref_basename+"_"+str(k_frame).zfill(ref_zfill)+"."+ref_ext,
-            verbose=0)
+            verbose=verbose-1)
         n_points = ref.GetNumberOfPoints()
         n_cells = ref.GetNumberOfCells()
         sol = myvtk.readUGrid(
             filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
-            verbose=0)
+            verbose=verbose-1)
         assert (sol.GetNumberOfPoints() == n_points)
         assert (sol.GetNumberOfCells() == n_cells)
 
@@ -66,10 +67,18 @@ def compute_displacement_error(
 
         err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
         ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
+        ref_max = max(ref_max, numpy.max([numpy.sum([((ref_disp.GetTuple(k_point)[k_dim])**2)**0.5 for k_dim in range(3)]) for k_point in range(n_points)]))
 
-    ref_int_int = numpy.mean(ref_int)
-    err_int_rel = err_int/ref_int_int
+    error_file.write("\n".join([" ".join([str(val) for val in [k_frame, err_int[k_frame], ref_int[k_frame]]]) for k_frame in range(n_frames)]))
 
-    error_file.write("\n".join([" ".join([str(val) for val in [k_frame, err_int[k_frame], ref_int[k_frame], err_int_rel[k_frame]]]) for k_frame in range(n_frames)]))
+    err_int_int = numpy.mean(err_int**2)**(0.5)
+    ref_int_int = numpy.mean(ref_int**2)**(0.5)
+
+    # print (err_int_int)
+    # print (ref_int_int)
+    print (err_int_int/ref_int_int)
+
+    # error_file.write("\n\n")
+    # error_file.write(" ".join([str(val) for val in [err_int_int, ref_int_int]]))
 
     error_file.close()
