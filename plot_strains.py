@@ -63,7 +63,7 @@ def plot_strains(
     size_x = 5
     size_y = 3
     plotfile.write('''\
-set terminal pdf size '''+str(n_cols*size_x)+''','''+str(n_rows*size_y)+'''
+set terminal pdf enhanced size '''+str(n_cols*size_x)+''','''+str(n_rows*size_y)+'''
 
 set output "'''+plotfile_basename+'''.pdf"
 
