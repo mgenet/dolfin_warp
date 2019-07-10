@@ -30,6 +30,8 @@ def mesh2ugrid(
         mesh,
         verbose=0):
 
+    if (verbose): print("mesh2ugrid")
+
     n_dim = mesh.geometry().dim()
     assert (n_dim in (2,3))
     if (verbose): print("n_dim = "+str(n_dim))
@@ -55,11 +57,11 @@ def mesh2ugrid(
     if (verbose): print("n_nodes = "+str(n_nodes))
     global np_coordinates # MG20190621: if it disappears the vtk objects is broken
     np_coordinates = fs.tabulate_dof_coordinates().reshape([n_nodes, n_dim])
-    # if (verbose): print("np_coordinates = "+str(np_coordinates))
+    if (verbose): print("np_coordinates = "+str(np_coordinates))
 
     if (n_dim == 2):
         np_coordinates = numpy.hstack((np_coordinates, numpy.zeros([n_nodes, 1])))
-        # if (verbose): print("np_coordinates = "+str(np_coordinates))
+        if (verbose): print("np_coordinates = "+str(np_coordinates))
 
     # Convert nodes coordinates to VTK
     vtk_coordinates = vtk.util.numpy_support.numpy_to_vtk(
@@ -114,6 +116,7 @@ def add_function_to_ugrid(
         ugrid,
         verbose=0):
 
+    if (verbose): print("add_function_to_ugrid")
     if (verbose): print(ugrid.GetPoints())
 
     # Convert function values and add as scalar data
