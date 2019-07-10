@@ -41,7 +41,7 @@ def compute_displacements_from_ref(
     n_points = ref_mesh.GetNumberOfPoints()
     n_cells = ref_mesh.GetNumberOfCells()
 
-    ref_disp_farray = myvtk.createFloatArray(name="ref_disp")
+    ref_disp_farray = myvtk.createDoubleArray(name="ref_disp")
     ref_disp_farray.DeepCopy(ref_mesh.GetPointData().GetVectors())
 
     warper = vtk.vtkWarpVector()

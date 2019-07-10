@@ -75,10 +75,10 @@ public:
     MyExpr():
         Expression(3)
     {
-            sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
-            probe_points = vtkSmartPointer<vtkPoints>::New();
-            probe_polydata = vtkSmartPointer<vtkPolyData>::New();
-            probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
+        sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
+        probe_points = vtkSmartPointer<vtkPoints>::New();
+        probe_polydata = vtkSmartPointer<vtkPolyData>::New();
+        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
     }
 
     void init_image(

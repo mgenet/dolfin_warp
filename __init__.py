@@ -2,7 +2,6 @@
 
 from .generate_images_Mapping import *
 from .fedic import *
-from .expressions_imaging_models_cpp import *
 from .plot_binned_strains_vs_radius import *
 from .NonlinearSolver import *
 from .MeshSeries import *
@@ -17,7 +16,6 @@ from .compute_quadrature_degree import *
 from .expressions_static_scaling_cpp import *
 from .Energy_Regularization import *
 from .compute_warped_images import *
-from .expressions_generated_grad_cpp import *
 from .plot_strains import *
 from .plot_twist_vs_height import *
 from .compute_projected_image import *

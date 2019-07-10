@@ -19,7 +19,7 @@ from .Energy import Energy
 
 ################################################################################
 
-class WarpedImageEnergy(Energy):
+class GeneratedImageEnergy(Energy):
 
 
 
@@ -27,7 +27,8 @@ class WarpedImageEnergy(Energy):
             problem,
             image_series,
             quadrature_degree,
-            name="im",
+            texture,
+            name="gen_im",
             w=1.,
             ref_frame=0):
 
@@ -35,11 +36,12 @@ class WarpedImageEnergy(Energy):
         self.printer           = self.problem.printer
         self.image_series      = image_series
         self.quadrature_degree = quadrature_degree
+        self.texture           = texture
         self.name              = name
         self.w                 = w
         self.ref_frame         = ref_frame
 
-        self.printer.print_str("Defining warped image correlation energy…")
+        self.printer.print_str("Defining generated image correlation energy…")
         self.printer.inc()
 
         self.printer.print_str("Defining quadrature finite elements…")
@@ -85,6 +87,9 @@ class WarpedImageEnergy(Energy):
             domain=self.problem.mesh,
             metadata=self.form_compiler_parameters)
 
+        self.printer.print_str("Defining generated image…")
+        self.printer.inc()
+
         # ref_frame
         assert (abs(self.ref_frame) < self.image_series.n_frames),\
             "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.image_series.n_frames)+" = image_series.n_frames. Aborting."
@@ -92,71 +97,138 @@ class WarpedImageEnergy(Energy):
         self.ref_image_filename = self.image_series.get_image_filename(self.ref_frame)
         self.printer.print_var("ref_frame",self.ref_frame)
 
+        # Igen
+        name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+            im_dim=self.image_series.dimension,
+            im_type="im",
+            im_is_def=0,
+            im_texture=self.texture,
+            verbose=0)
+        # print (name)
+        # print (cpp)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, name)
+        self.Igen = dolfin.CompiledExpression(
+            expr(),
+            element=self.fe)
+        self.Igen.init_image(
+            filename=self.ref_image_filename)
+        self.Igen.init_ugrid(
+            mesh_=self.problem.mesh,
+            U_=self.problem.U.cpp_object())
+        self.Igen.generate_image()
+        self.Igen.write_image(
+            filename="run_gimic.vti")
+
+        self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
+        self.printer.print_sci("Igen_int0",self.Igen_int0)
+
+        self.Igen_norm0 = (dolfin.assemble(self.Igen**2 * self.dV)/self.problem.mesh_V0)**(1./2)
+        self.printer.print_sci("Igen_norm0",self.Igen_norm0)
+
+        # # DIgen
+        # name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+        #     im_dim=self.image_series.dimension,
+        #     im_type="grad",
+        #     im_texture=self.texture)
+        # module = dolfin.compile_cpp_code(cpp)
+        # expr = getattr(module, name)
+        # self.DIgen = dolfin.CompiledExpression(
+        #     expr(),
+        #     element=self.ve)
+        # self.DIgen.init_image(
+        #     filename=self.ref_image_filename)
+        # self.DIgen.init_ugrid(
+        #     mesh_=self.problem.mesh,
+        #     U_=self.problem.U.cpp_object())
+        # self.DIgen.generate_image()
+
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
-
-        # Igen
-        self.Igen = dolfin.Expression(
-            ddic.get_ExprGenIm_cpp(
-                im_dim=self.image_series.dimension,
-                im_type="im"),
-            element=self.fe)
-        self.Igen.init_image(self.ref_image_filename)
-        self.Igen.init_disp(self.problem.U)
-
-        # DIgen
-        self.DIgen = dolfin.Expression(
-            ddic.get_ExprGenIm_cpp(
-                im_dim=self.image_series.dimension,
-                im_type="grad"),
-            element=self.ve)
-        self.Igen.init_image(self.ref_image_filename)
-        self.Igen.init_disp(self.problem.U)
+        self.printer.inc()
 
         # Idef
-        self.Idef = dolfin.Expression(
-            ddic.get_ExprIm_cpp(
-                im_dim=self.image_series.dimension,
-                im_type="im",
-                im_is_def=1),
+        name, cpp = ddic.get_ExprIm_cpp_pybind(
+            im_dim=self.image_series.dimension,
+            im_type="im",
+            im_is_def=1)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, name)
+        self.Idef = dolfin.CompiledExpression(
+            expr(),
             element=self.fe)
-        self.Idef.init_image(self.ref_image_filename)
-        self.Idef.init_disp(self.problem.U)
+        self.Idef.init_image(
+            filename=self.ref_image_filename)
+        self.Idef.init_disp(
+            U_=self.problem.U.cpp_object())
+
+        self.Idef_int0 = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
+        self.printer.print_sci("Idef_int0",self.Idef_int0)
+
+        self.Idef_norm0 = (dolfin.assemble(self.Idef**2 * self.dV)/self.problem.mesh_V0)**(1./2)
+        self.printer.print_sci("Idef_norm0",self.Idef_norm0)
 
         # DIdef
-        self.DIdef = dolfin.Expression(
-            ddic.get_ExprIm_cpp(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1),
+        name, cpp = ddic.get_ExprIm_cpp_pybind(
+            im_dim=self.image_series.dimension,
+            im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+            im_is_def=1)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, name)
+        self.DIdef = dolfin.CompiledExpression(
+            expr(),
             element=self.ve)
-        self.DIdef.init_image(self.ref_image_filename)
-        self.DIdef.init_disp(self.problem.U)
+        self.DIdef.init_image(
+            filename=self.ref_image_filename)
+        self.DIdef.init_disp(
+            U_=self.problem.U.cpp_object())
 
-        self.printer.print_str("Defining previous image…")
-
-        self.printer.print_str("Defining correlation energy…")
+        self.printer.dec()
+        self.printer.print_str("Defining characteristic functions…")
+        self.printer.inc()
 
         # Phi_ref
-        self.Phi_Iref = dolfin.Expression(
-            ddic.get_ExprCharFuncIm_cpp(
-                im_dim=self.image_series.dimension),
+        name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+            im_dim=self.image_series.dimension,
+            im_is_def=0)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, name)
+        self.Phi_ref = dolfin.CompiledExpression(
+            expr(),
             element=self.fe)
-        self.Phi_Iref.init_image(self.ref_image_filename)
+        self.Phi_ref.init_image(
+            filename=self.ref_image_filename)
+
+        self.Phi_ref_int = dolfin.assemble(self.Phi_ref * self.dV)/self.problem.mesh_V0
+        self.printer.print_sci("Phi_ref_int",self.Phi_ref_int)
 
         # Phi_def
-        self.Phi_Idef = dolfin.Expression(
-            ddic.get_ExprCharFuncIm_cpp(
-                im_dim=self.image_series.dimension,
-                im_is_def=1),
+        name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+            im_dim=self.image_series.dimension,
+            im_is_def=1)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, name)
+        self.Phi_def = dolfin.CompiledExpression(
+            expr(),
             element=self.fe)
-        self.Phi_Idef.init_image(self.ref_image_filename)
-        self.Phi_Idef.init_disp(self.problem.U)
+        self.Phi_def.init_image(
+            filename=self.ref_image_filename)
+        self.Phi_def.init_disp(
+            U_=self.problem.U.cpp_object())
+
+        self.Phi_def_int = dolfin.assemble(self.Phi_def * self.dV)/self.problem.mesh_V0
+        self.printer.print_sci("Phi_def_int",self.Phi_def_int)
+
+        self.printer.dec()
+        self.printer.print_str("Defining correlation energy…")
+        self.printer.inc()
 
         # Psi_c
-        self.Psi_c   = self.Phi_Idef * self.Phi_Iref * (self.Igen - self.Idef)**2/2
-        self.DPsi_c  = self.Phi_Idef * self.Phi_Iref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
-        self.DDPsi_c = self.Phi_Idef * self.Phi_Iref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+        self.Psi_c   =   self.Phi_def * self.Phi_ref * (self.Igen - self.Idef)**2/2
+        self.DPsi_c  = - self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        # self.DPsi_c  = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+        self.DDPsi_c =   self.Phi_def * self.Phi_ref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        # self.DDPsi_c = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
 
         # forms
         self.ener_form = self.Psi_c   * self.dV
@@ -164,47 +236,62 @@ class WarpedImageEnergy(Energy):
         self.jac_form  = self.DDPsi_c * self.dV
 
         self.printer.dec()
-
-
-
-    def reinit(self):
-
-        pass
-
-
-
-    def call_before_assembly(self):
-
-        self.Igen.generate_image()
-        self.DIgen.generate_image()
+        self.printer.dec()
 
 
 
     def call_before_solve(self,
             k_frame,
-            k_frame_old):
+            **kwargs):
 
         self.printer.print_str("Loading deformed image for correlation energy…")
 
         # Idef
         self.def_image_filename = self.image_series.get_image_filename(k_frame)
-        self.Idef.init_image(self.def_image_filename)
+        self.Idef.init_image(
+            filename=self.def_image_filename)
 
         # DIdef
         self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame)
-        self.DIdef.init_image(self.def_grad_image_filename)
+        self.DIdef.init_image(
+            filename=self.def_grad_image_filename)
 
 
 
-    def call_after_solve(self):
+    def call_before_assembly(self,
+            write_iterations=False,
+            basename=None,
+            k_iter=None,
+            **kwargs):
 
         pass
+
+        # self.Igen.update_disp()
+        # self.Igen.generate_image()
+
+        # self.DIgen.update_disp()
+        # self.DIgen.generate_image()
+        # if (write_iterations):
+        #     self.DIgen.write_grad_image(
+        #         filename=basename+"_"+str(k_iter-1).zfill(3)+".vti")
+
+
+
+    def call_after_solve(self,
+            k_frame,
+            basename,
+            **kwargs):
+
+        pass
+
+        # self.DIgen.write_image(
+        #     filename=basename+"_"+str(k_frame).zfill(3)+".vti")
 
 
 
     def get_qoi_names(self):
 
-        return [self.name+"_ener"]
+        return [self.name+"_ener", self.name+"_ener_norm"]
 
 
 
@@ -213,4 +300,7 @@ class WarpedImageEnergy(Energy):
         self.ener = (dolfin.assemble(self.ener_form)/self.problem.mesh_V0)**(1./2)
         self.printer.print_sci(self.name+"_ener",self.ener)
 
-        return [self.ener]
+        self.ener_norm = self.ener/self.Idef_norm0
+        self.printer.print_sci(self.name+"_ener_norm",self.ener_norm)
+
+        return [self.ener, self.ener_norm]

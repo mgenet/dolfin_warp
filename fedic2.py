@@ -28,35 +28,38 @@ def fedic2(
         images_ref_frame=0,
         images_quadrature=None,
         images_quadrature_from="points_count", # points_count, integral
-        images_expressions_type="cpp", # cpp, py
-        images_dynamic_scaling=1,
+        images_expressions_type="cpp", # cpp
+        images_dynamic_scaling=0,
         images_is_cone=0,
         mesh=None,
         mesh_folder=None,
         mesh_basename=None,
         mesh_degree=1,
-        regul_type="equilibrated", # hyperelastic, equilibrated
-        regul_model="neohookean", # linear, kirchhoff, neohookean, mooneyrivlin
+        regul_type="equilibrated", # equilibrated, hyperelastic
+        regul_model="neohookean", # hooke, kirchhoff, neohookean
         regul_quadrature=None,
         regul_level=0.1,
         regul_poisson=0.0,
-        tangent_type="Idef", # Idef, Idef-wHess, Iold, Iref
-        residual_type="Iref", # Iref, Iold, Iref-then-Iold
+        tangent_type="Idef", # Idef
+        residual_type="Iref", # Iref
         relax_type="gss", # constant, aitken, gss
-        relax_init=1.0,
+        relax_init=1.0, # 1.0
         initialize_U_from_file=0,
         initialize_U_folder=None,
         initialize_U_basename=None,
         initialize_U_ext="vtu",
         initialize_U_array_name="displacement",
         initialize_DU_with_DUold=0,
-        tol_res=None,
+        register_ref_frame=0,
+        gimic=0,
+        gimic_texture="no",
+        tol_res=None, # None
         tol_res_rel=None,
         tol_dU=None,
-        tol_im=None,
+        tol_im=None, # None
         n_iter_max=100,
         continue_after_fail=0,
-        print_refined_mesh=0,
+        print_refined_mesh=0, # False
         print_iterations=0):
 
     assert (images_expressions_type == "cpp"),\
@@ -110,24 +113,35 @@ def fedic2(
         problem.printer.print_var("images_quadrature",images_quadrature)
         problem.printer.dec()
 
-    warped_image_energy = ddic.WarpedImageEnergy(
-        problem=problem,
-        image_series=image_series,
-        quadrature_degree=images_quadrature,
-        w=1.-regul_level,
-        ref_frame=images_ref_frame,
-        dynamic_scaling=images_dynamic_scaling,
-        im_is_cone=images_is_cone)
-    problem.add_image_energy(warped_image_energy)
+    if (gimic):
+        generated_image_energy = ddic.GeneratedImageEnergy(
+            problem=problem,
+            image_series=image_series,
+            quadrature_degree=images_quadrature,
+            texture=gimic_texture,
+            w=1.-regul_level,
+            ref_frame=images_ref_frame)
+        problem.add_image_energy(generated_image_energy)
+    else:
+        warped_image_energy = ddic.WarpedImageEnergy(
+            problem=problem,
+            image_series=image_series,
+            quadrature_degree=images_quadrature,
+            w=1.-regul_level,
+            ref_frame=images_ref_frame,
+            im_is_cone=images_is_cone,
+            dynamic_scaling=images_dynamic_scaling)
+        problem.add_image_energy(warped_image_energy)
 
-    regularization_energy = ddic.RegularizationEnergy(
-        problem=problem,
-        w=regul_level,
-        type=regul_type,
-        model=regul_model,
-        poisson=regul_poisson,
-        quadrature_degree=regul_quadrature)
-    problem.add_regul_energy(regularization_energy)
+    if (regul_level>0):
+        regularization_energy = ddic.RegularizationEnergy(
+            problem=problem,
+            w=regul_level,
+            type=regul_type,
+            model=regul_model,
+            poisson=regul_poisson,
+            quadrature_degree=regul_quadrature)
+        problem.add_regul_energy(regularization_energy)
 
     solver = ddic.NonlinearSolver(
         problem=problem,
@@ -146,6 +160,7 @@ def fedic2(
         parameters={
             "working_folder":working_folder,
             "working_basename":working_basename,
+            "register_ref_frame":register_ref_frame,
             "initialize_U_from_file":initialize_U_from_file,
             "initialize_U_folder":initialize_U_folder,
             "initialize_U_basename":initialize_U_basename,

@@ -55,7 +55,7 @@ class ImageSeries():
             self.n_frames = len(self.filenames)
         else:
             assert (self.n_frames <= len(self.filenames))
-        assert (self.n_frames >= 2),\
+        assert (self.n_frames >= 1),\
             "n_frames = "+str(self.n_frames)+" < 2. Aborting."
         self.printer.print_var("n_frames",self.n_frames)
 

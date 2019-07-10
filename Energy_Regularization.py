@@ -73,7 +73,7 @@ class RegularizationEnergy(Energy):
             "E":self.E,
             "nu":self.nu}
 
-        if (self.model == "linear"): # <- super bad
+        if (self.model == "hooke"): # <- super bad
             self.e = dolfin.sym(dolfin.grad(self.problem.U))
             self.material = dcm.HookeElasticMaterial(
                 parameters=self.material_parameters)
@@ -98,7 +98,7 @@ class RegularizationEnergy(Energy):
                     C=self.C)
             self.P_m = self.F * self.S_m
         else:
-            assert (0), "\"model\" ("+str(self.model)+") must be \"linear\", \"kirchhoff\" or \"neohookean\". Aborting."
+            assert (0), "\"model\" ("+str(self.model)+") must be \"hooke\", \"kirchhoff\" or \"neohookean\". Aborting."
 
         self.printer.print_str("Defining regularization energy…")
 

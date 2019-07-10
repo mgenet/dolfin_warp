@@ -83,8 +83,10 @@ class NonlinearSolver():
     def solve(self,
             k_frame=None):
 
+        self.k_frame = k_frame
+
         if (self.write_iterations):
-            self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(k_frame).zfill(len(str(self.problem.images_n_frames)))
+            self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(self.k_frame).zfill(len(str(self.problem.images_n_frames)))
 
             self.frame_printer = mypy.DataPrinter(
                 names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
@@ -94,6 +96,8 @@ class NonlinearSolver():
                 filebasename=self.frame_filebasename,
                 function=self.problem.U,
                 time=0)
+        else:
+            self.frame_filebasename = None
 
         self.k_iter = 0
         self.success = False
@@ -113,7 +117,7 @@ class NonlinearSolver():
             # solution update
             self.problem.U.vector().axpy(self.relax, self.problem.dU.vector())
             self.problem.U_norm = self.problem.U.vector().norm("l2")
-            #self.printer.print_sci("U_norm",self.problem.U_norm)
+            self.printer.print_sci("U_norm",self.problem.U_norm)
 
             if (self.write_iterations):
                 ddic.write_VTU_file(
@@ -123,11 +127,12 @@ class NonlinearSolver():
 
             # displacement error
             self.problem.dU_norm *= abs(self.relax)
-            #self.printer.print_sci("dU_norm",self.problem.dU_norm)
-            if (self.problem.dU_norm == 0.) and (self.problem.Uold_norm == 0.) and (self.problem.U_norm == 0.):
-                self.problem.dU_err = 0.
-            elif (self.problem.Uold_norm == 0.):
-                self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
+            # self.printer.print_sci("dU_norm",self.problem.dU_norm)
+            if (self.problem.Uold_norm == 0.):
+                if (self.problem.U_norm == 0.):
+                    self.problem.dU_err = 0.
+                else:
+                    self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
             else:
                 self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
@@ -148,7 +153,7 @@ class NonlinearSolver():
                 break
 
             if (self.k_iter == self.n_iter_max):
-                self.printer.print_str("Warning! Nonlinear solver failed to converge… (k_frame = "+str(k_frame)+")")
+                self.printer.print_str("Warning! Nonlinear solver failed to converge… (k_frame = "+str(self.k_frame)+")")
                 break
 
         self.printer.dec()
@@ -181,7 +186,10 @@ class NonlinearSolver():
                 self.res_old_vec = self.res_vec.copy()
             self.res_old_norm = self.res_norm
 
-        self.problem.call_before_assembly()
+        self.problem.call_before_assembly(
+            write_iterations=self.write_iterations,
+            basename=self.frame_filebasename,
+            k_iter=self.k_iter)
 
         # linear system: residual assembly
         self.printer.print_str("Residual assembly…",newline=False)
@@ -195,7 +203,7 @@ class NonlinearSolver():
 
         # res_norm
         self.res_norm = self.res_vec.norm("l2")
-        #self.printer.print_sci("res_norm",self.res_norm)
+        self.printer.print_sci("res_norm",self.res_norm)
 
         # dres
         if (self.k_iter > 1):
@@ -241,7 +249,7 @@ class NonlinearSolver():
 
         # dU_norm
         self.problem.dU_norm = self.problem.dU.vector().norm("l2")
-        #self.printer.print_sci("dU_norm",self.problem.dU_norm)
+        self.printer.print_sci("dU_norm",self.problem.dU_norm)
         if not (numpy.isfinite(self.problem.dU_norm)):
             self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
             self.problem.dU.vector().zero()
@@ -280,9 +288,9 @@ class NonlinearSolver():
         relax_list = []
         ener_list = []
         self.printer.inc()
-        relax_k = 1
+        k_relax = 1
         while (True):
-            self.printer.print_var("relax_k",relax_k,-1)
+            self.printer.print_var("k_relax",k_relax,-1)
             # self.printer.print_sci("relax_a",relax_a)
             # self.printer.print_sci("relax_b",relax_b)
             self.problem.call_before_assembly()
@@ -313,20 +321,20 @@ class NonlinearSolver():
                 ener_list.append(relax_fd)
             # self.printer.print_var("relax_list",relax_list)
             # self.printer.print_var("ener_list",ener_list)
-            if (relax_k > 1):
+            if (k_relax > 1):
                 ener_min_old = ener_min
             relax_min = relax_list[numpy.argmin(ener_list)]
             # self.printer.print_sci("relax_min",relax_min)
             ener_min = min(ener_list)
             # self.printer.print_sci("ener_min",ener_min)
-            if (relax_k > 1):
+            if (k_relax > 1) and (ener_list[0] > 0):
                 dener_min = ener_min-ener_min_old
                 self.printer.print_sci("dener_min",dener_min)
                 relax_err = dener_min/ener_list[0]
                 self.printer.print_sci("relax_err",relax_err)
                 if (relax_min != 0.) and (abs(relax_err) < self.relax_tol):
                     break
-            if (relax_k == self.relax_n_iter_max):
+            if (k_relax == self.relax_n_iter_max):
                 break
             if (relax_fc < relax_fd):
                 relax_b = relax_d
@@ -341,7 +349,7 @@ class NonlinearSolver():
                 need_update_c = False
                 need_update_d = True
             else: assert(0)
-            relax_k += 1
+            k_relax += 1
         self.printer.dec()
         self.problem.U.vector().axpy(-relax_cur, self.problem.dU.vector())
         #self.printer.print_var("ener_list",ener_list)
@@ -349,12 +357,12 @@ class NonlinearSolver():
         if (self.write_iterations):
             self.iter_filebasename = self.frame_filebasename+"-iter="+str(self.k_iter).zfill(3)
             file_dat_iter = open(self.iter_filebasename+".dat","w")
-            file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[relax_k], ener_list[relax_k]]]) for relax_k in range(len(relax_list))]))
+            file_dat_iter.write("\n".join([" ".join([str(val) for val in [relax_list[k_relax], ener_list[k_relax]]]) for k_relax in range(len(relax_list))]))
             file_dat_iter.close()
-            commandline  = "gnuplot -e \"set terminal pdf;"
+            commandline  = "gnuplot -e \"set terminal pdf noenhanced;"
             commandline += " set output '"+self.iter_filebasename+".pdf';"
             commandline += " plot '"+self.iter_filebasename+".dat' using 1:2 with points title 'psi_int';"
-            commandline += " plot '"+self.iter_filebasename+".dat' u 1:2 with points title 'psi_int', '"+self.iter_filebasename+".dat' using (\$2=='inf'?\$1:1/0):(GPVAL_Y_MIN+(0.8)*(GPVAL_Y_MAX-GPVAL_Y_MIN)):(0):((0.2)*(GPVAL_Y_MAX-GPVAL_Y_MIN)) with vectors notitle\""
+            commandline += " plot '"+self.iter_filebasename+".dat' using 1:2 with points title 'psi_int', '"+self.iter_filebasename+".dat' using (\$2=='inf'?\$1:1/0):(GPVAL_Y_MIN+(0.8)*(GPVAL_Y_MAX-GPVAL_Y_MIN)):(0):((0.2)*(GPVAL_Y_MAX-GPVAL_Y_MIN)) with vectors notitle\""
             os.system(commandline)
 
         self.relax = relax_list[numpy.argmin(ener_list)]

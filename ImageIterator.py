@@ -111,7 +111,7 @@ class ImageIterator():
                     k_frames = range(self.problem.images_ref_frame-1,                           -1, -1)
                 else:
                     k_frames = range(self.problem.images_ref_frame  ,                           -1, -1)
-            #self.printer.print_var("k_frames",k_frames)
+            self.printer.print_var("k_frames",k_frames)
 
             if (forward_or_backward == "backward"):
                 self.problem.reinit()
@@ -142,8 +142,7 @@ class ImageIterator():
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
 
                 self.problem.call_before_solve(
-                    k_frame=k_frame,
-                    k_frame_old=k_frame_old)
+                    k_frame=k_frame)
 
                 self.printer.print_str("Running registration…")
 
@@ -155,7 +154,9 @@ class ImageIterator():
                     global_success = False
                     break
 
-                self.problem.call_after_solve()
+                self.problem.call_after_solve(
+                    k_frame=k_frame,
+                    basename=pvd_basename)
 
                 self.printer.print_str("Writing solution…")
                 self.printer.inc()
@@ -188,7 +189,7 @@ class ImageIterator():
         self.printer.print_str("Plotting QOI…")
 
         qoi_printer.__del__() #MG20190702: Not needed, right?
-        commandline  = "gnuplot -e \"set terminal pdf;"
+        commandline  = "gnuplot -e \"set terminal pdf noenhanced;"
         commandline += " set output '"+qoi_filebasename+".pdf';"
         commandline += " set grid;"
         for k_qoi in range(1,len(qoi_names)):

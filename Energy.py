@@ -22,15 +22,7 @@ class Energy():
 
 
     def reinit(self,
-            *args,
-            **kwargs):
-
-        pass
-
-
-
-    def call_before_assembly(self,
-            *args,
+            *kargs,
             **kwargs):
 
         pass
@@ -38,7 +30,15 @@ class Energy():
 
 
     def call_before_solve(self,
-            *args,
+            *kargs,
+            **kwargs):
+
+        pass
+
+
+
+    def call_before_assembly(self,
+            *kargs,
             **kwargs):
 
         pass
@@ -46,7 +46,7 @@ class Energy():
 
 
     def call_after_solve(self,
-            *args,
+            *kargs,
             **kwargs):
 
         pass

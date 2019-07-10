@@ -79,6 +79,7 @@ class WarpedImageEnergy(Energy):
 
         self.printer.print_str("Defining measure…")
 
+        # dV
         self.form_compiler_parameters = {
             "quadrature_degree":self.quadrature_degree,
             "quadrature_scheme":"default"}
@@ -115,7 +116,8 @@ class WarpedImageEnergy(Energy):
                     im_is_def=0),
                 element=self.fe)
         self.ref_image_filename = self.image_series.get_image_filename(self.ref_frame)
-        self.Iref.init_image(self.ref_image_filename)
+        self.Iref.init_image(
+            filename=self.ref_image_filename)
 
         self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Iref_int",self.Iref_int)
@@ -145,14 +147,15 @@ class WarpedImageEnergy(Energy):
                 cppcode=cpp,
                 element=self.ve)
         self.ref_image_grad_filename = self.image_series.get_image_grad_filename(self.ref_frame)
-        self.DIref.init_image(self.ref_image_grad_filename)
+        self.DIref.init_image(
+            filename=self.ref_image_grad_filename)
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
         self.printer.inc()
 
-        self.scaling = numpy.array([1.,0.])
         if (self.dynamic_scaling):
+            self.scaling = numpy.array([1.,0.])
             self.p = numpy.empty((2,2))
             self.q = numpy.empty(2)
 
@@ -161,7 +164,8 @@ class WarpedImageEnergy(Energy):
             name, cpp = ddic.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="im",
-                im_is_def=1)
+                im_is_def=1,
+                dynamic_scaling=self.dynamic_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
             self.Idef = dolfin.CompiledExpression(
@@ -178,7 +182,8 @@ class WarpedImageEnergy(Energy):
                 element=self.fe)
             self.Idef.init_disp(self.problem.U)
         self.Idef.init_image(self.ref_image_filename)
-        self.Idef.init_dynamic_scaling(self.scaling)
+        if (self.dynamic_scaling):
+            self.Idef.init_dynamic_scaling(self.scaling)
 
         self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Idef_int",self.Idef_int)
@@ -188,7 +193,8 @@ class WarpedImageEnergy(Energy):
             name, cpp = ddic.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1)
+                im_is_def=1,
+                dynamic_scaling=self.dynamic_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
             self.DIdef = dolfin.CompiledExpression(
@@ -205,62 +211,11 @@ class WarpedImageEnergy(Energy):
                 element=self.ve)
             self.DIdef.init_disp(self.problem.U)
         self.DIdef.init_image(self.ref_image_filename)
-        self.DIdef.init_dynamic_scaling(self.scaling)
+        if (self.dynamic_scaling):
+            self.DIdef.init_dynamic_scaling(self.scaling)
 
         self.printer.dec()
-        self.printer.print_str("Defining previous image…")
-        self.printer.inc()
-
-        # Iold
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="im",
-                im_is_def=1)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.Iold = dolfin.CompiledExpression(
-                expr(),
-                element=self.fe)
-            self.Iold.init_disp(self.problem.Uold.cpp_object())
-        else:
-            cpp = ddic.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="im",
-                im_is_def=1)
-            self.Iold = dolfin.Expression(
-                cppcode=cpp,
-                element=self.fe)
-            self.Iold.init_disp(self.problem.Uold)
-        self.Iold.init_image(self.ref_image_filename)
-        self.Iold.init_dynamic_scaling(self.scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
-
-        # DIold
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.DIold = dolfin.CompiledExpression(
-                expr(),
-                element=self.ve)
-            self.DIold.init_disp(self.problem.Uold.cpp_object())
-        else:
-            cpp = ddic.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1)
-            self.DIold = dolfin.Expression(
-                cppcode=cpp,
-                element=self.ve)
-            self.DIold.init_disp(self.problem.Uold)
-        self.DIold.init_image(self.ref_image_filename)
-        self.DIold.init_dynamic_scaling(self.scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
-
-        self.printer.dec()
-        self.printer.print_str("Defining correlation energy…")
+        self.printer.print_str("Defining characteristic functions…")
         self.printer.inc()
 
         # Phi_ref
@@ -313,16 +268,16 @@ class WarpedImageEnergy(Energy):
         self.Phi_def_int = dolfin.assemble(self.Phi_def * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Phi_def_int",self.Phi_def_int)
 
+        self.printer.dec()
+        self.printer.print_str("Defining correlation energy…")
+        self.printer.inc()
+
         # Psi_c
         self.Psi_c  = self.Phi_def * self.Phi_ref * (self.Idef - self.Iref)**2/2
         self.DPsi_c = self.Phi_def * self.Phi_ref * (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
         self.DDPsi_c     = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c_old = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIold, self.problem.dU_trial) * dolfin.dot(self.DIold, self.problem.dU_test)
         self.DDPsi_c_ref = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
-
-        self.Psi_c_old   = self.Phi_def * self.Phi_ref * (self.Idef - self.Iold)**2/2
-        self.DPsi_c_old  = self.Phi_def * self.Phi_ref * (self.Idef - self.Iold) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
         # forms
         self.ener_form = self.Psi_c   * self.dV
@@ -335,13 +290,14 @@ class WarpedImageEnergy(Energy):
 
     def reinit(self):
 
-        self.scaling[:] = [1.,0.]
+        if (self.dynamic_scaling):
+            self.scaling[:] = [1.,0.]
 
 
 
     def call_before_solve(self,
             k_frame,
-            k_frame_old):
+            **kwargs):
 
         self.printer.print_str("Loading deformed image for correlation energy…")
 
@@ -353,19 +309,10 @@ class WarpedImageEnergy(Energy):
         self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame)
         self.DIdef.init_image(self.def_grad_image_filename)
 
-        self.printer.print_str("Loading previous image for correlation energy…")
-
-        # Iold
-        self.old_image_filename = self.image_series.get_image_filename(k_frame_old)
-        self.Iold.init_image(self.old_image_filename)
-
-        # DIold
-        self.old_grad_image_filename = self.image_series.get_image_grad_filename(k_frame_old)
-        self.DIold.init_image(self.old_grad_image_filename)
 
 
-
-    def call_after_solve(self):
+    def call_after_solve(self,
+            **kwargs):
 
         if (self.dynamic_scaling):
             self.printer.print_str("Updating dynamic scaling…")
@@ -385,9 +332,6 @@ class WarpedImageEnergy(Energy):
             if (int(dolfin.__version__.split('.')[0]) <= 2017):
                 self.Idef.update_dynamic_scaling(self.scaling)  # should not be needed
                 self.DIdef.update_dynamic_scaling(self.scaling) # should not be needed
-
-                self.Iold.update_dynamic_scaling(self.scaling)  # should not be needed
-                self.DIold.update_dynamic_scaling(self.scaling) # should not be needed
 
             self.get_qoi_values()
 
