@@ -118,7 +118,7 @@ def generate_images(
     image_upsampled.SetOrigin(origin_upsampled)
 
     n_points_upsampled = image_upsampled.GetNumberOfPoints()
-    image_upsampled_scalars = myvtk.createFloatArray(
+    image_upsampled_scalars = myvtk.createDoubleArray(
         name="ImageScalars",
         n_components=1,
         n_tuples=n_points_upsampled,

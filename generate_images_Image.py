@@ -33,7 +33,7 @@ class Image():
             structure,
             texture,
             noise,
-            generate_image_gradient=False):
+            generate_image_gradient=0):
 
         self.L = images["L"]
 
