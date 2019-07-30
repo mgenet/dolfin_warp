@@ -101,12 +101,12 @@ def fedic2(
         if (images_quadrature_from == "points_count"):
             images_quadrature = ddic.compute_quadrature_degree_from_points_count(
                 image_filename=image_series.get_image_filename(images_ref_frame),
-                mesh=mesh,
+                mesh=problem.mesh,
                 verbose=1)
         elif (method == "integral"):
             images_quadrature = ddic.compute_quadrature_degree_from_integral(
                 image_filename=self.get_image_filename(images_ref_frame),
-                mesh=mesh,
+                mesh=problem.mesh,
                 verbose=1)
         else:
             assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
