@@ -159,7 +159,7 @@ class NonlinearSolver():
         self.printer.dec()
 
         if (self.write_iterations):
-            self.frame_printer.__del__() #MG20190702: Not needed, right?
+            self.frame_printer.close()
             commandline  = "gnuplot -e \"set terminal pdf noenhanced;"
             commandline += " set output '"+self.frame_filebasename+".pdf';"
             commandline += " set key box textcolor variable;"

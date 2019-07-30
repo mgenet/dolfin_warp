@@ -169,3 +169,5 @@ def fedic2(
             "initialize_DU_with_DUold":initialize_DU_with_DUold})
 
     image_iterator.iterate()
+
+    problem.close()

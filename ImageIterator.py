@@ -188,7 +188,7 @@ class ImageIterator():
         self.printer.dec()
         self.printer.print_str("Plotting QOI…")
 
-        qoi_printer.__del__() #MG20190702: Not needed, right?
+        qoi_printer.close()
         commandline  = "gnuplot -e \"set terminal pdf noenhanced;"
         commandline += " set output '"+qoi_filebasename+".pdf';"
         commandline += " set grid;"

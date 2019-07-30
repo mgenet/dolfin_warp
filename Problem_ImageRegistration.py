@@ -45,9 +45,9 @@ class ImageRegistrationProblem(Problem):
 
 
 
-    def __del__(self):
+    def close(self):
 
-        self.printer.__del__() #MG20190702: Not needed, right?
+        self.printer.close()
 
 
 
