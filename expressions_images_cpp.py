@@ -258,7 +258,7 @@ def get_ExprIm_cpp_swig(
 
     assert (im_dim  in (2,3))
     assert (im_type in ("im","grad","grad_no_deriv"))
-    assert ( u_type in ("dolfin","vtk"))
+    assert (u_type in ("dolfin","vtk"))
 
     ExprIm_cpp = '''\
 #include <string.h>
@@ -293,7 +293,6 @@ class MyExpr : public Expression
     vtkSmartPointer<vtkProbeFilter> probe_filter;
     vtkSmartPointer<vtkPoints>      probe_points;
     vtkSmartPointer<vtkPolyData>    probe_polydata;''')*(u_type=="vtk")+'''
-
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
     mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
