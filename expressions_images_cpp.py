@@ -355,7 +355,7 @@ public:
         }
         interpolator->SetOutValue(interpol_out_value);
         interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');'''+'''
-        interpolator->Update(); '''+(('''
+        //interpolator->Update(); '''+(('''
 
         x[2] = Z;''')*(im_is_def)+('''
 
