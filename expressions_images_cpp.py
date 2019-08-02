@@ -52,6 +52,7 @@ def get_ExprIm_cpp_pybind(
 #include <vtkImageGradient.h>
 #include <vtkImageInterpolator.h>
 #include <vtkPolyData.h>
+#include <vtkPointData.h>
 #include <vtkProbeFilter.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
@@ -270,6 +271,7 @@ def get_ExprIm_cpp_swig(
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkProbeFilter.h>
+#include <vtkPointData.h>
 #include <vtkPolyData.h>''')*(im_is_def)*(u_type=="vtk")+'''
 
 '''+ddic.get_StaticScaling_cpp()+'''\
