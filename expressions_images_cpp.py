@@ -52,6 +52,7 @@ def get_ExprIm_cpp_pybind(
 #include <vtkImageGradient.h>
 #include <vtkImageInterpolator.h>
 #include <vtkPolyData.h>
+#include <vtkPointData.h>
 #include <vtkProbeFilter.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
@@ -257,7 +258,7 @@ def get_ExprIm_cpp_swig(
 
     assert (im_dim  in (2,3))
     assert (im_type in ("im","grad","grad_no_deriv"))
-    assert ( u_type in ("dolfin","vtk"))
+    assert (u_type in ("dolfin","vtk"))
 
     ExprIm_cpp = '''\
 #include <string.h>
@@ -270,6 +271,7 @@ def get_ExprIm_cpp_swig(
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkProbeFilter.h>
+#include <vtkPointData.h>
 #include <vtkPolyData.h>''')*(im_is_def)*(u_type=="vtk")+'''
 
 '''+ddic.get_StaticScaling_cpp()+'''\
@@ -291,7 +293,6 @@ class MyExpr : public Expression
     vtkSmartPointer<vtkProbeFilter> probe_filter;
     vtkSmartPointer<vtkPoints>      probe_points;
     vtkSmartPointer<vtkPolyData>    probe_polydata;''')*(u_type=="vtk")+'''
-
     mutable Array<double> UX;
     mutable Array<double> x;''')*(im_is_def)+('''
     mutable Array<double> X3D;''')*(not im_is_def)*(im_dim==2)+'''
@@ -353,7 +354,8 @@ public:
             assert(0);
         }
         interpolator->SetOutValue(interpol_out_value);
-        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');'''+(('''
+        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');
+        //interpolator->Update();'''+(('''
 
         x[2] = Z;''')*(im_is_def)+('''
 
@@ -414,6 +416,7 @@ public:
         probe_points->SetPoint(0,X.data());
         probe_polydata->SetPoints(probe_points);
         probe_filter->SetInputData(probe_polydata);
+        probe_filter->Update();
         probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
 
         ''')*(u_type=="vtk")+('''
