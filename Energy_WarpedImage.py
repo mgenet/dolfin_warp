@@ -116,8 +116,7 @@ class WarpedImageEnergy(Energy):
                     im_is_def=0),
                 element=self.fe)
         self.ref_image_filename = self.image_series.get_image_filename(self.ref_frame)
-        self.Iref.init_image(
-            filename=self.ref_image_filename)
+        self.Iref.init_image(self.ref_image_filename)
 
         self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Iref_int",self.Iref_int)
@@ -147,8 +146,7 @@ class WarpedImageEnergy(Energy):
                 cppcode=cpp,
                 element=self.ve)
         self.ref_image_grad_filename = self.image_series.get_image_grad_filename(self.ref_frame)
-        self.DIref.init_image(
-            filename=self.ref_image_grad_filename)
+        self.DIref.init_image(self.ref_image_grad_filename)
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
