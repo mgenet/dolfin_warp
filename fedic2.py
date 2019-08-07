@@ -53,6 +53,7 @@ def fedic2(
         register_ref_frame=0,
         gimic=0,
         gimic_texture="no",
+        gimic_resample=1,
         tol_res=None, # None
         tol_res_rel=None,
         tol_dU=None,
@@ -120,7 +121,8 @@ def fedic2(
             quadrature_degree=images_quadrature,
             texture=gimic_texture,
             w=1.-regul_level,
-            ref_frame=images_ref_frame)
+            ref_frame=images_ref_frame,
+            resample=gimic_resample)
         problem.add_image_energy(generated_image_energy)
     else:
         warped_image_energy = ddic.WarpedImageEnergy(
