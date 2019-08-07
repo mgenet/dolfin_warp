@@ -26,7 +26,7 @@ def compute_equalized_images(
         images_basename,
         images_ext="vti",
         array_name="scalars",
-        overwrite_orig_images=0,
+        suffix="",
         verbose=0):
 
     image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
@@ -61,4 +61,4 @@ def compute_equalized_images(
 
         myvtk.writeImage(
             image=image,
-            filename=images_folder+"/"+images_basename+("_equalized")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            filename=images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)

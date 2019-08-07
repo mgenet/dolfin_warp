@@ -32,7 +32,7 @@ def compute_selective_image_gradient(
         masks_basename,
         masks_ext,
         mask_field_name,
-        overwrite_orig_images=1,
+        suffix="",
         verbose=0):
 
     images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
@@ -78,7 +78,7 @@ def compute_selective_image_gradient(
         for k_point in range(n_points):
             mask_field.GetTuple(k_point, mask_tuple)
 
-#if inside the mesh (= mask value is 1)
+            #if inside the mesh (= mask value is 1)
             if (mask_tuple[0] == 1):
 
                 intensity_field.GetTuple(k_point, intensity_tuple)
@@ -142,17 +142,5 @@ def compute_selective_image_gradient(
 
         myvtk.writeImage(
             image=image,
-            filename=images_folder+"/"+images_basename+("_gradient")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext,
+            filename=images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext,
             verbose=verbose-1)
-
-compute_selective_image_gradient(
-        images_folder = "/home/sebastiano/Desktop/3D_images",
-        images_basename = "X",
-        images_ext = "vti",
-        images_field_name = "ImageScalars",
-        masks_folder = "/home/sebastiano/Desktop/3D_mask_all1s",
-        masks_basename = "AllOnes",
-        masks_ext = "vti",
-        mask_field_name = "ImageScalars",
-        overwrite_orig_images=1,
-        verbose=2)
