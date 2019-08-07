@@ -82,17 +82,17 @@ public:
 
     mutable Eigen::Matrix<double, n_dim, 1> UX;''')*(im_is_def)+'''
 
-    mutable Eigen::Matrix<double,     3, 1> X_3D, x_3D, ux_3D;
+    mutable Eigen::Matrix<double, 3, 1> X_3D, x_3D, ux_3D;
 
-    // vtkSmartPointer<vtkXMLImageDataReader> reader;
+    vtkSmartPointer<vtkXMLImageDataReader> reader;
     vtkSmartPointer<vtkImageData>          image;'''+('''
-    // vtkSmartPointer<vtkImageGradient>      grad;
+    vtkSmartPointer<vtkImageGradient>      grad;
     vtkSmartPointer<vtkImageData>          grad_image;''')*(im_type=="grad")+'''
     vtkSmartPointer<vtkImageInterpolator>  interpolator;
     vtkSmartPointer<vtkUnstructuredGrid>   ugrid;
-    // vtkSmartPointer<vtkWarpVector>         warp;
+    vtkSmartPointer<vtkWarpVector>         warp;
     vtkSmartPointer<vtkUnstructuredGrid>   warp_ugrid;
-    // vtkSmartPointer<vtkProbeFilter>        probe;
+    vtkSmartPointer<vtkProbeFilter>        probe;
     vtkSmartPointer<vtkImageData>          probe_image;
 
     std::shared_ptr<dolfin::Mesh>     mesh;
@@ -105,53 +105,53 @@ public:
         const double &Z=0.''')*(im_dim==2)+'''
     ) :
             dolfin::Expression('''+('''n_dim''')*(im_type=="grad")+'''),
-            // reader(vtkSmartPointer<vtkXMLImageDataReader>::New()),'''+('''
-            // grad(vtkSmartPointer<vtkImageGradient>::New()),''')*(im_type=="grad")+'''
-            // interpolator(vtkSmartPointer<vtkImageInterpolator>::New()),
-            ugrid(vtkSmartPointer<vtkUnstructuredGrid>::New())
-            // warp(vtkSmartPointer<vtkWarpVector>::New()),
-            // probe(vtkSmartPointer<vtkProbeFilter>::New()
+            reader(vtkSmartPointer<vtkXMLImageDataReader>::New()),'''+('''
+            grad(vtkSmartPointer<vtkImageGradient>::New()),''')*(im_type=="grad")+'''
+            interpolator(vtkSmartPointer<vtkImageInterpolator>::New()),
+            ugrid(vtkSmartPointer<vtkUnstructuredGrid>::New()),
+            warp(vtkSmartPointer<vtkWarpVector>::New()),
+            probe(vtkSmartPointer<vtkProbeFilter>::New())
     {'''+('''
         std::cout << "constructor" << std::endl;''')*(verbose)+('''
 
         X_3D[2] = Z;
         x_3D[2] = Z;''')*(im_dim==2)+'''
 
-        // reader->UpdateDataObject();
-        // image = reader->GetOutput();'''+('''
+        reader->UpdateDataObject();
+        image = reader->GetOutput();'''+('''
 
-        // grad->SetInputDataObject(image);
-        // grad->SetDimensionality(n_dim);
-        // grad->UpdateDataObject();
-        // grad_image = grad->GetOutput();''')*(im_type=="grad")+'''
+        grad->SetInputDataObject(image);
+        grad->SetDimensionality(n_dim);
+        grad->UpdateDataObject();
+        grad_image = grad->GetOutput();''')*(im_type=="grad")+'''
 
-        // if (strcmp(image_interpol_mode, "nearest") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToNearest();
-        // }
-        // else if (strcmp(image_interpol_mode, "linear") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToLinear();
-        // }
-        // else if (strcmp(image_interpol_mode, "cubic") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToCubic();
-        // }
-        // else
-        // {
-        //     std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
-        //     std::exit(0);
-        // }
-        // interpolator->SetOutValue(image_interpol_out_value);
+        if (strcmp(image_interpol_mode, "nearest") == 0)
+        {
+            interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(image_interpol_mode, "linear") == 0)
+        {
+            interpolator->SetInterpolationModeToLinear();
+        }
+        else if (strcmp(image_interpol_mode, "cubic") == 0)
+        {
+            interpolator->SetInterpolationModeToCubic();
+        }
+        else
+        {
+            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        interpolator->SetOutValue(image_interpol_out_value);
 
-        // warp->SetInputDataObject(ugrid);
-        // warp->UpdateDataObject();
-        // warp_ugrid = warp->GetUnstructuredGridOutput();
+        warp->SetInputDataObject(ugrid);
+        warp->UpdateDataObject();
+        warp_ugrid = warp->GetUnstructuredGridOutput();
 
-        // probe->SetInputDataObject(image);
-        // probe->SetSourceConnection(warp->GetOutputPort());
-        // probe->UpdateDataObject();
-        // probe_image = probe->GetImageDataOutput();
+        probe->SetInputDataObject(image);
+        probe->SetSourceConnection(warp->GetOutputPort());
+        probe->UpdateDataObject();
+        probe_image = probe->GetImageDataOutput();
     }
 
     void init_image
@@ -161,10 +161,13 @@ public:
     {'''+('''
         std::cout << "init_image" << std::endl;''')*(verbose)+'''
 
-        vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
         reader->SetFileName(filename);
-        reader->Update();
-        image = reader->GetOutput();
+        reader->Update();'''+('''
+
+        interpolator->Initialize(image);''')*(im_type=="im")+('''
+
+        grad->Update();
+        interpolator->Initialize(grad_image);''')*(im_type=="grad")+'''
     }
 
     void init_ugrid
@@ -337,6 +340,7 @@ public:
                 (*U->vector())[3*k_point+1],
                 (*U->vector())[3*k_point+2])''')*(im_dim==3)+''';
         }
+        ugrid->Modified();
     }
 
     void generate_image
@@ -345,20 +349,9 @@ public:
     {'''+('''
         std::cout << "generate_image" << std::endl;''')*(verbose)+'''
 
-        // warp->Update(); // MG20190705: Does not work?!
+        warp->Update();
 
-        vtkSmartPointer<vtkWarpVector> warp = vtkSmartPointer<vtkWarpVector>::New();         // MG20190705: Why
-        warp->SetInputDataObject(ugrid);                                                     // MG20190705: do I
-        warp->Update();                                                                      // MG20190705: need to
-        warp_ugrid = warp->GetUnstructuredGridOutput(); // MG20190705: do that?!
-
-        // probe->Update(); // MG20190705: Does not work?!
-
-        vtkSmartPointer<vtkProbeFilter> probe = vtkSmartPointer<vtkProbeFilter>::New(); // MG20190705: Why
-        probe->SetInputDataObject(image);                                               // MG20190705: do I
-        probe->SetSourceData(warp_ugrid);                                               // MG20190705: need
-        probe->Update();                                                                // MG20190705: to do
-        probe_image = probe->GetImageDataOutput();         // MG20190705: that?!
+        probe->Update();
 
         unsigned int n_points = image->GetNumberOfPoints();
         vtkSmartPointer<vtkDataArray> image_scalars = image->GetPointData()->GetScalars();
@@ -390,25 +383,10 @@ public:
                                 *(1+sin(M_PI*X_3D[1]/0.1-M_PI/2))/2, 0.5) - 1;''')*(im_texture=="tagging-signed-diffComb")+'''
             }
             image_scalars->SetTuple(k_point, I);
-        }'''+('''
+        }
+        image->Modified();'''+('''
 
-        interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
-        // interpolator->SetInterpolationModeToNearest();
-        interpolator->SetInterpolationModeToLinear();
-        interpolator->SetOutValue(0.);
-        interpolator->Initialize(image);''')*(im_type=="im")+('''
-
-        vtkSmartPointer<vtkImageGradient> grad = vtkSmartPointer<vtkImageGradient>::New();
-        grad->SetInputDataObject(image);
-        grad->SetDimensionality(n_dim);
-        grad->Update();
-        grad_image = grad->GetOutput();
-
-        interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
-        // interpolator->SetInterpolationModeToNearest();
-        interpolator->SetInterpolationModeToLinear();
-        interpolator->SetOutValue(0.);
-        interpolator->Initialize(grad_image);''')*(im_type=="grad")+'''
+        grad->Update();''')*(im_type=="grad")+'''
     }
 
     void write_image
