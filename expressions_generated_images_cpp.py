@@ -17,8 +17,6 @@ def get_ExprGenIm_cpp_pybind(
         im_type="im", # im, grad
         im_is_def=1,
         im_texture="no", # no, tagging
-        im_up=1,
-        im_down=1,
         verbose=0):
 
     assert (im_dim in (2,3))
@@ -81,9 +79,7 @@ class '''+name+''' : public dolfin::Expression
 {
 public:
 
-    static constexpr unsigned int n_dim ='''+str(im_dim )+''';
-    static constexpr unsigned int n_up  ='''+str(im_up  )+''';
-    static constexpr unsigned int n_down='''+str(im_down)+''';'''+('''
+    static constexpr unsigned int n_dim ='''+str(im_dim )+'''; // MG20200124: Why static?'''+('''
 
     mutable Eigen::Matrix<double, n_dim, 1> UX;''')*(im_is_def)+'''
 
@@ -163,7 +159,8 @@ public:
 
     void init_image
     (
-        const char* filename
+        const char* filename,
+        const double n_up=1
     )
     {'''+('''
         std::cout << "init_image" << std::endl;''')*(verbose)+'''
@@ -173,25 +170,25 @@ public:
 
         int image_dimensions[3];
         image->GetDimensions(image_dimensions);
-        std::cout << "image_dimensions = " << image_dimensions[0] << " " << image_dimensions[1] << " " << image_dimensions[2] << std::endl;'''+('''
+        // std::cout << "image_dimensions = " << image_dimensions[0] << " " << image_dimensions[1] << " " << image_dimensions[2] << std::endl;'''+('''
         image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up,                    1    );''')*(im_dim==2)+('''
         image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up, image_dimensions[2]/n_up);''')*(im_dim==3)+'''
 
         double image_spacing[3];
         image->GetSpacing(image_spacing);
-        std::cout << "image_spacing = " << image_spacing[0] << " " << image_spacing[1] << " " << image_spacing[2] << std::endl;'''+('''
+        // std::cout << "image_spacing = " << image_spacing[0] << " " << image_spacing[1] << " " << image_spacing[2] << std::endl;'''+('''
         image_up->SetSpacing(image_spacing[0]/n_up, image_spacing[1]/n_up,                 1.   );''')*(im_dim==2)+('''
         image_up->SetSpacing(image_spacing[0]/n_up, image_spacing[1]/n_up, image_spacing[2]/n_up);''')*(im_dim==3)+'''
 
         double image_origin[3];
         image->GetOrigin(image_origin);
-        std::cout << "image_origin = " << image_origin[0] << " " << image_origin[1] << " " << image_origin[2] << std::endl;
+        // std::cout << "image_origin = " << image_origin[0] << " " << image_origin[1] << " " << image_origin[2] << std::endl;
         image_up->SetOrigin(image_origin);
 
         image_up->AllocateScalars(VTK_FLOAT, 1);
-        std::cout << image_up->GetPointData()->GetScalars()->GetName() << std::endl;
-        std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfTuples() << std::endl;
-        std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfComponents() << std::endl;'''+('''
+        // std::cout << image_up->GetPointData()->GetScalars()->GetName() << std::endl;
+        // std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfTuples() << std::endl;
+        // std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfComponents() << std::endl;'''+('''
 
         interpolator->Initialize(image_up);''')*(im_type=="im")+('''
 
@@ -516,7 +513,7 @@ PYBIND11_MODULE(SIGNATURE, m)
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>
     (m, "'''+name+'''")
     .def(pybind11::init<const char*, const double&, const double&>(), pybind11::arg("image_interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.'''+(''', pybind11::arg("Z") = 0.''')*(im_dim==2)+''')
-    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"))
+    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"), pybind11::arg("n_up") = 1)
     .def("init_ugrid", &'''+name+'''::init_ugrid, pybind11::arg("mesh_"), pybind11::arg("U_"))
     .def("update_disp", &'''+name+'''::update_disp)
     .def("generate_image", &'''+name+'''::generate_image)
