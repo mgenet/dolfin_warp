@@ -172,7 +172,7 @@ public:
         image->GetDimensions(image_dimensions);
         // std::cout << "image_dimensions = " << image_dimensions[0] << " " << image_dimensions[1] << " " << image_dimensions[2] << std::endl;'''+('''
         image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up,                    1    );''')*(im_dim==2)+('''
-        image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up, image_dimensions[2]/n_up);''')*(im_dim==3)+'''
+        image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up, image_dimensions[2]*n_up);''')*(im_dim==3)+'''
 
         double image_spacing[3];
         image->GetSpacing(image_spacing);
