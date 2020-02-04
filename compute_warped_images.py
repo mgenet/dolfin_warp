@@ -25,27 +25,32 @@ import dolfin_dic as ddic
 ################################################################################
 
 def compute_warped_images(
-        ref_image_folder,
-        ref_image_basename,
         working_folder,
         working_basename,
-        ref_frame=0,
-        ref_image_model=None,
         working_ext="vtu",
         working_displacement_field_name="displacement",
+        ref_image=None,
+        ref_image_folder=None,
+        ref_image_basename=None,
+        ref_image_model=None,
+        ref_frame=0,
+        suffix="warped",
         print_warped_mesh=0,
         verbose=0):
 
-    ref_image_zfill = len(glob.glob(ref_image_folder+"/"+ref_image_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
-    ref_image_filename = ref_image_folder+"/"+ref_image_basename+"_"+str(ref_frame).zfill(ref_image_zfill)+".vti"
-    ref_image = myvtk.readImage(
-        filename=ref_image_filename)
+    assert ((ref_image is not None)
+         or ((ref_image_folder is not None)
+         and (ref_image_basename is not None))), "Must provide a ref_image or a ref_image_folder and a ref_image_basename. Aborting."
+
+    if (ref_image is None):
+        ref_image_zfill = len(glob.glob(ref_image_folder+"/"+ref_image_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
+        ref_image_filename = ref_image_folder+"/"+ref_image_basename+"_"+str(ref_frame).zfill(ref_image_zfill)+".vti"
+        ref_image = myvtk.readImage(
+            filename=ref_image_filename)
 
     if (ref_image_model is None):
         ref_image_interpolator = myvtk.getImageInterpolator(
             image=ref_image)
-        #I = numpy.empty(1)
-        #ref_image_interpolator.Interpolate([0.35, 0.25, 0.], I)
 
     image = vtk.vtkImageData()
     image.SetOrigin(ref_image.GetOrigin())
@@ -63,6 +68,31 @@ def compute_warped_images(
     n_frames = len(glob.glob(working_folder+"/"+working_basename+"_"+"[0-9]"*working_zfill+"."+working_ext))
     # n_frames = 1
 
+    if   (working_ext == "vtk"):
+        reader = vtk.vtkUnstructuredGridReader()
+    elif (working_ext == "vtu"):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+    reader.UpdateDataObject();
+    ugrid = reader.GetOutput()
+
+    warp = vtk.vtkWarpVector()
+    if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
+        warp.SetInputData(ugrid)
+    else:
+        warp.SetInput(ugrid)
+    warp.UpdateDataObject()
+    warped_ugrid = warp.GetOutput()
+
+    probe = vtk.vtkProbeFilter()
+    if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
+        probe.SetInputData(image)
+        probe.SetSourceData(warped_ugrid)
+    else:
+        probe.SetInput(image)
+        probe.SetSource(warped_ugrid)
+    probe.UpdateDataObject()
+    probed_image = probe.GetOutput()
+
     X = numpy.empty(3)
     U = numpy.empty(3)
     x = numpy.empty(3)
@@ -71,35 +101,20 @@ def compute_warped_images(
     for k_frame in range(n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        mesh = myvtk.readUGrid(
-            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
-        # print(mesh)
-        assert (mesh.GetPointData().HasArray(working_displacement_field_name)), "no array '" + working_displacement_field_name + "' in mesh"
-        mesh.GetPointData().SetActiveVectors(working_displacement_field_name)
+        reader.SetFileName(working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
+        reader.Update()
+        # print(ugrid)
 
-        warp = vtk.vtkWarpVector()
-        if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-            warp.SetInputData(mesh)
-        else:
-            warp.SetInput(mesh)
+        assert (ugrid.GetPointData().HasArray(working_displacement_field_name)), "no array '" + working_displacement_field_name + "' in ugrid"
+        ugrid.GetPointData().SetActiveVectors(working_displacement_field_name)
         warp.Update()
-        warped_mesh = warp.GetOutput()
-        if print_warped_mesh:
-            myvtk.writeUGrid(
-                ugrid=warped_mesh,
-                filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
-
-        probe = vtk.vtkProbeFilter()
-        if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-            probe.SetInputData(image)
-            probe.SetSourceData(warped_mesh)
-        else:
-            probe.SetInput(image)
-            probe.SetSource(warped_mesh)
         probe.Update()
-        probed_image = probe.GetOutput()
         scalars_mask = probed_image.GetPointData().GetArray("vtkValidPointMask")
         scalars_U = probed_image.GetPointData().GetArray(working_displacement_field_name)
+        if (print_warped_mesh):
+            myvtk.writeUGrid(
+                ugrid=warped_ugrid,
+                filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
         #myvtk.writeImage(
             #image=probed_image,
             #filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+".vti")
@@ -120,4 +135,4 @@ def compute_warped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+".vti")
+            filename=working_folder+"/"+working_basename+("-"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(working_zfill)+".vti")
