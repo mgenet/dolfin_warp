@@ -65,6 +65,7 @@ def get_ExprGenIm_cpp_pybind(
 #include <vtkPoints.h>
 #include <vtkProbeFilter.h>
 #include <vtkSmartPointer.h>
+#include <vtkType.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkWarpVector.h>
 #include <vtkXMLImageDataReader.h>
@@ -78,21 +79,22 @@ class '''+name+''' : public dolfin::Expression
 {
 public:
 
-    static constexpr unsigned int n_dim='''+str(im_dim)+''';'''+('''
+    static constexpr unsigned int n_dim ='''+str(im_dim )+'''; // MG20200124: Why static?'''+('''
 
     mutable Eigen::Matrix<double, n_dim, 1> UX;''')*(im_is_def)+'''
 
-    mutable Eigen::Matrix<double,     3, 1> X_3D, x_3D, ux_3D;
+    mutable Eigen::Matrix<double, 3, 1> X_3D, x_3D, ux_3D;
 
-    // vtkSmartPointer<vtkXMLImageDataReader> reader;
-    vtkSmartPointer<vtkImageData>          image;'''+('''
-    // vtkSmartPointer<vtkImageGradient>      grad;
+    vtkSmartPointer<vtkXMLImageDataReader> reader;
+    vtkSmartPointer<vtkImageData>          image;
+    vtkSmartPointer<vtkImageData>          image_up;'''+('''
+    vtkSmartPointer<vtkImageGradient>      grad;
     vtkSmartPointer<vtkImageData>          grad_image;''')*(im_type=="grad")+'''
     vtkSmartPointer<vtkImageInterpolator>  interpolator;
     vtkSmartPointer<vtkUnstructuredGrid>   ugrid;
-    // vtkSmartPointer<vtkWarpVector>         warp;
+    vtkSmartPointer<vtkWarpVector>         warp;
     vtkSmartPointer<vtkUnstructuredGrid>   warp_ugrid;
-    // vtkSmartPointer<vtkProbeFilter>        probe;
+    vtkSmartPointer<vtkProbeFilter>        probe;
     vtkSmartPointer<vtkImageData>          probe_image;
 
     std::shared_ptr<dolfin::Mesh>     mesh;
@@ -105,66 +107,93 @@ public:
         const double &Z=0.''')*(im_dim==2)+'''
     ) :
             dolfin::Expression('''+('''n_dim''')*(im_type=="grad")+'''),
-            // reader(vtkSmartPointer<vtkXMLImageDataReader>::New()),'''+('''
-            // grad(vtkSmartPointer<vtkImageGradient>::New()),''')*(im_type=="grad")+'''
-            // interpolator(vtkSmartPointer<vtkImageInterpolator>::New()),
-            ugrid(vtkSmartPointer<vtkUnstructuredGrid>::New())
-            // warp(vtkSmartPointer<vtkWarpVector>::New()),
-            // probe(vtkSmartPointer<vtkProbeFilter>::New()
+            reader(vtkSmartPointer<vtkXMLImageDataReader>::New()),
+            image_up(vtkSmartPointer<vtkImageData>::New()),'''+('''
+            grad(vtkSmartPointer<vtkImageGradient>::New()),''')*(im_type=="grad")+'''
+            interpolator(vtkSmartPointer<vtkImageInterpolator>::New()),
+            ugrid(vtkSmartPointer<vtkUnstructuredGrid>::New()),
+            warp(vtkSmartPointer<vtkWarpVector>::New()),
+            probe(vtkSmartPointer<vtkProbeFilter>::New())
     {'''+('''
         std::cout << "constructor" << std::endl;''')*(verbose)+('''
 
         X_3D[2] = Z;
         x_3D[2] = Z;''')*(im_dim==2)+'''
 
-        // reader->UpdateDataObject();
-        // image = reader->GetOutput();'''+('''
+        reader->UpdateDataObject();
+        image = reader->GetOutput();'''+('''
 
-        // grad->SetInputDataObject(image);
-        // grad->SetDimensionality(n_dim);
-        // grad->UpdateDataObject();
-        // grad_image = grad->GetOutput();''')*(im_type=="grad")+'''
+        grad->SetInputDataObject(image_up);
+        grad->SetDimensionality(n_dim);
+        grad->UpdateDataObject();
+        grad_image = grad->GetOutput();''')*(im_type=="grad")+'''
 
-        // if (strcmp(image_interpol_mode, "nearest") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToNearest();
-        // }
-        // else if (strcmp(image_interpol_mode, "linear") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToLinear();
-        // }
-        // else if (strcmp(image_interpol_mode, "cubic") == 0)
-        // {
-        //     interpolator->SetInterpolationModeToCubic();
-        // }
-        // else
-        // {
-        //     std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
-        //     std::exit(0);
-        // }
-        // interpolator->SetOutValue(image_interpol_out_value);
+        if (strcmp(image_interpol_mode, "nearest") == 0)
+        {
+            interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(image_interpol_mode, "linear") == 0)
+        {
+            interpolator->SetInterpolationModeToLinear();
+        }
+        else if (strcmp(image_interpol_mode, "cubic") == 0)
+        {
+            interpolator->SetInterpolationModeToCubic();
+        }
+        else
+        {
+            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        interpolator->SetOutValue(image_interpol_out_value);
 
-        // warp->SetInputDataObject(ugrid);
-        // warp->UpdateDataObject();
-        // warp_ugrid = warp->GetUnstructuredGridOutput();
+        warp->SetInputDataObject(ugrid);
+        warp->UpdateDataObject();
+        warp_ugrid = warp->GetUnstructuredGridOutput();
 
-        // probe->SetInputDataObject(image);
-        // probe->SetSourceConnection(warp->GetOutputPort());
-        // probe->UpdateDataObject();
-        // probe_image = probe->GetImageDataOutput();
+        probe->SetInputDataObject(image_up);
+        probe->SetSourceConnection(warp->GetOutputPort()); // probe->SetSourceDataObject(warp_ugrid); ?
+        probe->UpdateDataObject();
+        probe_image = probe->GetImageDataOutput();
     }
 
     void init_image
     (
-        const char* filename
+        const char* filename,
+        const double n_up=1
     )
     {'''+('''
         std::cout << "init_image" << std::endl;''')*(verbose)+'''
 
-        vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
         reader->SetFileName(filename);
         reader->Update();
-        image = reader->GetOutput();
+
+        int image_dimensions[3];
+        image->GetDimensions(image_dimensions);
+        // std::cout << "image_dimensions = " << image_dimensions[0] << " " << image_dimensions[1] << " " << image_dimensions[2] << std::endl;'''+('''
+        image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up,                    1    );''')*(im_dim==2)+('''
+        image_up->SetDimensions(image_dimensions[0]*n_up, image_dimensions[1]*n_up, image_dimensions[2]*n_up);''')*(im_dim==3)+'''
+
+        double image_spacing[3];
+        image->GetSpacing(image_spacing);
+        // std::cout << "image_spacing = " << image_spacing[0] << " " << image_spacing[1] << " " << image_spacing[2] << std::endl;'''+('''
+        image_up->SetSpacing(image_spacing[0]/n_up, image_spacing[1]/n_up,                 1.   );''')*(im_dim==2)+('''
+        image_up->SetSpacing(image_spacing[0]/n_up, image_spacing[1]/n_up, image_spacing[2]/n_up);''')*(im_dim==3)+'''
+
+        double image_origin[3];
+        image->GetOrigin(image_origin);
+        // std::cout << "image_origin = " << image_origin[0] << " " << image_origin[1] << " " << image_origin[2] << std::endl;
+        image_up->SetOrigin(image_origin);
+
+        image_up->AllocateScalars(VTK_FLOAT, 1);
+        // std::cout << image_up->GetPointData()->GetScalars()->GetName() << std::endl;
+        // std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfTuples() << std::endl;
+        // std::cout << image_up->GetPointData()->GetScalars()->GetNumberOfComponents() << std::endl;'''+('''
+
+        interpolator->Initialize(image_up);''')*(im_type=="im")+('''
+
+        grad->Update();
+        interpolator->Initialize(grad_image);''')*(im_type=="grad")+'''
     }
 
     void init_ugrid
@@ -337,6 +366,7 @@ public:
                 (*U->vector())[3*k_point+1],
                 (*U->vector())[3*k_point+2])''')*(im_dim==3)+''';
         }
+        ugrid->Modified();
     }
 
     void generate_image
@@ -345,23 +375,12 @@ public:
     {'''+('''
         std::cout << "generate_image" << std::endl;''')*(verbose)+'''
 
-        // warp->Update(); // MG20190705: Does not work?!
+        warp->Update();
 
-        vtkSmartPointer<vtkWarpVector> warp = vtkSmartPointer<vtkWarpVector>::New();         // MG20190705: Why
-        warp->SetInputDataObject(ugrid);                                                     // MG20190705: do I
-        warp->Update();                                                                      // MG20190705: need to
-        warp_ugrid = warp->GetUnstructuredGridOutput(); // MG20190705: do that?!
+        probe->Update();
 
-        // probe->Update(); // MG20190705: Does not work?!
-
-        vtkSmartPointer<vtkProbeFilter> probe = vtkSmartPointer<vtkProbeFilter>::New(); // MG20190705: Why
-        probe->SetInputDataObject(image);                                               // MG20190705: do I
-        probe->SetSourceData(warp_ugrid);                                               // MG20190705: need
-        probe->Update();                                                                // MG20190705: to do
-        probe_image = probe->GetImageDataOutput();         // MG20190705: that?!
-
-        unsigned int n_points = image->GetNumberOfPoints();
-        vtkSmartPointer<vtkDataArray> image_scalars = image->GetPointData()->GetScalars();
+        unsigned int n_points = image_up->GetNumberOfPoints();
+        vtkSmartPointer<vtkDataArray> image_up_scalars = image_up->GetPointData()->GetScalars();
         vtkSmartPointer<vtkDataArray> probe_mask = probe_image->GetPointData()->GetArray("vtkValidPointMask");
         vtkSmartPointer<vtkDataArray> probe_disp = probe_image->GetPointData()->GetArray("U");
         double m[1], I[1];
@@ -376,7 +395,7 @@ public:
             }
             else
             {
-                image->GetPoint(k_point, x_3D.data());
+                image_up->GetPoint(k_point, x_3D.data());
                 probe_disp->GetTuple(k_point, ux_3D.data());
                 X_3D = x_3D - ux_3D;'''+('''
                 I[0] = 1.;''')*(im_texture=="no")+('''
@@ -389,26 +408,11 @@ public:
                 I[0] = pow(1 + 3*(1+sin(M_PI*X_3D[0]/0.1-M_PI/2))/2
                                 *(1+sin(M_PI*X_3D[1]/0.1-M_PI/2))/2, 0.5) - 1;''')*(im_texture=="tagging-signed-diffComb")+'''
             }
-            image_scalars->SetTuple(k_point, I);
-        }'''+('''
+            image_up_scalars->SetTuple(k_point, I);
+        }
+        image_up->Modified();'''+('''
 
-        interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
-        // interpolator->SetInterpolationModeToNearest();
-        interpolator->SetInterpolationModeToLinear();
-        interpolator->SetOutValue(0.);
-        interpolator->Initialize(image);''')*(im_type=="im")+('''
-
-        vtkSmartPointer<vtkImageGradient> grad = vtkSmartPointer<vtkImageGradient>::New();
-        grad->SetInputDataObject(image);
-        grad->SetDimensionality(n_dim);
-        grad->Update();
-        grad_image = grad->GetOutput();
-
-        interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
-        // interpolator->SetInterpolationModeToNearest();
-        interpolator->SetInterpolationModeToLinear();
-        interpolator->SetOutValue(0.);
-        interpolator->Initialize(grad_image);''')*(im_type=="grad")+'''
+        grad->Update();''')*(im_type=="grad")+'''
     }
 
     void write_image
@@ -419,7 +423,7 @@ public:
         std::cout << "write_image" << std::endl;''')*(verbose)+'''
 
         vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        writer->SetInputData(image);
+        writer->SetInputData(image_up);
         writer->SetFileName(filename);
         writer->Write();
     }'''+('''
@@ -487,20 +491,13 @@ public:
         U->eval(UX, X);'''+('''
         std::cout << "UX = " << UX << std::endl;''')*(verbose)+('''
 
-        x_3D.head<n_dim>() = X + UX;
-        // x_3D[0] = X[0] + UX[0];
-        // x_3D[1] = X[1] + UX[1];''')*(im_dim==2)+('''
-        x_3D = X + UX;
-        // x_3D[0] = X[0] + UX[0];
-        // x_3D[1] = X[1] + UX[1];
-        // x_3D[2] = X[2] + UX[2];''')*(im_dim==3)+('''
+        x_3D.head<n_dim>() = X + UX;''')*(im_dim==2)+('''
+        x_3D               = X + UX;''')*(im_dim==3)+('''
         std::cout << "x_3D = " << x_3D << std::endl;''')*(verbose)+'''
 
         interpolator->Interpolate(x_3D.data(), expr.data());''')*(im_is_def)+(('''
 
-        X_3D.head<n_dim>() = X;
-        // X_3D[0] = X[0];
-        // X_3D[1] = X[1];'''+('''
+        X_3D.head<n_dim>() = X;'''+('''
         std::cout << "X_3D = " << X_3D << std::endl;''')*(verbose)+'''
 
         interpolator->Interpolate(X_3D.data(), expr.data());''')*(im_dim==2)+('''
@@ -516,7 +513,7 @@ PYBIND11_MODULE(SIGNATURE, m)
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>
     (m, "'''+name+'''")
     .def(pybind11::init<const char*, const double&, const double&>(), pybind11::arg("image_interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.'''+(''', pybind11::arg("Z") = 0.''')*(im_dim==2)+''')
-    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"))
+    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"), pybind11::arg("n_up") = 1)
     .def("init_ugrid", &'''+name+'''::init_ugrid, pybind11::arg("mesh_"), pybind11::arg("U_"))
     .def("update_disp", &'''+name+'''::update_disp)
     .def("generate_image", &'''+name+'''::generate_image)

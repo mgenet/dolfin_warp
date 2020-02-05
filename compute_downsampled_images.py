@@ -31,8 +31,8 @@ def compute_downsampled_images(
         downsampling_factors,
         images_ext="vti",
         keep_resolution=0,
-        overwrite_orig_images=1,
         write_temp_images=0,
+        suffix="",
         verbose=0):
 
     mypy.my_print(verbose, "*** compute_downsampled_images ***")
@@ -48,52 +48,43 @@ def compute_downsampled_images(
         image=image,
         verbose=0)
     mypy.my_print(verbose, "images_ndim = "+str(images_ndim))
+    images_dimensions = image.GetDimensions()
+    mypy.my_print(verbose, "images_dimensions = "+str(images_dimensions))
+    images_npoints = numpy.prod(images_dimensions)
+    mypy.my_print(verbose, "images_npoints = "+str(images_npoints))
+    images_origin = image.GetOrigin()
+    mypy.my_print(verbose, "images_origin = "+str(images_origin))
     images_spacing = image.GetSpacing()
     mypy.my_print(verbose, "images_spacing = "+str(images_spacing))
-    images_delta = images_spacing[0:images_ndim]
-    mypy.my_print(verbose, "images_delta = "+str(images_delta))
-    images_nvoxels = myvtk.getImageDimensions(
-        image=image,
-        verbose=0)
-    mypy.my_print(verbose, "images_nvoxels = "+str(images_nvoxels))
-    images_npoints = numpy.prod(images_nvoxels)
-    mypy.my_print(verbose, "images_npoints = "+str(images_npoints))
 
-    images_downsampled_nvoxels = numpy.divide(images_nvoxels, downsampling_factors)
-    images_downsampled_nvoxels = numpy.ceil(images_downsampled_nvoxels)
-    images_downsampled_nvoxels = [int(n) for n in images_downsampled_nvoxels]
-    mypy.my_print(verbose, "images_downsampled_nvoxels = "+str(images_downsampled_nvoxels))
-    downsampling_factors = list(numpy.divide(images_nvoxels, images_downsampled_nvoxels))
     mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
-    downsampling_factor = numpy.prod(downsampling_factors)
-    mypy.my_print(verbose, "downsampling_factor = "+str(downsampling_factor))
-    images_downsampled_delta = list(numpy.multiply(images_delta, downsampling_factors))
-    # mypy.my_print(verbose, "images_downsampled_delta = "+str(images_downsampled_delta))
-    images_downsampled_npoints = numpy.prod(images_downsampled_nvoxels)
-    # mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
+    downsampling_factors = downsampling_factors+[1]*(3-images_ndim)
+    mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
+
+    images_downsampled_dimensions = numpy.divide(images_dimensions, downsampling_factors)
+    images_downsampled_dimensions = numpy.ceil(images_downsampled_dimensions)
+    images_downsampled_dimensions = [int(n) for n in images_downsampled_dimensions]
+    mypy.my_print(verbose, "images_downsampled_dimensions = "+str(images_downsampled_dimensions))
 
     if   (images_ext == "vtk"):
-        reader_constr = vtk.vtkImageReader
-        writer_constr = vtk.vtkImageWriter
+        reader_type = vtk.vtkImageReader
+        writer_type = vtk.vtkImageWriter
     elif (images_ext == "vti"):
-        reader_constr = vtk.vtkXMLImageDataReader
-        writer_constr = vtk.vtkXMLImageDataWriter
+        reader_type = vtk.vtkXMLImageDataReader
+        writer_type = vtk.vtkXMLImageDataWriter
     else:
         assert 0, "\"ext\" must be \".vtk\" or \".vti\". Aborting."
-    reader = reader_constr()
-    writer = writer_constr()
-    if (write_temp_images):
-        writer_fft  = writer_constr()
-        if (keep_resolution):
-            writer_mul = writer_constr()
-        else:
-            writer_sel = writer_constr()
+
+    reader = reader_type()
+    reader.UpdateDataObject()
 
     fft = vtk.vtkImageFFT()
     fft.SetDimensionality(images_ndim)
-    fft.SetInputConnection(reader.GetOutputPort())
+    fft.SetInputData(reader.GetOutput())
+    fft.UpdateDataObject()
     if (write_temp_images):
-        writer_fft.SetInputConnection(fft.GetOutputPort())
+        writer_fft = writer_type()
+        writer_fft.SetInputData(fft.GetOutput())
 
     if (keep_resolution):
         image_filename = images_folder+"/"+images_basename+"_"+str(0).zfill(images_zfill)+"."+images_ext
@@ -106,40 +97,19 @@ def compute_downsampled_images(
             n_tuples=images_npoints,
             verbose=0)
         mask_image.GetPointData().SetScalars(mask_scalars)
-        # print(mask_image.GetScalarType())
-        # print(mask_image.GetPointData().GetScalars())
-        if (images_ndim == 1):
-            for k_x in range(images_nvoxels[0]):
-                if ((k_x >                     images_downsampled_nvoxels[0]//2) \
-                and (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)):
-                    mask_scalars.SetTuple(k_x, [0, 0])
-                else:
-                    mask_scalars.SetTuple(k_x, [1, 1])
-        if (images_ndim == 2):
-            for k_y in range(images_nvoxels[1]):
-                for k_x in range(images_nvoxels[0]):
-                    k_point = k_y*images_nvoxels[0] + k_x
-                    if (((k_x >                     images_downsampled_nvoxels[0]//2)  \
-                    and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)) \
-                    or  ((k_y >                     images_downsampled_nvoxels[1]//2)  \
-                    and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]//2))):
+        for k_z in range(images_dimensions[2]):
+            for k_y in range(images_dimensions[1]):
+                for k_x in range(images_dimensions[0]):
+                    k_point = k_z*images_dimensions[1]*images_dimensions[0] + k_y*images_dimensions[0] + k_x
+                    if (((k_x >                        images_downsampled_dimensions[0]//2)  \
+                    and  (k_x < images_dimensions[0] - images_downsampled_dimensions[0]//2)) \
+                    or  ((k_y >                        images_downsampled_dimensions[1]//2)  \
+                    and  (k_y < images_dimensions[1] - images_downsampled_dimensions[1]//2)) \
+                    or  ((k_z >                        images_downsampled_dimensions[2]//2)  \
+                    and  (k_z < images_dimensions[2] - images_downsampled_dimensions[2]//2))):
                         mask_scalars.SetTuple(k_point, [0, 0])
                     else:
                         mask_scalars.SetTuple(k_point, [1, 1])
-        if (images_ndim == 3):
-            for k_z in range(images_nvoxels[2]):
-                for k_y in range(images_nvoxels[1]):
-                    for k_x in range(images_nvoxels[0]):
-                        k_point = k_z*images_nvoxels[1]*images_nvoxels[0] + k_y*images_nvoxels[0] + k_x
-                        if (((k_x >                     images_downsampled_nvoxels[0]//2)  \
-                        and  (k_x < images_nvoxels[0] - images_downsampled_nvoxels[0]//2)) \
-                        or  ((k_y >                     images_downsampled_nvoxels[1]//2)  \
-                        and  (k_y < images_nvoxels[1] - images_downsampled_nvoxels[1]//2)) \
-                        or  ((k_z >                     images_downsampled_nvoxels[2]//2)  \
-                        and  (k_z < images_nvoxels[2] - images_downsampled_nvoxels[2]//2))):
-                            mask_scalars.SetTuple(k_point, [0, 0])
-                        else:
-                            mask_scalars.SetTuple(k_point, [1, 1])
         if (write_temp_images):
             myvtk.writeImage(
                 image=mask_image,
@@ -148,25 +118,28 @@ def compute_downsampled_images(
 
         mult = vtk.vtkImageMathematics()
         mult.SetOperationToMultiply()
-        mult.SetInputConnection(0, fft.GetOutputPort())
+        mult.SetInputData(0, fft.GetOutput())
         mult.SetInputData(1, mask_image)
+        mult.UpdateDataObject()
         if (write_temp_images):
-            writer_mul.SetInputConnection(mult.GetOutputPort())
+            writer_mul = writer_type()
+            writer_mul.SetInputData(mult.GetOutput())
     else:
+        images_downsampled_npoints = numpy.prod(images_downsampled_dimensions)
+        mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
+        downsampling_factors = list(numpy.divide(images_dimensions, images_downsampled_dimensions))
+        mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
+        downsampling_factor = numpy.prod(downsampling_factors)
+        mypy.my_print(verbose, "downsampling_factor = "+str(downsampling_factor))
+        images_downsampled_origin = images_origin
+        mypy.my_print(verbose, "images_downsampled_origin = "+str(images_downsampled_origin))
+        images_downsampled_spacing = list(numpy.multiply(images_spacing, downsampling_factors))
+        mypy.my_print(verbose, "images_downsampled_spacing = "+str(images_downsampled_spacing))
+
         image_downsampled = vtk.vtkImageData()
-
-        dimensions_downsampled = images_downsampled_nvoxels+[1]*(3-images_ndim)
-        mypy.my_print(verbose, "dimensions_downsampled = "+str(dimensions_downsampled))
-        image_downsampled.SetDimensions(dimensions_downsampled)
-
-        spacing_downsampled = images_downsampled_delta+[1.]*(3-images_ndim)
-        mypy.my_print(verbose, "spacing_downsampled = "+str(spacing_downsampled))
-        image_downsampled.SetSpacing(spacing_downsampled)
-
-        origin_downsampled = list(numpy.divide(images_downsampled_delta, 2))
-        origin_downsampled = origin_downsampled+[0.]*(3-images_ndim)
-        mypy.my_print(verbose, "origin_downsampled = "+str(origin_downsampled))
-        image_downsampled.SetOrigin(origin_downsampled)
+        image_downsampled.SetDimensions(images_downsampled_dimensions)
+        image_downsampled.SetOrigin(images_downsampled_origin)
+        image_downsampled.SetSpacing(images_downsampled_spacing)
 
         image_downsampled_scalars = myvtk.createDoubleArray(
             name="ImageScalars",
@@ -177,99 +150,67 @@ def compute_downsampled_images(
         I = numpy.empty(2)
 
         if (write_temp_images):
+            writer_sel = writer_type()
             writer_sel.SetInputData(image_downsampled)
 
     rfft = vtk.vtkImageRFFT()
     rfft.SetDimensionality(images_ndim)
     if (keep_resolution):
-        rfft.SetInputConnection(mult.GetOutputPort())
+        rfft.SetInputData(mult.GetOutput())
     else:
-        rfft.SetInputData(image_downsampled) # MG20190520: Not sure why this does not work.
+        rfft.SetInputData(image_downsampled)
+    rfft.UpdateDataObject()
 
     extract = vtk.vtkImageExtractComponents()
-    extract.SetInputConnection(rfft.GetOutputPort())
+    extract.SetInputData(rfft.GetOutput())
     extract.SetComponents(0)
+    extract.UpdateDataObject()
 
-    writer.SetInputConnection(extract.GetOutputPort())
+    writer = writer_type()
+    writer.SetInputData(extract.GetOutput())
 
-    if (keep_resolution):
-        for k_frame in range(images_nframes):
-            mypy.my_print(verbose, "k_frame = "+str(k_frame))
+    for k_frame in range(images_nframes):
+        mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-            reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        reader.Update()
 
-            if (write_temp_images):
-                writer_fft.SetFileName(images_folder+"/"+images_basename+"_fft"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-                writer_fft.Write()
+        fft.Update()
+        if (write_temp_images):
+            writer_fft.SetFileName(images_folder+"/"+images_basename+"_fft"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            writer_fft.Write()
 
+        if (keep_resolution):
+
+            mult.Update()
             if (write_temp_images):
                 writer_mul.SetFileName(images_folder+"/"+images_basename+"_mul"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_mul.Write()
 
-            writer.SetFileName(images_folder+"/"+images_basename+("_downsampled")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-            writer.Write()
-    else:
-        for k_frame in range(images_nframes):
-            mypy.my_print(verbose, "k_frame = "+str(k_frame))
-
-            reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-            reader.Update()
-            # print("reader.GetOutput() = "+str(reader.GetOutput()))
-
-            fft.Update()
-            if (write_temp_images):
-                writer_fft.SetFileName(images_folder+"/"+images_basename+"_fft"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-                writer_fft.Write()
-            # print("fft.GetOutput() = "+str(fft.GetOutput()))
-            # print("fft.GetOutput().GetScalarType() = "+str(fft.GetOutput().GetScalarType()))
-            # print("fft.GetOutput().GetPointData().GetScalars() = "+str(fft.GetOutput().GetPointData().GetScalars()))
+        else:
 
             image_scalars = fft.GetOutput().GetPointData().GetScalars()
-            if (images_ndim == 1):
-                for k_x_downsampled in range(images_downsampled_nvoxels[0]):
-                    k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
-                    image_scalars.GetTuple(k_x, I)
-                    I /= downsampling_factor
-                    image_downsampled_scalars.SetTuple(k_x_downsampled, I)
-            if (images_ndim == 2):
-                for k_y_downsampled in range(images_downsampled_nvoxels[1]):
-                    k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]//2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
-                    for k_x_downsampled in range(images_downsampled_nvoxels[0]):
-                        k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
-                        k_point_downsampled = k_y_downsampled*images_downsampled_nvoxels[0] + k_x_downsampled
-                        k_point             = k_y            *images_nvoxels[0]             + k_x
+            image_downsampled_scalars = image_downsampled.GetPointData().GetScalars()
+            for k_z_downsampled in range(images_downsampled_dimensions[2]):
+                k_z = k_z_downsampled if (k_z_downsampled <= images_downsampled_dimensions[2]//2) else k_z_downsampled+(images_dimensions[2]-images_downsampled_dimensions[2])
+                for k_y_downsampled in range(images_downsampled_dimensions[1]):
+                    k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_dimensions[1]//2) else k_y_downsampled+(images_dimensions[1]-images_downsampled_dimensions[1])
+                    for k_x_downsampled in range(images_downsampled_dimensions[0]):
+                        k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_dimensions[0]//2) else k_x_downsampled+(images_dimensions[0]-images_downsampled_dimensions[0])
+                        k_point_downsampled = k_z_downsampled*images_downsampled_dimensions[1]*images_downsampled_dimensions[0] + k_y_downsampled*images_downsampled_dimensions[0] + k_x_downsampled
+                        k_point             = k_z            *images_dimensions[1]            *images_dimensions[0]             + k_y            *images_dimensions[0]             + k_x
                         image_scalars.GetTuple(k_point, I)
                         I /= downsampling_factor
                         image_downsampled_scalars.SetTuple(k_point_downsampled, I)
-            if (images_ndim == 3):
-                for k_z_downsampled in range(images_downsampled_nvoxels[2]):
-                    k_z = k_z_downsampled if (k_z_downsampled <= images_downsampled_nvoxels[2]//2) else k_z_downsampled+(images_nvoxels[2]-images_downsampled_nvoxels[2])
-                    for k_y_downsampled in range(images_downsampled_nvoxels[1]):
-                        k_y = k_y_downsampled if (k_y_downsampled <= images_downsampled_nvoxels[1]//2) else k_y_downsampled+(images_nvoxels[1]-images_downsampled_nvoxels[1])
-                        for k_x_downsampled in range(images_downsampled_nvoxels[0]):
-                            k_x = k_x_downsampled if (k_x_downsampled <= images_downsampled_nvoxels[0]//2) else k_x_downsampled+(images_nvoxels[0]-images_downsampled_nvoxels[0])
-                            k_point_downsampled = k_z_downsampled*images_downsampled_nvoxels[1]*images_downsampled_nvoxels[0] + k_y_downsampled*images_downsampled_nvoxels[0] + k_x_downsampled
-                            k_point             = k_z            *images_nvoxels[1]            *images_nvoxels[0]             + k_y            *images_nvoxels[0]             + k_x
-                            image_scalars.GetTuple(k_point, I)
-                            I /= downsampling_factor
-                            image_downsampled_scalars.SetTuple(k_point_downsampled, I)
-            # print("image_downsampled = "+str(image_downsampled))
-            # print("image_downsampled_scalars = "+str(image_downsampled_scalars))
+            image_downsampled.Modified()
 
             if (write_temp_images):
                 writer_sel.SetFileName(images_folder+"/"+images_basename+"_sel"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
                 writer_sel.Write()
 
-            rfft = vtk.vtkImageRFFT()                 # MG20190520: Not sure why this is needed.
-            rfft.SetDimensionality(images_ndim)       # MG20190520: Not sure why this is needed.
-            rfft.SetInputData(image_downsampled)      # MG20190520: Not sure why this is needed.
-            rfft.Update()
+        rfft.Update()
 
-            extract = vtk.vtkImageExtractComponents() # MG20190520: Not sure why this is needed.
-            extract.SetInputData(rfft.GetOutput())    # MG20190520: Not sure why this is needed.
-            extract.SetComponents(0)                  # MG20190520: Not sure why this is needed.
-            extract.Update()                          # MG20190520: Not sure why this is needed.
+        extract.Update()
 
-            writer.SetInputData(extract.GetOutput())  # MG20190520: Not sure why this is needed.
-            writer.SetFileName(images_folder+"/"+images_basename+("_downsampled")*(not overwrite_orig_images)+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-            writer.Write()
+        writer.SetFileName(images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        writer.Write()
