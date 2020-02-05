@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2012-2019                                       ###
+### Created by Martin Genet, 2012-2020                                       ###
 ###                                                                          ###
 ### University of California at San Francisco (UCSF), USA                    ###
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
