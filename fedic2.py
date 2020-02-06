@@ -145,7 +145,7 @@ def fedic2(
             quadrature_degree=regul_quadrature)
         problem.add_regul_energy(regularization_energy)
 
-    solver = ddic.NonlinearSolver(
+    solver = ddic.NewtonNonlinearSolver(
         problem=problem,
         parameters={
             "working_folder":working_folder,

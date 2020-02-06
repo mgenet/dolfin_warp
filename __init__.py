@@ -4,6 +4,7 @@ from .generate_images_Mapping import *
 from .fedic import *
 from .plot_binned_strains_vs_radius import *
 from .NonlinearSolver import *
+from .NonlinearSolver_Newton import *
 from .MeshSeries import *
 from .plot_strains_vs_radius import *
 from .Energy_GeneratedImage import *
