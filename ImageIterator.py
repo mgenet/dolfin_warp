@@ -76,6 +76,26 @@ class ImageIterator():
                 function=self.problem.U,
                 time=self.problem.images_ref_frame)
 
+            # self.I = dolfin.Identity(2)
+            # self.F = self.I + dolfin.grad(self.problem.U)
+            # self.J = dolfin.det(self.F)
+            # self.J_fe = dolfin.FiniteElement(
+            #     family="DG",
+            #     cell=self.problem.mesh.ufl_cell(),
+            #     degree=0)
+            # self.J_fs = dolfin.FunctionSpace(
+            #     self.problem.mesh,
+            #     self.J_fe)
+            # self.J_func = dolfin.Function(self.J_fs)
+            # dolfin.project(
+            #     v=self.J,
+            #     V=self.J_fs,
+            #     function=self.J_func)
+            # ddic.write_VTU_file(
+            #     filebasename=pvd_basename+"-J",
+            #     function=self.J_func,
+            #     time=self.problem.images_ref_frame)
+
             self.printer.dec()
             self.printer.print_str("Writing initial QOI…")
             self.printer.inc()
@@ -165,6 +185,14 @@ class ImageIterator():
                     filebasename=pvd_basename,
                     function=self.problem.U,
                     time=k_frame)
+                # dolfin.project(
+                #     v=self.J,
+                #     V=self.J_fs,
+                #     function=self.J_func)
+                # ddic.write_VTU_file(
+                #     filebasename=pvd_basename+"-J",
+                #     function=self.J_func,
+                #     time=k_frame)
 
                 self.printer.dec()
                 self.printer.print_str("Writing QOI…")
