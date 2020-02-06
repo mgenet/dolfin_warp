@@ -36,7 +36,7 @@ def fedic2(
         mesh_basename=None,
         mesh_degree=1,
         regul_type="equilibrated", # equilibrated, hyperelastic
-        regul_model="neohookean", # hooke, kirchhoff, neohookean
+        regul_model="mooneyrivlin", # hooke, kirchhoff, neohookean, mooneyrivlin
         regul_quadrature=None,
         regul_level=0.1,
         regul_poisson=0.0,
@@ -144,6 +144,33 @@ def fedic2(
             poisson=regul_poisson,
             quadrature_degree=regul_quadrature)
         problem.add_regul_energy(regularization_energy)
+        # regularization_energy = ddic.RegularizationEnergy(
+        #     name="reg_cg",
+        #     problem=problem,
+        #     w=regul_level,
+        #     type=regul_type,
+        #     model="ciarletgeymonat",
+        #     poisson=regul_poisson,
+        #     quadrature_degree=regul_quadrature)
+        # problem.add_regul_energy(regularization_energy)
+        # regularization_energy = ddic.RegularizationEnergy(
+        #     name="reg_nh",
+        #     problem=problem,
+        #     w=regul_level,
+        #     type=regul_type,
+        #     model="neohookeandev",
+        #     poisson=regul_poisson,
+        #     quadrature_degree=regul_quadrature)
+        # problem.add_regul_energy(regularization_energy)
+        # regularization_energy = ddic.RegularizationEnergy(
+        #     name="reg_mr",
+        #     problem=problem,
+        #     w=regul_level,
+        #     type=regul_type,
+        #     model="puremooneyrivlindev",
+        #     poisson=regul_poisson,
+        #     quadrature_degree=regul_quadrature)
+        # problem.add_regul_energy(regularization_energy)
 
     solver = ddic.NonlinearSolver(
         problem=problem,

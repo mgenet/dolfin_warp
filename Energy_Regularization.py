@@ -29,7 +29,7 @@ class RegularizationEnergy(Energy):
             name="reg",
             w=1.,
             type="equilibrated",
-            model="neohookean",
+            model="mooneyrivlin",
             young=1.,
             poisson=0.,
             quadrature_degree=None):
@@ -80,7 +80,7 @@ class RegularizationEnergy(Energy):
             self.Psi_m, self.S_m = self.material.get_free_energy(
                 epsilon=self.e)
             self.P_m = self.S_m
-        elif (self.model in ("kirchhoff", "neohookean")):
+        elif (self.model in ("kirchhoff", "ciarletgeymonat", "neohookean", "neohookeandev", "mooneyrivlin", "mooneyrivlindev", "puremooneyrivlindev")):
             self.dim = self.problem.U.ufl_shape[0]
             self.I = dolfin.Identity(self.dim)
             self.F = self.I + dolfin.grad(self.problem.U)
@@ -91,14 +91,39 @@ class RegularizationEnergy(Energy):
                     parameters=self.material_parameters)
                 self.Psi_m, self.S_m = self.material.get_free_energy(
                     E=self.E)
+            elif (self.model == "ciarletgeymonat"):
+                self.material = dcm.CiarletGeymonatBulkElasticMaterial(
+                    parameters=self.material_parameters)
+                self.Psi_m, self.S_m = self.material.get_free_energy(
+                    C=self.C)
             elif (self.model == "neohookean"):
                 self.material = dcm.CiarletGeymonatNeoHookeanElasticMaterial(
                     parameters=self.material_parameters)
                 self.Psi_m, self.S_m = self.material.get_free_energy(
                     C=self.C)
+            elif (self.model == "neohookeandev"):
+                self.material = dcm.NeoHookeanDevElasticMaterial(
+                    parameters=self.material_parameters)
+                self.Psi_m, self.S_m = self.material.get_free_energy(
+                    C=self.C)
+            elif (self.model == "mooneyrivlin"):
+                self.material = dcm.CiarletGeymonatMooneyRivlinElasticMaterial(
+                    parameters=self.material_parameters)
+                self.Psi_m, self.S_m = self.material.get_free_energy(
+                    C=self.C)
+            elif (self.model == "mooneyrivlindev"):
+                self.material = dcm.MooneyRivlinDevElasticMaterial(
+                    parameters=self.material_parameters)
+                self.Psi_m, self.S_m = self.material.get_free_energy(
+                    C=self.C)
+            elif (self.model == "puremooneyrivlindev"):
+                self.material = dcm.PureMooneyRivlinDevElasticMaterial(
+                    parameters=self.material_parameters)
+                self.Psi_m, self.S_m = self.material.get_free_energy(
+                    C=self.C)
             self.P_m = self.F * self.S_m
         else:
-            assert (0), "\"model\" ("+str(self.model)+") must be \"hooke\", \"kirchhoff\" or \"neohookean\". Aborting."
+            assert (0), "\"model\" ("+str(self.model)+") must be \"hooke\", \"kirchhoff\", \"neohookean\" or \"mooneyrivlin\". Aborting."
 
         self.printer.print_str("Defining regularization energy…")
 
