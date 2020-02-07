@@ -37,6 +37,7 @@ def fedic2(
         mesh_degree=1,
         regul_type="equilibrated", # equilibrated, hyperelastic
         regul_model="mooneyrivlin", # hooke, kirchhoff, neohookean, mooneyrivlin
+        regul_models=None, # hooke, kirchhoff, neohookean, mooneyrivlin
         regul_quadrature=None,
         regul_level=0.1,
         regul_poisson=0.0,
@@ -136,41 +137,18 @@ def fedic2(
         problem.add_image_energy(warped_image_energy)
 
     if (regul_level>0):
-        regularization_energy = ddic.RegularizationEnergy(
-            problem=problem,
-            w=regul_level,
-            type=regul_type,
-            model=regul_model,
-            poisson=regul_poisson,
-            quadrature_degree=regul_quadrature)
-        problem.add_regul_energy(regularization_energy)
-        # regularization_energy = ddic.RegularizationEnergy(
-        #     name="reg_cg",
-        #     problem=problem,
-        #     w=regul_level,
-        #     type=regul_type,
-        #     model="ciarletgeymonat",
-        #     poisson=regul_poisson,
-        #     quadrature_degree=regul_quadrature)
-        # problem.add_regul_energy(regularization_energy)
-        # regularization_energy = ddic.RegularizationEnergy(
-        #     name="reg_nh",
-        #     problem=problem,
-        #     w=regul_level,
-        #     type=regul_type,
-        #     model="neohookeandev",
-        #     poisson=regul_poisson,
-        #     quadrature_degree=regul_quadrature)
-        # problem.add_regul_energy(regularization_energy)
-        # regularization_energy = ddic.RegularizationEnergy(
-        #     name="reg_mr",
-        #     problem=problem,
-        #     w=regul_level,
-        #     type=regul_type,
-        #     model="puremooneyrivlindev",
-        #     poisson=regul_poisson,
-        #     quadrature_degree=regul_quadrature)
-        # problem.add_regul_energy(regularization_energy)
+        if (regul_models is None):
+            regul_models = [regul_model]
+        for regul_model in regul_models:
+            regularization_energy = ddic.RegularizationEnergy(
+                name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                problem=problem,
+                w=regul_level,
+                type=regul_type,
+                model=regul_model,
+                poisson=regul_poisson,
+                quadrature_degree=regul_quadrature)
+            problem.add_regul_energy(regularization_energy)
 
     solver = ddic.NonlinearSolver(
         problem=problem,
