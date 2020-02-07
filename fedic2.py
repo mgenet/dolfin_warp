@@ -36,8 +36,8 @@ def fedic2(
         mesh_basename=None,
         mesh_degree=1,
         regul_type="equilibrated", # equilibrated, hyperelastic
-        regul_model="mooneyrivlin", # hooke, kirchhoff, neohookean, mooneyrivlin
-        regul_models=None, # hooke, kirchhoff, neohookean, mooneyrivlin
+        regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_models=None,
         regul_quadrature=None,
         regul_level=0.1,
         regul_poisson=0.0,
