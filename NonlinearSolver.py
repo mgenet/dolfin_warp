@@ -61,7 +61,7 @@ class NonlinearSolver():
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
             self.relax_tol        = parameters["relax_tol"]        if ("relax_tol"        in parameters) else 0
-            self.relax_n_iter_max = parameters["relax_n_iter_max"] if ("relax_n_iter_max" in parameters) else 5
+            self.relax_n_iter_max = parameters["relax_n_iter_max"] if ("relax_n_iter_max" in parameters) else 9
 
         # iterations control
         self.tol_dU      = parameters["tol_dU"]      if ("tol_dU"      in parameters) else None
@@ -323,11 +323,11 @@ class NonlinearSolver():
             # self.printer.print_var("ener_list",ener_list)
             if (k_relax > 1):
                 ener_min_old = ener_min
-            relax_min = relax_list[numpy.argmin(ener_list)]
-            # self.printer.print_sci("relax_min",relax_min)
             ener_min = min(ener_list)
             # self.printer.print_sci("ener_min",ener_min)
-            if (k_relax > 1) and (ener_list[0] > 0):
+            relax_min = relax_list[numpy.argmin(ener_list)]
+            # self.printer.print_sci("relax_min",relax_min)
+            if (ener_list[0] > 0) and (k_relax > 1):
                 dener_min = ener_min-ener_min_old
                 self.printer.print_sci("dener_min",dener_min)
                 relax_err = dener_min/ener_list[0]
