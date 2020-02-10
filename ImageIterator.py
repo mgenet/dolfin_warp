@@ -46,6 +46,8 @@ class ImageIterator():
         self.initialize_U_ext         = parameters["initialize_U_ext"]         if ("initialize_U_ext"         in parameters) else "vtu"
         self.initialize_U_array_name  = parameters["initialize_U_array_name"]  if ("initialize_U_array_name"  in parameters) else "displacement"
         self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
+        self.write_VTU_file = parameters["write_VTU_file"] if ("write_VTU_file" in parameters) else True
+        self.write_XML_file = parameters["write_XML_file"] if ("write_XML_file" in parameters) else False
 
 
 
@@ -71,10 +73,13 @@ class ImageIterator():
             self.printer.print_str("Writing initial solution…")
             self.printer.inc()
 
-            ddic.write_VTU_file(
-                filebasename=pvd_basename,
-                function=self.problem.U,
-                time=self.problem.images_ref_frame)
+            if (self.write_VTU_file):
+                ddic.write_VTU_file(
+                    filebasename=pvd_basename,
+                    function=self.problem.U,
+                    time=self.problem.images_ref_frame)
+            if (self.write_XML_file):
+                dolfin.File(pvd_basename+"_"+str(self.problem.images_ref_frame).zfill(3)+".xml") << self.problem.U
 
             # self.I = dolfin.Identity(2)
             # self.F = self.I + dolfin.grad(self.problem.U)
@@ -181,10 +186,13 @@ class ImageIterator():
                 self.printer.print_str("Writing solution…")
                 self.printer.inc()
 
-                ddic.write_VTU_file(
-                    filebasename=pvd_basename,
-                    function=self.problem.U,
-                    time=k_frame)
+                if (self.write_VTU_file):
+                    ddic.write_VTU_file(
+                        filebasename=pvd_basename,
+                        function=self.problem.U,
+                        time=k_frame)
+                if (self.write_XML_file):
+                    dolfin.File(pvd_basename+"_"+str(k_frame).zfill(3)+".xml") << self.problem.U
                 # dolfin.project(
                 #     v=self.J,
                 #     V=self.J_fs,
