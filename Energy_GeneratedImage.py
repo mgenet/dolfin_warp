@@ -31,7 +31,9 @@ class GeneratedImageEnergy(Energy):
             name="gen_im",
             w=1.,
             ref_frame=0,
-            resample=1):
+            resample=1,
+            compute_DIgen=1,
+            n_resampling_Igen=1):
 
         self.problem           = problem
         self.printer           = self.problem.printer
@@ -42,6 +44,8 @@ class GeneratedImageEnergy(Energy):
         self.w                 = w
         self.ref_frame         = ref_frame
         self.resample          = resample
+        self.compute_DIgen     = compute_DIgen
+        self.n_resampling_Igen = n_resampling_Igen
 
         self.printer.print_str("Defining generated image correlation energy…")
         self.printer.inc()
@@ -114,39 +118,61 @@ class GeneratedImageEnergy(Energy):
             expr(),
             element=self.fe)
         self.Igen.init_image(
-            filename=self.ref_image_filename)
+            filename=self.ref_image_filename,
+            n_up=self.n_resampling_Igen)
         self.Igen.init_ugrid(
             mesh_=self.problem.mesh,
             U_=self.problem.U.cpp_object())
-        self.Igen.generate_image()
+        self.Igen.generate_image(
+            n_down=self.n_resampling_Igen)
         self.Igen.write_image(
             filename="run_gimic.vti")
 
         self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Igen_int0",self.Igen_int0)
 
-        self.Igen_norm0 = (dolfin.assemble(self.Igen**2 * self.dV)/self.problem.mesh_V0)**(1./2)
-        self.printer.print_sci("Igen_norm0",self.Igen_norm0)
+        ###
+        # U_rbm_expr = dolfin.Expression(
+        #     ("UX", "UY"),
+        #     UX=0.1,
+        #     UY=0.1,
+        #     element=self.problem.U_fe)
+        # U_rbm = dolfin.interpolate(
+        #     v=U_rbm_expr,
+        #     V=self.problem.U_fs)
+        # self.problem.U.vector()[:] = U_rbm.vector()[:]
+        # self.Igen.update_disp()
+        # self.Igen.generate_image(
+        #     n_down=self.n_resampling_Igen)
+        # self.Igen.write_image(
+        #     filename="run_gimic2.vti")
+        # self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
+        # self.printer.print_sci("Igen_int0_b",self.Igen_int0)
+        # ###
+        #
+        # self.Igen_norm0 = (dolfin.assemble(self.Igen**2 * self.dV)/self.problem.mesh_V0)**(1./2)
+        # self.printer.print_sci("Igen_norm0",self.Igen_norm0)
 
         if (self.resample):
-            # DIgen
-            name, cpp = ddic.get_ExprGenIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad",
-                im_is_def=1,
-                im_texture=self.texture,
-                verbose=0)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.DIgen = dolfin.CompiledExpression(
-                expr(),
-                element=self.ve)
-            self.DIgen.init_image(
-                filename=self.ref_image_filename)
-            self.DIgen.init_ugrid(
-                mesh_=self.problem.mesh,
-                U_=self.problem.U.cpp_object())
-            self.DIgen.generate_image()
+            if (self.compute_DIgen):
+                # DIgen
+                name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_type="grad",
+                    im_is_def=1,
+                    im_texture=self.texture,
+                    verbose=0)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.DIgen = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.ve)
+                self.DIgen.init_image(
+                    filename=self.ref_image_filename)
+                self.DIgen.init_ugrid(
+                    mesh_=self.problem.mesh,
+                    U_=self.problem.U.cpp_object())
+                self.DIgen.generate_image()
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
@@ -230,9 +256,9 @@ class GeneratedImageEnergy(Energy):
 
         # Psi_c
         self.Psi_c = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef)**2/2
-        if (self.resample):
-            self.DPsi_c  = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
-            self.DDPsi_c = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+        if (self.resample) and (self.compute_DIgen):
+                self.DPsi_c  = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
+                self.DDPsi_c = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
         else:
             self.DPsi_c  = - self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIdef, self.problem.dU_test)
             self.DDPsi_c =   self.Phi_def * self.Phi_ref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
@@ -255,6 +281,7 @@ class GeneratedImageEnergy(Energy):
 
         # Idef
         self.def_image_filename = self.image_series.get_image_filename(k_frame)
+
         self.Idef.init_image(
             filename=self.def_image_filename)
 
@@ -273,13 +300,15 @@ class GeneratedImageEnergy(Energy):
 
         if (self.resample):
             self.Igen.update_disp()
-            self.Igen.generate_image()
+            self.Igen.generate_image(
+                n_down=self.n_resampling_Igen)
 
-            self.DIgen.update_disp()
-            self.DIgen.generate_image()
-            if (write_iterations):
-                self.DIgen.write_grad_image(
-                    filename=basename+"_"+str(k_iter-1).zfill(3)+".vti")
+            if (self.compute_DIgen):
+                self.DIgen.update_disp()
+                self.DIgen.generate_image()
+                if (write_iterations):
+                    self.DIgen.write_grad_image(
+                        filename=basename+"_"+str(k_iter-1).zfill(3)+".vti")
 
 
 
@@ -289,8 +318,12 @@ class GeneratedImageEnergy(Energy):
             **kwargs):
 
         if (self.resample):
-            self.DIgen.write_image(
-                filename=basename+"_"+str(k_frame).zfill(3)+".vti")
+            if (self.compute_DIgen):
+                self.DIgen.write_image(
+                    filename=basename+"_"+str(k_frame).zfill(3)+".vti")
+
+        # self.Igen.write_image(
+        #     filename="run_gimic_"+str(k_frame)+".vti")
 
 
 
