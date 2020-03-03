@@ -54,6 +54,7 @@ def fedic2(
         gimic=0,
         gimic_texture="no",
         gimic_resample=1,
+        solver="newton", # newton, CMA
         tol_res=None, # None
         tol_res_rel=None,
         tol_dU=None,
@@ -145,16 +146,24 @@ def fedic2(
             quadrature_degree=regul_quadrature)
         problem.add_regul_energy(regularization_energy)
 
-    solver = ddic.NewtonNonlinearSolver(
-        problem=problem,
-        parameters={
-            "working_folder":working_folder,
-            "working_basename":working_basename,
-            "relax_type":relax_type,
-            "tol_res_rel":tol_res_rel,
-            "tol_dU":tol_dU,
-            "n_iter_max":n_iter_max,
-            "write_iterations":print_iterations})
+    if (nonlinearsolver == "newton"):
+        solver = ddic.NewtonNonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "relax_type":relax_type,
+                "tol_res_rel":tol_res_rel,
+                "tol_dU":tol_dU,
+                "n_iter_max":n_iter_max,
+                "write_iterations":print_iterations})
+    elif (nonlinearsolver == "cma"):
+        solver = ddic.CMANonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "write_iterations":print_iterations})
 
     image_iterator = ddic.ImageIterator(
         problem=problem,
