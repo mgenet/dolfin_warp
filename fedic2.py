@@ -36,7 +36,8 @@ def fedic2(
         mesh_basename=None,
         mesh_degree=1,
         regul_type="equilibrated", # equilibrated, hyperelastic
-        regul_model="neohookean", # hooke, kirchhoff, neohookean
+        regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_models=None,
         regul_quadrature=None,
         regul_level=0.1,
         regul_poisson=0.0,
@@ -61,6 +62,8 @@ def fedic2(
         tol_im=None, # None
         n_iter_max=100,
         continue_after_fail=0,
+        write_VTU_file=1,
+        write_XML_file=0,
         print_refined_mesh=0, # False
         print_iterations=0):
 
@@ -137,14 +140,18 @@ def fedic2(
         problem.add_image_energy(warped_image_energy)
 
     if (regul_level>0):
-        regularization_energy = ddic.RegularizationEnergy(
-            problem=problem,
-            w=regul_level,
-            type=regul_type,
-            model=regul_model,
-            poisson=regul_poisson,
-            quadrature_degree=regul_quadrature)
-        problem.add_regul_energy(regularization_energy)
+        if (regul_models is None):
+            regul_models = [regul_model]
+        for regul_model in regul_models:
+            regularization_energy = ddic.RegularizationEnergy(
+                name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                problem=problem,
+                w=regul_level,
+                type=regul_type,
+                model=regul_model,
+                poisson=regul_poisson,
+                quadrature_degree=regul_quadrature)
+            problem.add_regul_energy(regularization_energy)
 
     if (nonlinearsolver == "newton"):
         solver = ddic.NewtonNonlinearSolver(
@@ -177,7 +184,9 @@ def fedic2(
             "initialize_U_basename":initialize_U_basename,
             "initialize_U_ext":initialize_U_ext,
             "initialize_U_array_name":initialize_U_array_name,
-            "initialize_DU_with_DUold":initialize_DU_with_DUold})
+            "initialize_DU_with_DUold":initialize_DU_with_DUold,
+            "write_VTU_file":write_VTU_file,
+            "write_XML_file":write_XML_file})
 
     image_iterator.iterate()
 
