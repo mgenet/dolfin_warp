@@ -10,6 +10,8 @@ WORKDIR /home/fenics
 RUN git clone https://github.com/aschn/gnuplot-colorbrewer.git
 RUN echo "set loadpath \"/home/fenics/gnuplot-colorbrewer/diverging:/home/fenics/gnuplot-colorbrewer/qualitative:/home/fenics/gnuplot-colorbrewer/sequential\"" > .gnuplot
 
+RUN python3 -m pip install cma
+
 WORKDIR /home/fenics
 RUN mkdir code
 ENV PYTHONPATH=/home/fenics/code:$PYTHONPATH
