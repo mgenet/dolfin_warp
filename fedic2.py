@@ -61,6 +61,8 @@ def fedic2(
         tol_im=None, # None
         n_iter_max=100,
         continue_after_fail=0,
+        write_VTU_file=1,
+        write_XML_file=0,
         print_refined_mesh=0, # False
         print_iterations=0):
 
@@ -173,7 +175,9 @@ def fedic2(
             "initialize_U_basename":initialize_U_basename,
             "initialize_U_ext":initialize_U_ext,
             "initialize_U_array_name":initialize_U_array_name,
-            "initialize_DU_with_DUold":initialize_DU_with_DUold})
+            "initialize_DU_with_DUold":initialize_DU_with_DUold,
+            "write_VTU_file":write_VTU_file,
+            "write_XML_file":write_XML_file})
 
     image_iterator.iterate()
 

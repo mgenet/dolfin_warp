@@ -46,8 +46,8 @@ class ImageIterator():
         self.initialize_U_ext         = parameters["initialize_U_ext"]         if ("initialize_U_ext"         in parameters) else "vtu"
         self.initialize_U_array_name  = parameters["initialize_U_array_name"]  if ("initialize_U_array_name"  in parameters) else "displacement"
         self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
-        self.write_VTU_file = parameters["write_VTU_file"] if ("write_VTU_file" in parameters) else True
-        self.write_XML_file = parameters["write_XML_file"] if ("write_XML_file" in parameters) else False
+        self.write_VTU_file           = parameters["write_VTU_file"]           if ("write_VTU_file"           in parameters) else True
+        self.write_XML_file           = parameters["write_XML_file"]           if ("write_XML_file"           in parameters) else False
 
 
 
