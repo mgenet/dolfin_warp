@@ -198,10 +198,18 @@ class RegularizationEnergy(Energy):
             self.Psi_m_V = dolfin.Constant(0)
             self.Psi_m_F = dolfin.Constant(0)
             self.Psi_m_S = dolfin.Constant(0)
+        elif (self.type == "equilibrated4"):
+            self.Psi_m_V = self.Psi_m
+            self.Psi_m_F = dolfin.Constant(0)
+            # self.Psi_m_S = dolfin.Constant(0)
+            N = dolfin.FacetNormal(self.problem.mesh)
+            self.Psi_m_S = - dolfin.inner(
+                self.P_m * N,
+                self.problem.U)
         else:
             assert (0), "\"type\" ("+str(self.type)+") must be \"hyperelastic\" or \"equilibrated\". Aborting."
 
-        if (self.type in ("hyperelastic", "equilibrated")):
+        if (self.type in ("hyperelastic", "equilibrated", "equilibrated4")):
             self.DPsi_m_V  = dolfin.derivative( self.Psi_m_V, self.problem.U, self.problem.dU_test )
             self.DPsi_m_F  = dolfin.derivative( self.Psi_m_F, self.problem.U, self.problem.dU_test )
             self.DPsi_m_S  = dolfin.derivative( self.Psi_m_S, self.problem.U, self.problem.dU_test )
