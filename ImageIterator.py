@@ -135,7 +135,7 @@ class ImageIterator():
                 if not (self.register_ref_frame):
                     k_frames = range(self.problem.images_ref_frame-1,                           -1, -1)
                 else:
-                    k_frames = range(self.problem.images_ref_frame  ,                           -1, -1)
+                    k_frames = range(self.problem.images_ref_frame-1,                           -1, -1)
             self.printer.print_var("k_frames",k_frames)
 
             if (forward_or_backward == "backward"):
