@@ -65,7 +65,19 @@ def compute_displacement_error(
         ref_disp = ref.GetPointData().GetArray(ref_disp_array_name)
         working_disp = sol.GetPointData().GetArray(working_disp_array_name)
 
-        err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
+        # FA20200311: sort_ref and sort_working are created because enumeration is not the same in the meshes of ref and sol
+        from vtk.util import numpy_support
+        coords_ref     = numpy_support.vtk_to_numpy(ref.GetPoints().GetData())
+        coords_working = numpy_support.vtk_to_numpy(sol.GetPoints().GetData())
+        # print(coords_ref)
+        # print(coords_working)
+        sort_ref     = [i_sort[0] for i_sort in sorted(enumerate(coords_ref.tolist()), key=lambda k: [k[1],k[0]])]
+        sort_working = [i_sort[0] for i_sort in sorted(enumerate(coords_working.tolist()), key=lambda k: [k[1],k[0]])]
+        # print(sort_ref)
+        # print(sort_working)
+        # print ([[working_disp.GetTuple(sort_working[k_point])[k_dim] for k_dim in numpy.array([0])] for k_point in range(n_points)])
+        # print ([[ref_disp.GetTuple(sort_ref[k_point])[k_dim] for k_dim in numpy.array([0])] for k_point in range(n_points)])
+        err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(sort_working[k_point])[k_dim]-ref_disp.GetTuple(sort_ref[k_point])[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
         ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
         ref_max = max(ref_max, numpy.max([numpy.sum([((ref_disp.GetTuple(k_point)[k_dim])**2)**0.5 for k_dim in range(3)]) for k_point in range(n_points)]))
 
