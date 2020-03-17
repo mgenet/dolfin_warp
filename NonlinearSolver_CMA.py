@@ -61,6 +61,7 @@ class CMANonlinearSolver(NonlinearSolver):
         self.sigma0    = parameters["sigma0"]  if ("sigma0" in parameters)  else 2.
         self.bounds    = parameters["bounds"]  if ("bounds" in parameters)  else [0,10]
         self.ftarget   = parameters["ftarget"] if ("ftarget" in parameters) else 1E-6
+        self.tolfun    = parameters["tolfun"]  if ("tolfun"  in parameters) else 1E-11
 
         self.motion_model = parameters["motion_model"] if ("motion_model" in parameters) else "rbm"
 
@@ -87,8 +88,14 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # initial guess for cma.fmin
         if (self.motion_model == "full") or (self.motion_model == "trans") or (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
-            # FA20200221: "full" use the same initial guess, and range, as the one used for displacements
-            self.range_disp  = self.x_0_real_range["trans"]
+            # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame
+            #             And by default, the range used is previous_result +- 0.07
+            self.restrict_x0_range       = parameters["restrict_x0_range"] if ("restrict_x0_range" in parameters) else True
+            self.restrict_x0_range_bound = parameters["restrict_x0_range_bound"] if ("restrict_x0_range_bound" in parameters) else 0.07
+
+            if (self.motion_model == "full" and self.restrict_x0_range == False) or self.motion_model != "full":
+                # FA20200221: "full" use the same initial guess, and range, as the one used for displacements
+                self.range_disp  = self.x_0_real_range["trans"]
 
         if (self.motion_model == "full"):
             assert (len(self.x_0_real) == 2), "2 values for initial guess required"
@@ -96,9 +103,17 @@ class CMANonlinearSolver(NonlinearSolver):
             self.dofs = numpy.zeros(self.n_dofs)
             self.x_0  = numpy.zeros(self.n_dofs)
 
-            for dof in range(int(self.n_dofs/2)):
-                self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
-                self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
+            if self.restrict_x0_range:
+                self.x_real     = numpy.zeros(self.n_dofs)
+                self.range_disp = [self.x_0_real_range["trans"]]*(self.n_dofs)
+                for dof in range(int(self.n_dofs/2)):
+                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[2*dof][0], self.range_disp[2*dof][1])
+                    self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
+
+            else:
+                for dof in range(int(self.n_dofs/2)):
+                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
+                    self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
 
         elif (self.motion_model == "trans"):
             assert (len(self.x_0_real) == 2), "2 values for initial guess required"
@@ -109,17 +124,20 @@ class CMANonlinearSolver(NonlinearSolver):
         elif (self.motion_model == "rbm"):
             assert (len(self.x_0_real) == 3), "3 values for initial guess required"
             self.x_0 = numpy.zeros(len(self.x_0_real))
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"], 0., 360.)
+            self.range_theta = self.x_0_real_range["rot"] if ("rot" in self.x_0_real_range) else [0., 360.]
+
+            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0],  self.range_disp[1])
+            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0],  self.range_disp[1])
+            self.x_0[2] = self.real2norm(self.x_0_real["rot"], self.range_theta[0], self.range_theta[1])
 
         elif (self.motion_model == "rbm+eigenmodes"):
             self.range_modal = self.x_0_real_range["modal_factors"]
+            self.range_theta = self.x_0_real_range["rot"] if ("rot" in self.x_0_real_range) else [0., 360.]
 
             self.x_0 = numpy.zeros(3+self.n_modes)
             self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
             self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"], 0., 360.)
+            self.x_0[2] = self.real2norm(self.x_0_real["rot"], self.range_theta[0], self.range_theta[1])
 
             for ind in range(self.n_modes):
                 self.x_0[3+ind] = self.real2norm(self.x_0_real["modal_factors"][ind], self.range_modal[0], self.range_modal[1])
@@ -137,12 +155,20 @@ class CMANonlinearSolver(NonlinearSolver):
         # solve with cma.fmin
         # FA20200218: If objective_function has extra args, in cma.fmin() add them as a tuple: args=(extra_arg1, extra_arg2, ...)
         objective_function = self.compute_corr_energy
-        res = cma.fmin(objective_function, self.x_0, self.sigma0, options={'bounds': self.bounds, 'ftarget': self.ftarget, 'verb_filenameprefix': self.working_folder + "/outcmaes/"})
+        res = cma.fmin(objective_function, self.x_0, self.sigma0, options={'bounds': self.bounds, 'ftarget': self.ftarget, 'tolfun':self.tolfun, 'verb_filenameprefix': self.working_folder + "/outcmaes/"})
 
         coeffs = res[0]
         self.print_state("CMA obtained values:",coeffs)
 
-        self.x_0 = coeffs
+        if (self.motion_model == "full") and (self.restrict_x0_range):
+            for dof in range(self.n_dofs):
+                self.x_real[dof] = self.norm2real(coeffs[dof], self.range_disp[dof][0], self.range_disp[dof][1])
+
+            for dof in range(int(self.n_dofs)):
+                self.range_disp[dof] = [self.x_real[dof]-self.restrict_x0_range_bound, self.x_real[dof]+self.restrict_x0_range_bound]
+
+        else:
+            self.x_0 = coeffs
 
         success = True # FA20200218: CHECK: success always true?
         return success, res[4]
@@ -185,7 +211,11 @@ class CMANonlinearSolver(NonlinearSolver):
 
         if (self.motion_model == "full"):
             for dof in range(self.n_dofs):
-                self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[0], self.range_disp[1])
+
+                if (self.restrict_x0_range):
+                    self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[dof][0], self.range_disp[dof][1])
+                else:
+                    self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[0], self.range_disp[1])
 
             self.U_tot.vector()[:] = self.dofs
 
@@ -197,7 +227,7 @@ class CMANonlinearSolver(NonlinearSolver):
                 disp_rot = 0.
 
             elif (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
-                disp_rot = self.norm2real(coeffs[2], 0., 360.)
+                disp_rot = self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1])
 
             U_rbm = self.U_rbm(disp=[disp_x, disp_y, disp_rot])
             # print(U_rbm.vector()[:])
@@ -248,8 +278,14 @@ class CMANonlinearSolver(NonlinearSolver):
         if (self.motion_model == "full"):
             self.printer.print_str("Values of displacement in nodes:")
             for dof in range(int(self.n_dofs/2)):
-                dof_x = self.norm2real(coeffs[2*dof],   self.range_disp[0], self.range_disp[1])
-                dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[0], self.range_disp[1])
+
+                if (self.restrict_x0_range):
+                    dof_x = self.norm2real(coeffs[2*dof],   self.range_disp[2*dof][0], self.range_disp[2*dof][1])
+                    dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
+                else:
+                    dof_x = self.norm2real(coeffs[2*dof],   self.range_disp[0], self.range_disp[1])
+                    dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[0], self.range_disp[1])
+
                 self.printer.print_str("node "+str(dof)+": "+" "*bool(dof_x>=0)+str(round(dof_x,3))+" "*(5-len(str(round(dof_x%1,3))))+"   "+" "*bool(dof_y>=0)+str(round(dof_y,3)))
 
         else:
@@ -258,7 +294,7 @@ class CMANonlinearSolver(NonlinearSolver):
             self.printer.print_str("u_y   = "+str(round(self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1]),5)))
 
             if (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
-                self.printer.print_str("theta = "+str(round(self.norm2real(coeffs[2], 0., 360.),5)) + "°")
+                self.printer.print_str("theta = "+str(round(self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1]),5)) + "°")
 
             if (self.motion_model == "rbm+eigenmodes"):
                 print("Values of modal coefficients:")
