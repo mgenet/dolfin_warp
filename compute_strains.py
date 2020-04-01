@@ -14,12 +14,14 @@ import dolfin
 import glob
 import math
 import numpy
+import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 import vtkpython_cbl as cbl
 
 import dolfin_dic as ddic
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 ################################################################################
 
@@ -48,6 +50,7 @@ def compute_strains(
         plot_binned_strains_vs_radius=0,
         write_twist_vs_height=0,
         plot_twist_vs_height=0,
+        twist_vs_height_interpolation = None,
         verbose=1):
 
     if (write_strains_vs_radius):
@@ -274,11 +277,45 @@ def compute_strains(
             binned_strains_vs_radius_file.write("\n")
 
         if (write_twist_vs_height):
-            points_AB = cbl.getABPointsFromBoundsAndCenter(
-                mesh=mesh,
-                AB=[0,0,1],
-                verbose=verbose)
-            C = points_AB.GetPoint(0)
+            if (twist_vs_height_interpolation is None):
+                points_AB = cbl.getABPointsFromBoundsAndCenter(
+                    mesh=mesh,
+                    AB=[0,0,1],
+                    verbose=verbose)
+                C = points_AB.GetPoint(0)
+
+            if (twist_vs_height_interpolation is "piecewiseLinear" or "2ndOrder"):
+                warper = vtk.vtkWarpVector()
+                if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
+                    warper.SetInputData(mesh)
+                else:
+                    warper.SetInput(mesh)
+                warper.Update()
+                warped_ugrid = warper.GetOutput()
+
+                warped_sector_centroids = ddic.get_centroids(mesh=warped_ugrid)
+                ref_sector_centroids = ddic.get_centroids(mesh=mesh)
+
+                (cell_locator,
+                closest_point,
+                generic_cell,
+                cellId,
+                subId,
+                dist) = myvtk.getCellLocator(
+                    mesh=warped_ugrid,
+                    verbose=verbose-1)
+
+                if (twist_vs_height_interpolation is "piecewiseLinear"):
+                    warped_sector_centroids_x =  InterpolatedUnivariateSpline(numpy.flip(warped_sector_centroids[:,2]),numpy.flip(warped_sector_centroids[:,0]), k = 1, ext = 0)
+                    warped_sector_centroids_y =  InterpolatedUnivariateSpline(numpy.flip(warped_sector_centroids[:,2]),numpy.flip(warped_sector_centroids[:,1]), k = 1, ext = 0)
+                    ref_sector_centroids_x = InterpolatedUnivariateSpline(numpy.flip(ref_sector_centroids[:,2]),numpy.flip(ref_sector_centroids[:,0]), k = 1, ext = 0)
+                    ref_sector_centroids_y = InterpolatedUnivariateSpline(numpy.flip(ref_sector_centroids[:,2]),numpy.flip(ref_sector_centroids[:,1]), k = 1, ext = 0)
+
+                if (twist_vs_height_interpolation is "2ndOrder"):
+                    warped_sector_centroids_x = numpy.poly1d(numpy.polyfit(warped_sector_centroids[:,2],warped_sector_centroids[:,0],2))
+                    warped_sector_centroids_y = numpy.poly1d(numpy.polyfit(warped_sector_centroids[:,2],warped_sector_centroids[:,1],2))
+                    ref_sector_centroids_x = numpy.poly1d(numpy.polyfit(ref_sector_centroids[:,2],ref_sector_centroids[:,0],2))
+                    ref_sector_centroids_y = numpy.poly1d(numpy.polyfit(ref_sector_centroids[:,2],ref_sector_centroids[:,1],2))
 
             farray_r  = mesh.GetPointData().GetArray("r")
             farray_ll = mesh.GetPointData().GetArray("ll")
@@ -305,10 +342,17 @@ def compute_strains(
                 r  = farray_r.GetTuple1(k_point)
                 ll = farray_ll.GetTuple1(k_point)
                 mesh.GetPoint(k_point, X)
-                X -= C
-                Theta = math.degrees(math.atan2(X[1], X[0]))
                 farray_U.GetTuple(k_point, U)
                 x[:] = X[:] + U[:]
+
+                if (twist_vs_height_interpolation is None):
+                    X -= C
+                elif (twist_vs_height_interpolation is "piecewiseLinear" or "2ndOrder"):
+                    x -= [warped_sector_centroids_x(x[2]),warped_sector_centroids_y(x[2]),x[2]]
+                    X -= [ref_sector_centroids_x(X[2]),ref_sector_centroids_y(X[2]),X[2]]
+
+                Theta = math.degrees(math.atan2(X[1], X[0]))
+
                 theta = math.degrees(math.atan2(x[1], x[0]))
                 beta = theta - Theta
                 if (beta > +180.): beta -= 360.

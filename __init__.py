@@ -39,3 +39,4 @@ from .compute_displacement_error import *
 from .expressions_images_cpp import *
 from .compute_strains import *
 from .generate_images_Image import *
+from .get_centroids import*
