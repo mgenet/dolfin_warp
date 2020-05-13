@@ -27,12 +27,12 @@ def get_centroids(mesh):
     cell_centers = myvtk.getCellCenters(
                        mesh=mesh)
 
-    for k_cell in xrange(n_cells):
+    for k_cell in range(n_cells):
         k_cell_sector_id = int(sector_id.GetTuple(k_cell)[0])
         sector_centroids[k_cell_sector_id,:]= numpy.add(sector_centroids[k_cell_sector_id,:],cell_centers.GetPoint(k_cell))
         n_cells_per_sector[k_cell_sector_id] += 1
 
-    for k_sector in xrange(n_sector_ids):
+    for k_sector in range(n_sector_ids):
         sector_centroids[k_sector,:] = sector_centroids[k_sector,:]/n_cells_per_sector[k_sector]
 
     return sector_centroids

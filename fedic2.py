@@ -64,7 +64,8 @@ def fedic2(
         write_VTU_file=1,
         write_XML_file=0,
         print_refined_mesh=0, # False
-        print_iterations=0):
+        print_iterations=0,
+        iteration_mode="normal"):
 
     assert (images_expressions_type == "cpp"),\
         "Python image expression are deprecated. Aborting."
@@ -177,7 +178,8 @@ def fedic2(
             "initialize_U_array_name":initialize_U_array_name,
             "initialize_DU_with_DUold":initialize_DU_with_DUold,
             "write_VTU_file":write_VTU_file,
-            "write_XML_file":write_XML_file})
+            "write_XML_file":write_XML_file,
+            "iteration_mode":iteration_mode})
 
     image_iterator.iterate()
 
