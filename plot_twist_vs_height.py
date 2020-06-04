@@ -56,7 +56,7 @@ set ytics("apex" 0, "base" 1)
 g(x) = c*x + d
 h(x) = x/c - d/c
 
-# FIT_MAXITER = 10
+FIT_MAXITER = 10
 
 datafile = "'''+working_folder+'''/'''+working_basename+'''-twist_vs_height.dat"
 

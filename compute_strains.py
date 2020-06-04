@@ -331,16 +331,20 @@ def compute_strains(
                 if (twist_vs_height_interpolation == "2ndOrder"):
                     warped_sector_centroids_x = numpy.poly1d(numpy.polyfit(
                         warped_sector_centroids[:,2],
-                        warped_sector_centroids[:,0],2))
+                        warped_sector_centroids[:,0],
+                        2))
                     warped_sector_centroids_y = numpy.poly1d(numpy.polyfit(
                         warped_sector_centroids[:,2],
-                        warped_sector_centroids[:,1],2))
+                        warped_sector_centroids[:,1],
+                        2))
                     ref_sector_centroids_x = numpy.poly1d(numpy.polyfit(
                         ref_sector_centroids[:,2],
-                        ref_sector_centroids[:,0],2))
+                        ref_sector_centroids[:,0],
+                        2))
                     ref_sector_centroids_y = numpy.poly1d(numpy.polyfit(
                         ref_sector_centroids[:,2],
-                        ref_sector_centroids[:,1],2))
+                        ref_sector_centroids[:,1],
+                        2))
 
             farray_r  = mesh.GetPointData().GetArray("r")
             farray_ll = mesh.GetPointData().GetArray("ll")
