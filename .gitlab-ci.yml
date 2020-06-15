@@ -1,0 +1,15 @@
+build:
+  image: docker:19.03.11
+  stage: build
+  services:
+    - docker:19.03.11-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-2017.2.0-dev -f Docker/dolfin_dic-2017.2.0-dev/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-2017.2.0-dev
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-2017.2.0 -f Docker/dolfin_dic-2017.2.0/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-2017.2.0
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-dev -f Docker/dolfin_dic-dev/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic-dev
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic -f Docker/dolfin_dic/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic

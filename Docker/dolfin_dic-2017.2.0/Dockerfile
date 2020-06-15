@@ -1,4 +1,4 @@
-FROM dolfin_dic-dev:2017.2.0
+FROM registry.gitlab.inria.fr/mgenet/dolfin_dic/dolfin_dic-2017.2.0-dev
 
 RUN pip install myPythonLibrary
 RUN pip install myVTKPythonLibrary
