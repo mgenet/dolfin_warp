@@ -17,11 +17,13 @@ WORKDIR /home/fenics
 RUN git clone https://github.com/aschn/gnuplot-colorbrewer.git
 RUN echo "set loadpath \"/home/fenics/gnuplot-colorbrewer/diverging:/home/fenics/gnuplot-colorbrewer/qualitative:/home/fenics/gnuplot-colorbrewer/sequential\"" > .gnuplot
 
+# optimization stuff
+RUN pip3 install git+https://github.com/dolfin-adjoint/pyadjoint.git@2019.1.0 cma nlopt sklearn
+
 # environment setup
 WORKDIR /home/fenics
 RUN mkdir code
 ENV PYTHONPATH=/home/fenics/code:$PYTHONPATH
-ENV PATH=/home/fenics/code/myPythonLibrary:/home/fenics/code/myVTKPythonLibrary:/home/fenics/code/vtkpython_cbl:$PATH
-
-# optimization stuff
-RUN pip3 install git+https://github.com/dolfin-adjoint/pyadjoint.git@2019.1.0 cma nlopt sklearn
+ENV PATH=/home/fenics/code/myPythonLibrary/myPythonLibrary:$PATH
+ENV PATH=/home/fenics/code/myVTKPythonLibrary/myVTKPythonLibrary:$PATH
+ENV PATH=/home/fenics/code/vtkpython_cbl:$PATH
