@@ -14,14 +14,15 @@ import dolfin
 import glob
 import math
 import numpy
+import scipy
+from scipy.interpolate import InterpolatedUnivariateSpline # MG20200616: Is that needed?
 import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
-import vtkpython_cbl as cbl
+import vtkpython_cbl      as cbl
 
 import dolfin_dic as ddic
-from scipy.interpolate import InterpolatedUnivariateSpline
 
 ################################################################################
 

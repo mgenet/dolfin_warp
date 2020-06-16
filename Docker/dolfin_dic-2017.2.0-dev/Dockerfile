@@ -41,6 +41,8 @@ RUN echo "set loadpath \"/home/fenics/gnuplot-colorbrewer/diverging:/home/fenics
 WORKDIR /home/fenics
 RUN mkdir code
 ENV PYTHONPATH=/home/fenics/code:$PYTHONPATH
+ENV PYTHONPATH=/home/fenics/code/myPythonLibrary:$PYTHONPATH
+ENV PYTHONPATH=/home/fenics/code/myVTKPythonLibrary:$PYTHONPATH
 ENV PATH=/home/fenics/code/myPythonLibrary/myPythonLibrary:$PATH
 ENV PATH=/home/fenics/code/myVTKPythonLibrary/myVTKPythonLibrary:$PATH
 ENV PATH=/home/fenics/code/vtkpython_cbl:$PATH
