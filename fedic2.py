@@ -52,6 +52,7 @@ def fedic2(
         initialize_U_array_name="displacement",
         initialize_DU_with_DUold=0,
         register_ref_frame=0,
+        iteration_mode="normal", # normal, loop
         gimic=0,
         gimic_texture="no",
         gimic_resample=1,
@@ -64,8 +65,7 @@ def fedic2(
         write_VTU_file=1,
         write_XML_file=0,
         print_refined_mesh=0, # False
-        print_iterations=0,
-        iteration_mode="normal"):
+        print_iterations=0):
 
     assert (images_expressions_type == "cpp"),\
         "Python image expression are deprecated. Aborting."
