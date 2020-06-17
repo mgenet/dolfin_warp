@@ -24,7 +24,7 @@ FROM quay.io/fenicsproject/stable:2017.2.0
 RUN apt-get update; apt-get -y install rename; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # python stuff
-RUN apt-get update; apt-get -y install python-future python-numpy python-scipy; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update; apt-get -y install python-future python-numpy python-scipy python-tk; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN pip install numpy==1.15
 
 # vtk stuff

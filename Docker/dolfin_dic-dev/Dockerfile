@@ -5,7 +5,7 @@ FROM quay.io/fenicsproject/stable:2019.1.0.r3
 RUN apt-get update; apt-get -y install rename; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # python3 stuff
-RUN apt-get update; apt-get -y install python3-future python3-numpy python3-scipy; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update; apt-get -y install python3-future python3-numpy python3-scipy python3-tk; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # vtk stuff
 RUN apt-get update; apt-get -y install libvtk7-dev python3-vtk7; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
