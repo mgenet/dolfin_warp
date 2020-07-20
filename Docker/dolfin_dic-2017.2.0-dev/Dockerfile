@@ -25,7 +25,6 @@ RUN apt-get update; apt-get -y install rename; apt-get clean; rm -rf /var/lib/ap
 
 # python stuff
 RUN apt-get update; apt-get -y install python-future python-numpy python-scipy python-tk; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN pip install numpy==1.15
 
 # vtk stuff
 RUN apt-get update; apt-get -y install libvtk6-dev python-vtk6; apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
