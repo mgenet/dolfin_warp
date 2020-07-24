@@ -18,3 +18,5 @@ build:
     - echo Build dolfin_dic
     - docker build -t $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic -f Docker/dolfin_dic/Dockerfile .
     - docker push $CI_REGISTRY/mgenet/dolfin_dic/dolfin_dic
+    - echo Docker logout
+    - docker logout $CI_REGISTRY
