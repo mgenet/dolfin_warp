@@ -13,7 +13,7 @@ import dolfin
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_cm as dcm
+import dolfin_mech as dmech
 
 import dolfin_warp as dwarp
 from .Energy import Energy
@@ -74,32 +74,32 @@ class RegularizationEnergy(Energy):
             "nu":self.nu}
 
         if (self.model == "hooke"): # <- super bad
-            self.material = dcm.HookeElasticMaterial(
+            self.material = dmech.HookeElasticMaterial(
                 parameters=self.material_parameters)
             self.Psi_m, self.S_m = self.material.get_free_energy(
                 U=self.problem.U)
             self.P_m = self.S_m
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
             if (self.model == "kirchhoff"): # <- pretty bad too
-                self.material = dcm.KirchhoffElasticMaterial(
+                self.material = dmech.KirchhoffElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "neohookean"):
-                self.material = dcm.NeoHookeanDevElasticMaterial(
+                self.material = dmech.NeoHookeanDevElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "mooneyrivlin"):
-                self.material = dcm.MooneyRivlinDevElasticMaterial(
+                self.material = dmech.MooneyRivlinDevElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "neohookeanmooneyrivlin"):
-                self.material = dcm.NeoHookeanMooneyRivlinDevElasticMaterial(
+                self.material = dmech.NeoHookeanMooneyRivlinDevElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "ciarletgeymonat"):
-                self.material = dcm.CiarletGeymonatBulkElasticMaterial(
+                self.material = dmech.CiarletGeymonatBulkElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "ciarletgeymonatneohookean"):
-                self.material = dcm.CiarletGeymonatNeoHookeanElasticMaterial(
+                self.material = dmech.CiarletGeymonatNeoHookeanElasticMaterial(
                     parameters=self.material_parameters)
             elif (self.model == "ciarletgeymonatneohookeanmooneyrivlin"):
-                self.material = dcm.CiarletGeymonatNeoHookeanMooneyRivlinElasticMaterial(
+                self.material = dmech.CiarletGeymonatNeoHookeanMooneyRivlinElasticMaterial(
                     parameters=self.material_parameters)
             self.Psi_m, self.S_m = self.material.get_free_energy(
                 U=self.problem.U)
