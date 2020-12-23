@@ -14,7 +14,7 @@ import numpy
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .Energy import Energy
 
 ################################################################################
@@ -100,7 +100,7 @@ class GeneratedImageEnergy(Energy):
         self.printer.print_var("ref_frame",self.ref_frame)
 
         # Igen
-        name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
             im_dim=self.image_series.dimension,
             im_type="im",
             im_is_def=self.resample,
@@ -130,7 +130,7 @@ class GeneratedImageEnergy(Energy):
 
         if (self.resample):
             # DIgen
-            name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="grad",
                 im_is_def=1,
@@ -153,7 +153,7 @@ class GeneratedImageEnergy(Energy):
         self.printer.inc()
 
         # Idef
-        name, cpp = ddic.get_ExprIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprIm_cpp_pybind(
             im_dim=self.image_series.dimension,
             im_type="im",
             im_is_def=1)
@@ -174,7 +174,7 @@ class GeneratedImageEnergy(Energy):
         self.printer.print_sci("Idef_norm0",self.Idef_norm0)
 
         # DIdef
-        name, cpp = ddic.get_ExprIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprIm_cpp_pybind(
             im_dim=self.image_series.dimension,
             im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
             im_is_def=1)
@@ -193,7 +193,7 @@ class GeneratedImageEnergy(Energy):
         self.printer.inc()
 
         # Phi_ref
-        name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
             im_dim=self.image_series.dimension,
             im_is_def=0)
         module = dolfin.compile_cpp_code(cpp)
@@ -208,7 +208,7 @@ class GeneratedImageEnergy(Energy):
         self.printer.print_sci("Phi_ref_int",self.Phi_ref_int)
 
         # Phi_def
-        name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
             im_dim=self.image_series.dimension,
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)

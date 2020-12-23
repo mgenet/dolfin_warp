@@ -13,7 +13,7 @@ import dolfin
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -86,13 +86,13 @@ def fedic2(
     assert (print_refined_mesh == 0),\
         "print_refined_mesh is deprecated. Aborting."
 
-    problem = ddic.ImageRegistrationProblem(
+    problem = dwarp.ImageRegistrationProblem(
         mesh=mesh,
         mesh_folder=mesh_folder,
         mesh_basename=mesh_basename,
         U_degree=mesh_degree)
 
-    image_series = ddic.ImageSeries(
+    image_series = dwarp.ImageSeries(
         problem=problem,
         folder=images_folder,
         basename=images_basename,
@@ -104,12 +104,12 @@ def fedic2(
         problem.printer.print_str("Computing quadrature degree…")
         problem.printer.inc()
         if (images_quadrature_from == "points_count"):
-            images_quadrature = ddic.compute_quadrature_degree_from_points_count(
+            images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
                 image_filename=image_series.get_image_filename(images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
         elif (method == "integral"):
-            images_quadrature = ddic.compute_quadrature_degree_from_integral(
+            images_quadrature = dwarp.compute_quadrature_degree_from_integral(
                 image_filename=self.get_image_filename(images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
@@ -119,7 +119,7 @@ def fedic2(
         problem.printer.dec()
 
     if (gimic):
-        generated_image_energy = ddic.GeneratedImageEnergy(
+        generated_image_energy = dwarp.GeneratedImageEnergy(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
@@ -129,7 +129,7 @@ def fedic2(
             resample=gimic_resample)
         problem.add_image_energy(generated_image_energy)
     else:
-        warped_image_energy = ddic.WarpedImageEnergy(
+        warped_image_energy = dwarp.WarpedImageEnergy(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
@@ -143,7 +143,7 @@ def fedic2(
         if (regul_models is None):
             regul_models = [regul_model]
         for regul_model in regul_models:
-            regularization_energy = ddic.RegularizationEnergy(
+            regularization_energy = dwarp.RegularizationEnergy(
                 name="reg"+("_"+regul_model)*(len(regul_models)>1),
                 problem=problem,
                 w=regul_level,
@@ -153,7 +153,7 @@ def fedic2(
                 quadrature_degree=regul_quadrature)
             problem.add_regul_energy(regularization_energy)
 
-    solver = ddic.NonlinearSolver(
+    solver = dwarp.NonlinearSolver(
         problem=problem,
         parameters={
             "working_folder":working_folder,
@@ -164,7 +164,7 @@ def fedic2(
             "n_iter_max":n_iter_max,
             "write_iterations":print_iterations})
 
-    image_iterator = ddic.ImageIterator(
+    image_iterator = dwarp.ImageIterator(
         problem=problem,
         solver=solver,
         parameters={

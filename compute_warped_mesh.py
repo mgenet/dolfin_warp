@@ -20,7 +20,7 @@ import vtk
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .generate_images import *
 
 ################################################################################
@@ -52,7 +52,7 @@ def compute_warped_mesh(
         assert (os.path.exists(mesh_filename)),\
         "No mesh in "+mesh_filename+". Aborting."
         if (mesh_ext == "xml"):
-            mesh = ddic.mesh2ugrid(
+            mesh = dwarp.mesh2ugrid(
                 dolfin.Mesh(
                     mesh_filename))
         elif (mesh_ext in ("vtk", "vtu")):
@@ -60,7 +60,7 @@ def compute_warped_mesh(
                 filename=mesh_filename,
                 verbose=verbose-1)
     else:
-        mesh = ddic.mesh2ugrid(mesh)
+        mesh = dwarp.mesh2ugrid(mesh)
     n_points = mesh.GetNumberOfPoints()
     n_cells = mesh.GetNumberOfCells()
 

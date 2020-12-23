@@ -8,7 +8,7 @@
 ###                                                                          ###
 ################################################################################
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -60,7 +60,7 @@ def get_ExprIm_cpp_pybind(
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-'''+ddic.get_StaticScaling_cpp()+'''\
+'''+dwarp.get_StaticScaling_cpp()+'''\
 
 class '''+name+''' : public dolfin::Expression
 {
@@ -272,7 +272,7 @@ def get_ExprIm_cpp_swig(
 #include <vtkPointData.h>
 #include <vtkPolyData.h>''')*(im_is_def)*(u_type=="vtk")+'''
 
-'''+ddic.get_StaticScaling_cpp()+'''\
+'''+dwarp.get_StaticScaling_cpp()+'''\
 
 namespace dolfin
 {

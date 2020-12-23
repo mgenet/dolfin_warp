@@ -16,7 +16,7 @@ import numpy
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -36,7 +36,7 @@ def compute_quadrature_degree_from_points_count(
         image=image,
         verbose=verbose-1)
 
-    ugrid = ddic.mesh2ugrid(mesh)
+    ugrid = dwarp.mesh2ugrid(mesh)
     n_cells = ugrid.GetNumberOfCells()
     if (verbose): print("n_cells = "+str(n_cells))
 
@@ -127,11 +127,11 @@ def compute_quadrature_degree_from_integral(
             degree=degree,
             quad_scheme="default")
         if   (image_dimension == 2):
-            I0 = ddic.ExprIm2(
+            I0 = dwarp.ExprIm2(
                 filename=image_filename,
                 element=fe)
         elif (image_dimension == 3):
-            I0 = ddic.ExprIm3(
+            I0 = dwarp.ExprIm3(
                 filename=image_filename,
                 element=fe)
         if not (first_time):

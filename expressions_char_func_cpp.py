@@ -10,7 +10,7 @@
 
 import dolfin
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 

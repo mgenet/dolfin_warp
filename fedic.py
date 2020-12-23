@@ -21,7 +21,7 @@ import time
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -145,12 +145,12 @@ def fedic(
         ref_image_grad_filename = images_folder+"/"+images_grad_basename+"_"+str(images_ref_frame).zfill(images_zfill)+"."+images_ext
     if (images_quadrature is None):
         if (images_quadrature_from == "points_count"):
-            images_quadrature = ddic.compute_quadrature_degree_from_points_count(
+            images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
                 image_filename=ref_image_filename,
                 mesh=mesh,
                 verbose=1)
         elif (images_quadrature_from == "integral"):
-            images_quadrature = ddic.compute_quadrature_degree_from_integral(
+            images_quadrature = dwarp.compute_quadrature_degree_from_integral(
                 image_filename=ref_image_filename,
                 mesh=mesh,
                 deg_min=1,
@@ -192,14 +192,14 @@ def fedic(
         sub_element._quad_scheme = "default" # should not be needed
     if (images_expressions_type == "cpp"):
         Iref = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=0),
             element=fe)
         Iref.init_image(ref_image_filename)
         DIref = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=0),
@@ -207,17 +207,17 @@ def fedic(
         DIref.init_image(ref_image_filename if (images_grad_basename is None) else ref_image_grad_filename)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
-            Iref = ddic.ExprIm2(
+            Iref = dwarp.ExprIm2(
                 filename=ref_image_filename,
                 element=fe)
-            DIref = ddic.ExprGradIm2(
+            DIref = dwarp.ExprGradIm2(
                 filename=ref_image_filename,
                 element=ve)
         elif (images_dimension == 3):
-            Iref = ddic.ExprIm3(
+            Iref = dwarp.ExprIm3(
                 filename=ref_image_filename,
                 element=fe)
-            DIref = ddic.ExprGradIm3(
+            DIref = dwarp.ExprGradIm3(
                 filename=ref_image_filename,
                 element=ve)
     else:
@@ -397,7 +397,7 @@ def fedic(
     scaling = numpy.array([1.,0.])
     if (images_expressions_type == "cpp"):
         Idef = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=1),
@@ -405,7 +405,7 @@ def fedic(
         Idef.init_dynamic_scaling(scaling)
         Idef.init_disp(U)
         DIdef = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
@@ -415,7 +415,7 @@ def fedic(
         if ("-wHess" in tangent_type):
             assert (0), "ToDo"
         Iold = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="im",
                 im_is_def=1),
@@ -423,7 +423,7 @@ def fedic(
         Iold.init_dynamic_scaling(scaling) # 2016/07/25: ok, same scaling must apply to Idef & Iold…
         Iold.init_disp(Uold)
         DIold = dolfin.Expression(
-            cppcode=ddic.get_ExprIm_cpp(
+            cppcode=dwarp.get_ExprIm_cpp(
                 im_dim=images_dimension,
                 im_type="grad" if (images_grad_basename is None) else "grad_no_deriv",
                 im_is_def=1),
@@ -432,46 +432,46 @@ def fedic(
         DIold.init_disp(Uold)
     elif (images_expressions_type == "py"):
         if (images_dimension == 2):
-            Idef = ddic.ExprDefIm2(
+            Idef = dwarp.ExprDefIm2(
                 U=U,
                 scaling=scaling,
                 element=fe)
-            DIdef = ddic.ExprGradDefIm2(
+            DIdef = dwarp.ExprGradDefIm2(
                 U=U,
                 scaling=scaling,
                 element=ve)
             if ("-wHess" in tangent_type):
-                DDIdef = ddic.ExprHessDefIm2(
+                DDIdef = dwarp.ExprHessDefIm2(
                     U=U,
                     scaling=scaling,
                     element=te)
-            Iold = ddic.ExprDefIm2(
+            Iold = dwarp.ExprDefIm2(
                 U=Uold,
                 scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=fe)
-            DIold = ddic.ExprGradDefIm2(
+            DIold = dwarp.ExprGradDefIm2(
                 U=Uold,
                 scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=ve)
         elif (images_dimension == 3):
-            Idef = ddic.ExprDefIm3(
+            Idef = dwarp.ExprDefIm3(
                 U=U,
                 scaling=scaling,
                 element=fe)
-            DIdef = ddic.ExprGradDefIm3(
+            DIdef = dwarp.ExprGradDefIm3(
                 U=U,
                 scaling=scaling,
                 element=ve)
             if ("-wHess" in tangent_type):
-                DDIdef = ddic.ExprHessDefIm3(
+                DDIdef = dwarp.ExprHessDefIm3(
                     U=U,
                     scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                     element=te)
-            Iold = ddic.ExprDefIm3(
+            Iold = dwarp.ExprDefIm3(
                 U=Uold,
                 scaling=scaling,
                 element=fe)
-            DIold = ddic.ExprGradDefIm3(
+            DIold = dwarp.ExprGradDefIm3(
                 U=Uold,
                 scaling=scaling, # 2016/07/25: ok, same scaling must apply to Idef & Iold…
                 element=ve)
@@ -480,7 +480,7 @@ def fedic(
 
     mypy.print_str("Defining correlation energy…",tab)
     phi_Iref = dolfin.Expression(
-        cppcode=ddic.get_ExprCharFuncIm_cpp(
+        cppcode=dwarp.get_ExprCharFuncIm_cpp(
             im_dim=images_dimension),
         element=fe)
     phi_Iref.init_image(ref_image_filename)

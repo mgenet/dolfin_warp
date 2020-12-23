@@ -22,7 +22,7 @@ import vtk
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -147,6 +147,6 @@ def add_functions_to_ugrid(
         ugrid):
 
     for function in functions:
-        ddic.add_function_to_ugrid(
+        dwarp.add_function_to_ugrid(
             function=function,
             ugrid=ugrid)

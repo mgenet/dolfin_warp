@@ -15,7 +15,7 @@ import myVTKPythonLibrary as myvtk
 
 import dolfin_cm as dcm
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .Energy import Energy
 
 ################################################################################

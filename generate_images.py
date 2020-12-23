@@ -22,7 +22,7 @@ import vtk
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .generate_images_Image   import Image
 from .generate_images_Mapping import Mapping
 
@@ -198,7 +198,7 @@ def generate_images(
                     src=images["folder"]+"/"+images["basename"]             +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                     dst=images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
-        ddic.compute_downsampled_images(
+        dwarp.compute_downsampled_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             downsampling_factors=images["upsampling_factors"],
@@ -216,7 +216,7 @@ def generate_images(
                     src=images["folder"]+"/"+images["basename"]                  +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                     dst=images["folder"]+"/"+images["basename"]+"_predownsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
-        ddic.compute_downsampled_images(
+        dwarp.compute_downsampled_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             downsampling_factors=images["downsampling_factors"],
@@ -234,7 +234,7 @@ def generate_images(
                     src=images["folder"]+"/"+images["basename"]                 +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
                     dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
-        ddic.compute_normalized_images(
+        dwarp.compute_normalized_images(
             images_folder=images["folder"],
             images_basename=images["basename"],
             images_datatype=images["data_type"],

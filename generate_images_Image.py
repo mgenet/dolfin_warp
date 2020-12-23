@@ -21,7 +21,7 @@ import vtk
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 

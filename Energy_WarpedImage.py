@@ -14,7 +14,7 @@ import numpy
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .Energy import Energy
 
 ################################################################################
@@ -99,7 +99,7 @@ class WarpedImageEnergy(Energy):
 
         # Iref
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=0)
@@ -110,7 +110,7 @@ class WarpedImageEnergy(Energy):
                 element=self.fe)
         else:
             self.Iref = dolfin.Expression(
-                ddic.get_ExprIm_cpp_swig(
+                dwarp.get_ExprIm_cpp_swig(
                     im_dim=self.image_series.dimension,
                     im_type="im",
                     im_is_def=0),
@@ -128,7 +128,7 @@ class WarpedImageEnergy(Energy):
 
         # DIref
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=0)
@@ -138,7 +138,7 @@ class WarpedImageEnergy(Energy):
                 expr(),
                 element=self.ve)
         else:
-            cpp = ddic.get_ExprIm_cpp_swig(
+            cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=0)
@@ -159,7 +159,7 @@ class WarpedImageEnergy(Energy):
 
         # Idef
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=1,
@@ -171,7 +171,7 @@ class WarpedImageEnergy(Energy):
                 element=self.fe)
             self.Idef.init_disp(self.problem.U.cpp_object())
         else:
-            cpp = ddic.get_ExprIm_cpp_swig(
+            cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=1)
@@ -188,7 +188,7 @@ class WarpedImageEnergy(Energy):
 
         # DIdef
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1,
@@ -200,7 +200,7 @@ class WarpedImageEnergy(Energy):
                 element=self.ve)
             self.DIdef.init_disp(self.problem.U.cpp_object())
         else:
-            cpp = ddic.get_ExprIm_cpp_swig(
+            cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1)
@@ -218,7 +218,7 @@ class WarpedImageEnergy(Energy):
 
         # Phi_ref
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_is_def=0,
                 im_is_cone=im_is_cone)
@@ -228,7 +228,7 @@ class WarpedImageEnergy(Energy):
                 expr(),
                 element=self.fe)
         else:
-            cpp = ddic.get_ExprCharFuncIm_cpp_swig(
+            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_is_def=0,
                 im_is_cone=im_is_cone)
@@ -242,7 +242,7 @@ class WarpedImageEnergy(Energy):
 
         # Phi_def
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = ddic.get_ExprCharFuncIm_cpp_pybind(
+            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_is_def=1,
                 im_is_cone=im_is_cone)
@@ -253,7 +253,7 @@ class WarpedImageEnergy(Energy):
                 element=self.fe)
             self.Phi_def.init_disp(self.problem.U.cpp_object())
         else:
-            cpp = ddic.get_ExprCharFuncIm_cpp_swig(
+            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_is_def=1,
                 im_is_cone=im_is_cone)

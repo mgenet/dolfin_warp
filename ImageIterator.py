@@ -20,7 +20,7 @@ import vtk
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -75,7 +75,7 @@ class ImageIterator():
             self.printer.inc()
 
             if (self.write_VTU_file):
-                ddic.write_VTU_file(
+                dwarp.write_VTU_file(
                     filebasename=vtu_basename,
                     function=self.problem.U,
                     time=self.problem.images_ref_frame)
@@ -97,7 +97,7 @@ class ImageIterator():
             #     v=self.J,
             #     V=self.J_fs,
             #     function=self.J_func)
-            # ddic.write_VTU_file(
+            # dwarp.write_VTU_file(
             #     filebasename=vtu_basename+"-J",
             #     function=self.J_func,
             #     time=self.problem.images_ref_frame)
@@ -114,7 +114,7 @@ class ImageIterator():
         self.printer.print_str("Looping over frames…")
 
         if (self.initialize_U_from_file):
-            mesh_series = ddic.MeshSeries(
+            mesh_series = dwarp.MeshSeries(
                 problem=self.problem,
                 folder=self.initialize_U_folder,
                 basename=self.initialize_U_basename,
@@ -197,7 +197,7 @@ class ImageIterator():
                 self.printer.inc()
 
                 if (self.write_VTU_file):
-                    ddic.write_VTU_file(
+                    dwarp.write_VTU_file(
                         filebasename=vtu_basename,
                         function=self.problem.U,
                         time=k_frame)
@@ -207,7 +207,7 @@ class ImageIterator():
                 #     v=self.J,
                 #     V=self.J_fs,
                 #     function=self.J_func)
-                # ddic.write_VTU_file(
+                # dwarp.write_VTU_file(
                 #     filebasename=vtu_basename+"-J",
                 #     function=self.J_func,
                 #     time=k_frame)

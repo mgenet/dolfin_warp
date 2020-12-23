@@ -22,7 +22,7 @@ import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 import vtkpython_cbl      as cbl
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -295,8 +295,8 @@ def compute_strains(
                 warper.Update()
                 warped_ugrid = warper.GetOutput()
 
-                warped_sector_centroids = ddic.get_centroids(mesh=warped_ugrid)
-                ref_sector_centroids = ddic.get_centroids(mesh=mesh)
+                warped_sector_centroids = dwarp.get_centroids(mesh=warped_ugrid)
+                ref_sector_centroids = dwarp.get_centroids(mesh=mesh)
 
                 (cell_locator,
                  closest_point,
@@ -405,14 +405,14 @@ def compute_strains(
         strain_file.close()
 
         if (plot_strains):
-            ddic.plot_strains(
+            dwarp.plot_strains(
                 working_folder=working_folder,
                 working_basenames=[working_basename],
                 suffix=None,
                 verbose=verbose)
 
         if (plot_regional_strains):
-            ddic.plot_regional_strains(
+            dwarp.plot_regional_strains(
                 working_folder=working_folder,
                 working_basename=working_basename,
                 suffix=None,
@@ -422,7 +422,7 @@ def compute_strains(
         strains_vs_radius_file.close()
 
         if (plot_strains_vs_radius):
-            ddic.plot_strains_vs_radius(
+            dwarp.plot_strains_vs_radius(
                 working_folder=working_folder,
                 working_basenames=[working_basename],
                 suffix=None,
@@ -432,7 +432,7 @@ def compute_strains(
         binned_strains_vs_radius_file.close()
 
         if (plot_binned_strains_vs_radius):
-            ddic.plot_binned_strains_vs_radius(
+            dwarp.plot_binned_strains_vs_radius(
                 working_folder=working_folder,
                 working_basenames=[working_basename],
                 suffix=None,
@@ -442,7 +442,7 @@ def compute_strains(
         twist_vs_height_file.close()
 
         if (plot_twist_vs_height):
-            ddic.plot_twist_vs_height(
+            dwarp.plot_twist_vs_height(
                 working_folder=working_folder,
                 working_basename=working_basename,
                 suffix=None,

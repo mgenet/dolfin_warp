@@ -20,7 +20,7 @@ import time
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -92,7 +92,7 @@ class NonlinearSolver():
                 names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
                 filename=self.frame_filebasename+".dat")
 
-            ddic.write_VTU_file(
+            dwarp.write_VTU_file(
                 filebasename=self.frame_filebasename,
                 function=self.problem.U,
                 time=0)
@@ -120,7 +120,7 @@ class NonlinearSolver():
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
             if (self.write_iterations):
-                ddic.write_VTU_file(
+                dwarp.write_VTU_file(
                     filebasename=self.frame_filebasename,
                     function=self.problem.U,
                     time=self.k_iter)
