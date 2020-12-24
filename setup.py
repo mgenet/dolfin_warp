@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="dolfin_warp",
-    version="2020.12.23.post1",
+    version="2020.12.24",
     author="Martin Genet",
     author_email="martin.genet@polytechnique.edu",
     description=open("README.md", "r").readlines()[1][:-1],
@@ -18,3 +18,8 @@ setuptools.setup(
     ],
     install_requires=["numpy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
 )
+
+# python -m keyring set https://upload.pypi.org/legacy/ username
+
+# python setup.py sdist bdist_wheel
+# python -m twine upload dist/*

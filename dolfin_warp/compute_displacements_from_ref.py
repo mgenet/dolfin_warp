@@ -28,7 +28,7 @@ def compute_displacements_from_ref(
         ref_frame,
         working_ext="vtu",
         suffix="",
-        verbose=1):
+        verbose=0):
 
     working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
     working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])

@@ -30,7 +30,7 @@ def compute_displacement_error(
         ref_ext="vtu",
         working_disp_array_name="displacement",
         ref_disp_array_name="displacement",
-        verbose=1):
+        verbose=0):
 
     working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
     ref_filenames = glob.glob(ref_folder+"/"+ref_basename+"_[0-9]*."+ref_ext)
