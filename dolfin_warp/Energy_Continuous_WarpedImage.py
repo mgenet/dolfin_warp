@@ -15,11 +15,11 @@ import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
-from .Energy import Energy
+from .Energy_Continuous import ContinuousEnergy
 
 ################################################################################
 
-class WarpedImageEnergy(Energy):
+class WarpedImageContinuousEnergy(ContinuousEnergy):
 
 
 
@@ -282,6 +282,7 @@ class WarpedImageEnergy(Energy):
         self.res_form  = self.DPsi_c  * self.dV
         self.jac_form  = self.DDPsi_c * self.dV
 
+        self.printer.dec()
         self.printer.dec()
 
 

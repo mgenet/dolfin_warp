@@ -16,11 +16,11 @@ import myVTKPythonLibrary as myvtk
 import dolfin_mech as dmech
 
 import dolfin_warp as dwarp
-from .Energy import Energy
+from .Energy_Continuous import ContinuousEnergy
 
 ################################################################################
 
-class RegularizationEnergy(Energy):
+class RegularizationContinuousEnergy(ContinuousEnergy):
 
 
 
@@ -34,14 +34,31 @@ class RegularizationEnergy(Energy):
             poisson=0.,
             quadrature_degree=None):
 
-        self.problem           = problem
-        self.printer           = problem.printer
-        self.name              = name
-        self.w                 = w
-        self.type              = type
-        self.model             = model
-        self.young             = young
-        self.poisson           = poisson
+        self.problem = problem
+        self.printer = problem.printer
+
+        self.name = name
+
+        self.w = w
+
+        assert (type in ("equilibrated", "hyperelastic")),\
+            "\"type\" ("+str(type)+") must be \"equilibrated\" or \"hyperelastic\". Aborting."
+        self.type = type
+
+        assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
+            "\"model\" ("+str(model)+") must be \"hooke\", \"kirchhoff\", \"neohookean\", \"mooneyrivlin\", \"neohookeanmooneyrivlin\", \"ciarletgeymonat\", \"ciarletgeymonatneohookean\" or \"ciarletgeymonatneohookeanmooneyrivlin\". Aborting."
+        self.model = model
+
+        assert (young > 0.),\
+            "\"young\" ("+str(young)+") must be > 0. Aborting."
+        self.young = young
+
+        assert (poisson > -1.),\
+            "\"poisson\" ("+str(poisson)+") must be > -1. Aborting."
+        assert (poisson < 0.5),\
+            "\"poisson\" ("+str(poisson)+") must be < 0.5. Aborting."
+        self.poisson = poisson
+
         self.quadrature_degree = quadrature_degree
 
         self.printer.print_str("Defining regularization energy…")
@@ -107,8 +124,6 @@ class RegularizationEnergy(Energy):
             self.I = dolfin.Identity(self.dim)
             self.F = self.I + dolfin.grad(self.problem.U)
             self.P_m = self.F * self.S_m
-        else:
-            assert (0), "\"model\" ("+str(self.model)+") must be \"hooke\", \"kirchhoff\", \"neohookean\", \"mooneyrivlin\" or \"ciarletgeymonat\". Aborting."
 
         self.printer.print_str("Defining regularization energy…")
 
@@ -135,8 +150,6 @@ class RegularizationEnergy(Energy):
             # self.Psi_m_S = dolfin.inner(self.P_N,
             #                             self.P_N)/self.cell_h
             self.Psi_m_S = dolfin.Constant(0)
-        else:
-            assert (0), "\"type\" ("+str(self.type)+") must be \"hyperelastic\" or \"equilibrated\". Aborting."
 
         self.DPsi_m_V  = dolfin.derivative( self.Psi_m_V, self.problem.U, self.problem.dU_test )
         self.DPsi_m_F  = dolfin.derivative( self.Psi_m_F, self.problem.U, self.problem.dU_test )

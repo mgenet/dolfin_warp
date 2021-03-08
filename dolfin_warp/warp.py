@@ -17,7 +17,7 @@ import dolfin_warp as dwarp
 
 ################################################################################
 
-def fedic2(
+def warp(
         working_folder,
         working_basename,
         images_folder,
@@ -35,7 +35,7 @@ def fedic2(
         mesh_folder=None,
         mesh_basename=None,
         mesh_degree=1,
-        regul_type="equilibrated", # equilibrated, hyperelastic
+        regul_type="equilibrated", # equilibrated, hyperelastic, discrete-equilibrated, discrete-elastic
         regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
         regul_models=None,
         regul_quadrature=None,
@@ -119,7 +119,7 @@ def fedic2(
         problem.printer.dec()
 
     if (gimic):
-        generated_image_energy = dwarp.GeneratedImageEnergy(
+        generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
@@ -129,7 +129,7 @@ def fedic2(
             resample=gimic_resample)
         problem.add_image_energy(generated_image_energy)
     else:
-        warped_image_energy = dwarp.WarpedImageEnergy(
+        warped_image_energy = dwarp.WarpedImageContinuousEnergy(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
@@ -143,15 +143,26 @@ def fedic2(
         if (regul_models is None):
             regul_models = [regul_model]
         for regul_model in regul_models:
-            regularization_energy = dwarp.RegularizationEnergy(
-                name="reg"+("_"+regul_model)*(len(regul_models)>1),
-                problem=problem,
-                w=regul_level,
-                type=regul_type,
-                model=regul_model,
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
-            problem.add_regul_energy(regularization_energy)
+            if (regul_type in ("equilibrated", "hyperelastic")):
+                regularization_energy = dwarp.RegularizationContinuousEnergy(
+                    name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                    problem=problem,
+                    w=regul_level,
+                    type=regul_type,
+                    model=regul_model,
+                    poisson=regul_poisson,
+                    quadrature_degree=regul_quadrature)
+                problem.add_regul_energy(regularization_energy)
+            elif (regul_type in ("discrete-equilibrated", "discrete-elastic")):
+                regularization_energy = dwarp.RegularizationDiscreteEnergy(
+                    name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                    problem=problem,
+                    w=regul_level,
+                    type=regul_type.split("-")[1],
+                    model="hooke",
+                    poisson=regul_poisson,
+                    quadrature_degree=regul_quadrature)
+                problem.add_regul_energy(regularization_energy)
 
     solver = dwarp.NonlinearSolver(
         problem=problem,
@@ -184,3 +195,5 @@ def fedic2(
     image_iterator.iterate()
 
     problem.close()
+
+fedic2 = warp

@@ -15,11 +15,11 @@ import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
-from .Energy import Energy
+from .Energy_Continuous import ContinuousEnergy
 
 ################################################################################
 
-class GeneratedImageEnergy(Energy):
+class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
 
 

@@ -85,6 +85,8 @@ def fedic(
         print_refined_mesh=0,
         print_iterations=0):
 
+    print("WARNING! This function is deprecated. Use the warp function instead.")
+
     tab = 0
 
     if not os.path.exists(working_folder):

@@ -179,6 +179,17 @@ class ImageRegistrationProblem(Problem):
 
 
 
+    def call_before_solve(self,
+            *kargs,
+            **kwargs):
+
+        for energy in self.energies:
+            energy.call_before_solve(
+                *kargs,
+                **kwargs)
+
+
+
     def call_before_assembly(self,
             *kargs,
             **kwargs):
@@ -194,20 +205,10 @@ class ImageRegistrationProblem(Problem):
 
         ener = 0.
         for energy in self.energies:
-            ener_ = dolfin.assemble(
-                energy.ener_form)
+            ener_ = energy.assemble_ener()
             self.printer.print_sci("ener_"+energy.name,ener_)
-            ener += energy.w * ener_
-        #self.printer.print_sci("ener",ener)
-
-        # ener_form = 0.
-        # for energy in self.energies:
-        #     ener_form += dolfin.Constant(energy.w) * energy.ener_form
-        #
-        # ener = dolfin.assemble(
-        #     ener_form)
-        # #self.printer.print_sci("ener",ener)
-
+            ener += ener_
+        self.printer.print_sci("ener",ener)
         return ener
 
 
@@ -215,39 +216,29 @@ class ImageRegistrationProblem(Problem):
     def assemble_res(self,
             res_vec):
 
-        res_form = 0.
+        if (res_vec.size() > 0): res_vec.zero()
         for energy in self.energies:
-            res_form -= dolfin.Constant(energy.w) * energy.res_form
-
-        res_vec = dolfin.assemble(
-            res_form,
-            tensor=res_vec)
-        #self.printer.print_var("res_vec",res_vec.array())
+            # print(energy.name)
+            energy.assemble_res(
+                res_vec=res_vec,
+                add_values=True)
+        # self.printer.print_var("res_vec",res_vec.array())
 
 
 
     def assemble_jac(self,
             jac_mat):
 
-        jac_form = 0.
+        if (jac_mat.nnz() > 0): jac_mat.zero()
         for energy in self.energies:
-            jac_form += dolfin.Constant(energy.w) * energy.jac_form
-
-        jac_mat = dolfin.assemble(
-            jac_form,
-            tensor=jac_mat)
-        #self.printer.print_var("jac_mat",jac_mat.array())
-
-
-
-    def call_before_solve(self,
-            *kargs,
-            **kwargs):
-
-        for energy in self.energies:
-            energy.call_before_solve(
-                *kargs,
-                **kwargs)
+            # print(jac_mat.nnz())
+            # print(jac_mat.array())
+            energy.assemble_jac(
+                jac_mat=jac_mat,
+                add_values=True)
+            # print(jac_mat.nnz())
+            # print(jac_mat.array())
+        # self.printer.print_var("jac_mat",jac_mat.array())
 
 
 

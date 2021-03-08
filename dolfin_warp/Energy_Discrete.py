@@ -9,44 +9,16 @@
 ################################################################################
 
 import dolfin
+import numpy
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
+from .Energy import Energy
 
 ################################################################################
 
-class Energy():
+class DiscreteEnergy(Energy):
 
-
-
-    def reinit(self,
-            *kargs,
-            **kwargs):
-
-        pass
-
-
-
-    def call_before_solve(self,
-            *kargs,
-            **kwargs):
-
-        pass
-
-
-
-    def call_before_assembly(self,
-            *kargs,
-            **kwargs):
-
-        pass
-
-
-
-    def call_after_solve(self,
-            *kargs,
-            **kwargs):
-
-        pass
+    pass

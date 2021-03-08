@@ -237,7 +237,7 @@ class NonlinearSolver():
             timer = time.time()
             self.linear_solver.solve(
                 self.problem.dU.vector(),
-                self.res_vec)
+                -self.res_vec)
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
         except:
