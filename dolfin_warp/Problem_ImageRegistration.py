@@ -175,7 +175,11 @@ class ImageRegistrationProblem(Problem):
     def add_regul_energy(self,
             energy):
 
-        self.energies += [energy]
+        # self.energies += [energy]
+        if (dwarp.ContinuousEnergy in type(energy).__mro__):
+            self.energies.insert(0, energy)
+        elif (dwarp.DiscreteEnergy in type(energy).__mro__):
+            self.energies.append(energy)
 
 
 
@@ -205,6 +209,7 @@ class ImageRegistrationProblem(Problem):
 
         ener = 0.
         for energy in self.energies:
+            # print (energy.name)
             ener_ = energy.assemble_ener()
             self.printer.print_sci("ener_"+energy.name,ener_)
             ener += ener_
@@ -218,7 +223,7 @@ class ImageRegistrationProblem(Problem):
 
         if (res_vec.size() > 0): res_vec.zero()
         for energy in self.energies:
-            # print(energy.name)
+            # print (energy.name)
             energy.assemble_res(
                 res_vec=res_vec,
                 add_values=True)
@@ -231,13 +236,14 @@ class ImageRegistrationProblem(Problem):
 
         if (jac_mat.nnz() > 0): jac_mat.zero()
         for energy in self.energies:
-            # print(jac_mat.nnz())
-            # print(jac_mat.array())
+            # print (energy.name)
+            # print (jac_mat.nnz())
+            # print (jac_mat.array())
             energy.assemble_jac(
                 jac_mat=jac_mat,
                 add_values=True)
-            # print(jac_mat.nnz())
-            # print(jac_mat.array())
+            # print (jac_mat.nnz())
+            # print (jac_mat.array())
         # self.printer.print_var("jac_mat",jac_mat.array())
 
 

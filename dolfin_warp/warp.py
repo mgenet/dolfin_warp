@@ -163,6 +163,8 @@ def warp(
                     poisson=regul_poisson,
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
+            else:
+                assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"hyperelastic\", \"discrete-equilibrated\" or \"discrete-elastic\". Aborting."
 
     solver = dwarp.NonlinearSolver(
         problem=problem,

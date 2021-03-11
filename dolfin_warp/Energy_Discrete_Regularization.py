@@ -97,8 +97,9 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
             bc = dolfin.DirichletBC(self.problem.U_fs, [0]*self.problem.mesh_dimension, sd)
             bc.zero(self.K_mat)
 
-            self.K_mat = petsc4py.PETSc.Mat.transposeMatMult(self.K_mat.mat(), self.K_mat.mat())
-            self.K_mat = dolfin.PETScMatrix(self.K_mat)
+            self.K_mat_mat = self.K_mat.mat()
+            self.K_mat_mat = petsc4py.PETSc.Mat.transposeMatMult(self.K_mat_mat, self.K_mat_mat)
+            self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
 
         self.printer.dec()
 
