@@ -158,30 +158,45 @@ def compute_projected_image(
         mesh,
         image_filename,
         image_field_name="displacement",
+        image_field_dim=3,
+        image_field_family="Lagrange",
+        image_field_degree=1,
         image_quadrature=1):
 
     dV = dolfin.Measure("dx", domain=mesh)
     form_compiler_parameters_for_images = {}
     form_compiler_parameters_for_images["quadrature_degree"] = image_quadrature
 
-    vfe = dolfin.VectorElement(
-        family="Quadrature",
-        cell=mesh.ufl_cell(),
-        degree=image_quadrature,
-        quad_scheme="default")
+    if (image_field_name == 1):
+        fe = dolfin.FiniteElement(
+            family="Quadrature",
+            cell=mesh.ufl_cell(),
+            degree=image_quadrature,
+            quad_scheme="default")
 
-    vfs = dolfin.VectorFunctionSpace(
-        mesh=mesh,
-        family="Lagrange",
-        degree=1)
+        fs = dolfin.FunctionSpace(
+            mesh=mesh,
+            family=image_field_family,
+            degree=image_field_degree)
+    else:
+        fe = dolfin.VectorElement(
+            family="Quadrature",
+            cell=mesh.ufl_cell(),
+            degree=image_quadrature,
+            quad_scheme="default")
+
+        fs = dolfin.VectorFunctionSpace(
+            mesh=mesh,
+            family=image_field_family,
+            degree=image_field_degree)
 
     projected_func = dolfin.Function(
-        vfs,
+        fs,
         name=image_field_name)
     U = dolfin.TrialFunction(
-        vfs)
+        fs)
     V = dolfin.TestFunction(
-        vfs)
+        fs)
 
     if (int(dolfin.__version__.split('.')[0]) >= 2018):
         cpp = get_ExprProbedGrid_pybind(
@@ -191,13 +206,13 @@ def compute_projected_image(
         expr = getattr(module, "ProbedGridExpr")
         source_expr = dolfin.CompiledExpression(
             expr(),
-            element=vfe)
+            element=fe)
     else:
         source_expr = dolfin.Expression(
             cppcode=get_ExprProbedGrid_swig(
                 image_dim=3,
                 image_field_name=image_field_name),
-            element=vfe)
+            element=fe)
     source_expr.init_image(
         image_filename)
 
@@ -205,7 +220,7 @@ def compute_projected_image(
         dolfin.inner(U,V)*dV)
 
     N = dolfin.assemble(
-        dolfin.inner(source_expr,V)*dV,
+        dolfin.inner(source_expr, V) * dV,
         form_compiler_parameters=form_compiler_parameters_for_images)
 
     dolfin.solve(M, projected_func.vector(), N)
