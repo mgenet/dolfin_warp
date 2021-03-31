@@ -22,6 +22,138 @@ import dolfin_warp as dwarp
 
 ################################################################################
 
+def get_ExprProbedGrid_swig(
+    image_dim=3,
+    image_field_name="displacement"):
+
+    assert (ProbedGridExpr in (3))
+
+    cpp = '''\
+#include <vtkPolyData.h>
+#include <vtkProbeFilter.h>
+#include <vtkSmartPointer.h>
+#include <vtkStructuredGrid.h>
+#include <vtkStructuredGridReader.h>
+
+namespace dolfin
+{
+
+class MyExpr : public Expression
+{
+    vtkSmartPointer<vtkStructuredGrid> sgrid;
+    vtkSmartPointer<vtkPoints> probe_points;
+    vtkSmartPointer<vtkPolyData> probe_polydata;
+    vtkSmartPointer<vtkProbeFilter> probe_filter;
+
+public:
+
+    MyExpr():
+        Expression('''+image_dim+''')
+    {
+        sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
+        probe_points = vtkSmartPointer<vtkPoints>::New();
+        probe_polydata = vtkSmartPointer<vtkPolyData>::New();
+        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
+    }
+
+    void init_image(
+        const char* image_filename)
+    {
+        vtkSmartPointer<vtkStructuredGridReader> reader = vtkSmartPointer<vtkStructuredGridReader>::New();
+        reader->SetFileName(image_filename);
+        reader->Update();
+        sgrid = reader->GetOutput();
+        probe_filter->SetSourceData(sgrid);
+    }
+
+    void eval(
+        Array<double>& expr,
+        const Array<double>& X) const
+    {
+        probe_points->SetNumberOfPoints(1);
+        probe_points->SetPoint(0, X.data());
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
+        probe_filter->Update();
+        probe_filter->GetOutput()->GetPointData()->GetArray("'''+image_field_name+'''")->GetTuple(0, expr.data());
+    }
+};
+
+}'''
+
+    return cpp
+
+def get_ExprProbedGrid_pybind(
+        image_dim=3,
+        image_field_name="displacement"):
+
+    assert (image_dim  in (3))
+
+    cpp = '''\
+#include <dolfin/function/Expression.h>
+
+#include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
+
+#include <vtkPolyData.h>
+#include <vtkProbeFilter.h>
+#include <vtkSmartPointer.h>
+#include <vtkStructuredGrid.h>
+#include <vtkStructuredGridReader.h>
+
+class ProbedGridExpr : public dolfin::Expression
+{
+    vtkSmartPointer<vtkStructuredGrid> sgrid;
+    vtkSmartPointer<vtkPoints> probe_points;
+    vtkSmartPointer<vtkPolyData> probe_polydata;
+    vtkSmartPointer<vtkProbeFilter> probe_filter;
+
+public:
+
+    ProbedGridExpr():
+        Expression('''+image_dim+''')
+    {
+        sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
+        probe_points = vtkSmartPointer<vtkPoints>::New();
+        probe_polydata = vtkSmartPointer<vtkPolyData>::New();
+        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
+    }
+
+    void init_image(
+        const char* image_filename)
+    {
+        vtkSmartPointer<vtkStructuredGridReader> reader = vtkSmartPointer<vtkStructuredGridReader>::New();
+        reader->SetFileName(image_filename);
+        reader->Update();
+        sgrid = reader->GetOutput();
+        probe_filter->SetSourceData(sgrid);
+    }
+
+    void eval(
+        Array<double>& expr,
+        const Array<double>& X) const
+    {
+        probe_points->SetNumberOfPoints(1);
+        probe_points->SetPoint(0, X.data());
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
+        probe_filter->Update();
+        probe_filter->GetOutput()->GetPointData()->GetArray("'''+image_field_name+'''")->GetTuple(0, expr.data());
+    }
+};
+
+PYBIND11_MODULE(SIGNATURE, m)
+{
+    pybind11::class_<ProbedGridExpr, std::shared_ptr<ProbedGridExpr>, dolfin::Expression>
+    (m, "ProbedGridExpr")
+    .def(pybind11::init<>())
+    .def("init_image", &ProbedGridExpr::init_image, pybind11::arg("filename"));
+}
+'''
+    # print(cpp)
+
+    return cpp
+
 def compute_projected_image(
         mesh,
         image_filename,
@@ -51,61 +183,21 @@ def compute_projected_image(
     V = dolfin.TestFunction(
         vfs)
 
-    source_expr = dolfin.Expression(
-        cppcode='''\
-#include <vtkSmartPointer.h>
-#include <vtkStructuredGridReader.h>
-#include <vtkProbeFilter.h>
-#include <vtkStructuredGrid.h>
-#include <vtkPolyData.h>
-#include <vtkPointData.h>
-
-namespace dolfin
-{
-
-class MyExpr : public Expression
-{
-    vtkSmartPointer<vtkStructuredGrid> sgrid;
-    vtkSmartPointer<vtkPoints> probe_points;
-    vtkSmartPointer<vtkPolyData> probe_polydata;
-    vtkSmartPointer<vtkProbeFilter> probe_filter;
-
-public:
-
-    MyExpr():
-        Expression(3)
-    {
-        sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
-        probe_points = vtkSmartPointer<vtkPoints>::New();
-        probe_polydata = vtkSmartPointer<vtkPolyData>::New();
-        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
-    }
-
-    void init_image(
-        const char* image_filename)
-    {
-        vtkSmartPointer<vtkStructuredGridReader> reader = vtkSmartPointer<vtkStructuredGridReader>::New();
-        reader->SetFileName(image_filename);
-        reader->Update();
-        sgrid = reader->GetOutput();
-        probe_filter->SetSourceData(sgrid);
-}
-
-    void eval(
-        Array<double>& expr,
-        const Array<double>& X) const
-    {
-        probe_points->SetNumberOfPoints(1);
-        probe_points->SetPoint(0, X.data());
-        probe_polydata->SetPoints(probe_points);
-        probe_filter->SetInputData(probe_polydata);
-        probe_filter->Update();
-        probe_filter->GetOutput()->GetPointData()->GetArray("'''+image_field_name+'''")->GetTuple(0, expr.data());
-    }
-};
-
-}''',
-        element=vfe)
+    if (int(dolfin.__version__.split('.')[0]) >= 2018):
+        cpp = get_ExprProbedGrid_pybind(
+            image_dim=3,
+            image_field_name=image_field_name),
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, "ProbedGridExpr")
+        source_expr = dolfin.CompiledExpression(
+            expr(),
+            element=vfe)
+    else:
+        source_expr = dolfin.Expression(
+            cppcode=get_ExprProbedGrid_swig(
+                image_dim=3,
+                image_field_name=image_field_name),
+            element=vfe)
     source_expr.init_image(
         image_filename)
 
