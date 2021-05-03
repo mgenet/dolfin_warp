@@ -110,9 +110,9 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 element=self.fe)
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
-				im_dim=self.image_series.dimension,
-				im_type="im",
-				im_is_def=0)
+                im_dim=self.image_series.dimension,
+                im_type="im",
+                im_is_def=0)
             self.Iref = dolfin.Expression(
                 cppcode=cpp,
                 element=self.fe)
