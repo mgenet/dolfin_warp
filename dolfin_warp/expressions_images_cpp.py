@@ -182,6 +182,7 @@ public:
         probe_points->SetPoint(0,X.data());
         probe_polydata->SetPoints(probe_points);
         probe_filter->SetInputData(probe_polydata);
+        probe_filter->Update();
         probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
 
         ''')*(u_type=="vtk")+('''
