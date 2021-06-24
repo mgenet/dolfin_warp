@@ -31,7 +31,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             w=1.,
             ref_frame=0,
             im_is_cone=0,
-            dynamic_scaling=False):
+            static_scaling=0,
+            dynamic_scaling=0):
 
         self.problem           = problem
         self.printer           = self.problem.printer
@@ -40,6 +41,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.name              = name
         self.w                 = w
         self.ref_frame         = ref_frame
+        self.static_scaling    = static_scaling
         self.dynamic_scaling   = dynamic_scaling
 
         self.printer.print_str("Defining warped image correlation energy…")
@@ -102,7 +104,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="im",
-                im_is_def=0)
+                im_is_def=0,
+                static_scaling_factor=self.static_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
             self.Iref = dolfin.CompiledExpression(
@@ -112,7 +115,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="im",
-                im_is_def=0)
+                im_is_def=0,
+                static_scaling_factor=self.static_scaling)
             self.Iref = dolfin.Expression(
                 cppcode=cpp,
                 element=self.fe)
@@ -132,7 +136,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=0)
+                im_is_def=0,
+                static_scaling_factor=self.static_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
             self.DIref = dolfin.CompiledExpression(
@@ -142,7 +147,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=0)
+                im_is_def=0,
+                static_scaling_factor=self.static_scaling)
             self.DIref = dolfin.Expression(
                 cppcode=cpp,
                 element=self.ve)
@@ -164,6 +170,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 im_dim=self.image_series.dimension,
                 im_type="im",
                 im_is_def=1,
+                static_scaling_factor=self.static_scaling,
                 dynamic_scaling=self.dynamic_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
@@ -175,7 +182,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="im",
-                im_is_def=1)
+                im_is_def=1,
+                static_scaling_factor=self.static_scaling)
             self.Idef = dolfin.Expression(
                 cppcode=cpp,
                 element=self.fe)
@@ -193,6 +201,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1,
+                static_scaling_factor=self.static_scaling,
                 dynamic_scaling=self.dynamic_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
@@ -204,7 +213,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.image_series.dimension,
                 im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1)
+                im_is_def=1,
+                static_scaling_factor=self.static_scaling)
             self.DIdef = dolfin.Expression(
                 cppcode=cpp,
                 element=self.ve)
