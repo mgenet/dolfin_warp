@@ -154,7 +154,6 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         # self.printer.print_sci("Igen_norm0",self.Igen_norm0)
 
         if (self.resample):
-<<<<<<< HEAD:Energy_GeneratedImage.py
             if (self.compute_DIgen):
                 # DIgen
                 name, cpp = ddic.get_ExprGenIm_cpp_pybind(
@@ -174,26 +173,6 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
                     mesh_=self.problem.mesh,
                     U_=self.problem.U.cpp_object())
                 self.DIgen.generate_image()
-=======
-            # DIgen
-            name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad",
-                im_is_def=1,
-                im_texture=self.texture,
-                verbose=0)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.DIgen = dolfin.CompiledExpression(
-                expr(),
-                element=self.ve)
-            self.DIgen.init_image(
-                filename=self.ref_image_filename)
-            self.DIgen.init_ugrid(
-                mesh_=self.problem.mesh,
-                U_=self.problem.U.cpp_object())
-            self.DIgen.generate_image()
->>>>>>> master:dolfin_warp/Energy_Continuous_GeneratedImage.py
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")

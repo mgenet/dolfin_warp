@@ -30,12 +30,8 @@ def compute_displacement_error(
         ref_ext="vtu",
         working_disp_array_name="displacement",
         ref_disp_array_name="displacement",
-<<<<<<< HEAD:compute_displacement_error.py
         verbose=1,
         sort_mesh=0):
-=======
-        verbose=0):
->>>>>>> master:dolfin_warp/compute_displacement_error.py
 
     working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
     ref_filenames = glob.glob(ref_folder+"/"+ref_basename+"_[0-9]*."+ref_ext)

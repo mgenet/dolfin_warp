@@ -45,9 +45,6 @@ from .compute_displacement_error import *
 from .expressions_images_cpp import *
 from .compute_strains import *
 from .generate_images_Image import *
-<<<<<<< HEAD:__init__.py
 from .Modal_analysis import *
 from .NonlinearSolver_CMA import *
-=======
 from .Energy_Continuous_Regularization import *
->>>>>>> master:dolfin_warp/__init__.py

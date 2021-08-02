@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2020                                       ###
+### Created by Martin Genet, 2016-2021                                      ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -20,7 +20,7 @@ import time
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-import dolfin_dic as ddic
+import dolfin_warp as dwarp
 from .NonlinearSolver import NonlinearSolver
 
 ################################################################################
@@ -93,7 +93,7 @@ class NewtonNonlinearSolver(NonlinearSolver):
                 names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
                 filename=self.frame_filebasename+".dat")
 
-            ddic.write_VTU_file(
+            dwarp.write_VTU_file(
                 filebasename=self.frame_filebasename,
                 function=self.problem.U,
                 time=0)
@@ -121,7 +121,7 @@ class NewtonNonlinearSolver(NonlinearSolver):
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
             if (self.write_iterations):
-                ddic.write_VTU_file(
+                dwarp.write_VTU_file(
                     filebasename=self.frame_filebasename,
                     function=self.problem.U,
                     time=self.k_iter)
@@ -238,7 +238,7 @@ class NewtonNonlinearSolver(NonlinearSolver):
             timer = time.time()
             self.linear_solver.solve(
                 self.problem.dU.vector(),
-                self.res_vec)
+                -self.res_vec)
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
         except:

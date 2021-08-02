@@ -146,36 +146,6 @@ def warp(
         if (regul_models is None):
             regul_models = [regul_model]
         for regul_model in regul_models:
-<<<<<<< HEAD:fedic2.py
-            regularization_energy = ddic.RegularizationEnergy(
-                name="reg"+("_"+regul_model)*(len(regul_models)>1),
-                problem=problem,
-                w=regul_level,
-                type=regul_type,
-                model=regul_model,
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
-            problem.add_regul_energy(regularization_energy)
-
-    if (nonlinearsolver == "newton"):
-        solver = ddic.NewtonNonlinearSolver(
-            problem=problem,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "relax_type":relax_type,
-                "tol_res_rel":tol_res_rel,
-                "tol_dU":tol_dU,
-                "n_iter_max":n_iter_max,
-                "write_iterations":print_iterations})
-    elif (nonlinearsolver == "cma"):
-        solver = ddic.CMANonlinearSolver(
-            problem=problem,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "write_iterations":print_iterations})
-=======
             if (regul_type in ("equilibrated", "hyperelastic")):
                 regularization_energy = dwarp.RegularizationContinuousEnergy(
                     name="reg"+("_"+regul_model)*(len(regul_models)>1),
@@ -199,17 +169,24 @@ def warp(
             else:
                 assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"hyperelastic\", \"discrete-equilibrated\" or \"discrete-elastic\". Aborting."
 
-    solver = dwarp.NonlinearSolver(
-        problem=problem,
-        parameters={
-            "working_folder":working_folder,
-            "working_basename":working_basename,
-            "relax_type":relax_type,
-            "tol_res_rel":tol_res_rel,
-            "tol_dU":tol_dU,
-            "n_iter_max":n_iter_max,
-            "write_iterations":print_iterations})
->>>>>>> master:dolfin_warp/warp.py
+    if (nonlinearsolver == "newton"):
+        solver = ddic.NewtonNonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "relax_type":relax_type,
+                "tol_res_rel":tol_res_rel,
+                "tol_dU":tol_dU,
+                "n_iter_max":n_iter_max,
+                "write_iterations":print_iterations})
+    elif (nonlinearsolver == "cma"):
+        solver = ddic.CMANonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "write_iterations":print_iterations})
 
     image_iterator = dwarp.ImageIterator(
         problem=problem,
