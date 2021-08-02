@@ -156,7 +156,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         if (self.resample):
             if (self.compute_DIgen):
                 # DIgen
-                name, cpp = ddic.get_ExprGenIm_cpp_pybind(
+                name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
                     im_dim=self.image_series.dimension,
                     im_type="grad",
                     im_is_def=1,

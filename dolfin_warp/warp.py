@@ -170,7 +170,7 @@ def warp(
                 assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"hyperelastic\", \"discrete-equilibrated\" or \"discrete-elastic\". Aborting."
 
     if (nonlinearsolver == "newton"):
-        solver = ddic.NewtonNonlinearSolver(
+        solver = dwarp.NewtonNonlinearSolver(
             problem=problem,
             parameters={
                 "working_folder":working_folder,
@@ -181,7 +181,7 @@ def warp(
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "cma"):
-        solver = ddic.CMANonlinearSolver(
+        solver = dwarp.CMANonlinearSolver(
             problem=problem,
             parameters={
                 "working_folder":working_folder,

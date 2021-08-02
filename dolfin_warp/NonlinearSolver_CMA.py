@@ -15,18 +15,15 @@
 # from builtins import range
 
 import dolfin
-import cma
 import numpy
-# import glob
-# import math
-# import numpy
-# import os
-# import time
-#
-# import myPythonLibrary    as mypy
-# import myVTKPythonLibrary as myvtk
-#
-import dolfin_dic as ddic
+
+try:
+    import cma
+    has_cma = True
+except ImportError:
+    has_cma = False
+
+import dolfin_warp as dwarp
 from .NonlinearSolver import NonlinearSolver
 
 ################################################################################
@@ -39,6 +36,9 @@ class CMANonlinearSolver(NonlinearSolver):
             problem,
             parameters={}):
 
+        assert (has_cma),\
+            "CMA is needed to use this solver. Aborting."
+
         self.problem  = problem
         self.mesh     = self.problem.mesh
         self.printer  = self.problem.printer
@@ -50,7 +50,6 @@ class CMANonlinearSolver(NonlinearSolver):
 
         self.working_folder   = parameters["working_folder"]
         self.working_basename = parameters["working_basename"]
-
 
         # cma.fmin parameters
         assert (parameters["x_0"] is not None) and (parameters["x_0_range"] is not None)
@@ -79,7 +78,7 @@ class CMANonlinearSolver(NonlinearSolver):
             self.save_modes       = modal_parameters["save_modes"] if ("save_modes" in modal_parameters) else True
             self.folder_modes     = self.working_folder+"/mesh_modes/"
 
-            Modal_analysis_mesh = ddic.Modal_analysis(problem=self.problem, n_mod=self.n_modes, norm_mod=self.norm_modes)
+            Modal_analysis_mesh = dwarp.Modal_analysis(problem=self.problem, n_mod=self.n_modes, norm_mod=self.norm_modes)
             self.eigen_modes = Modal_analysis_mesh.find_modes(fixed_points=self.modes_fix_points, mat_params=self.modes_mat_par)
 
             if self.save_modes:
