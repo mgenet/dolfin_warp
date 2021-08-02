@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2020                                       ###
+### Created by Martin Genet, 2016-2021                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -175,11 +175,12 @@ class ImageRegistrationProblem(Problem):
     def add_regul_energy(self,
             energy):
 
-        # self.energies += [energy]
-        if (dwarp.ContinuousEnergy in type(energy).__mro__):
+        if isinstance(energy, dwarp.ContinuousEnergy):
             self.energies.insert(0, energy)
-        elif (dwarp.DiscreteEnergy in type(energy).__mro__):
+        elif isinstance(energy, dwarp.DiscreteEnergy):
             self.energies.append(energy)
+        else:
+            assert (0), "Wrong energy type \""+str(type(energy))+"\". Aborting."
 
 
 

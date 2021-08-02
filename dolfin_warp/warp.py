@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2020                                       ###
+### Created by Martin Genet, 2016-2021                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -29,6 +29,7 @@ def warp(
         images_quadrature=None,
         images_quadrature_from="points_count", # points_count, integral
         images_expressions_type="cpp", # cpp
+        images_static_scaling=0,
         images_dynamic_scaling=0,
         images_is_cone=0,
         mesh=None,
@@ -137,6 +138,7 @@ def warp(
             w=1.-regul_level,
             ref_frame=images_ref_frame,
             im_is_cone=images_is_cone,
+            static_scaling=images_static_scaling,
             dynamic_scaling=images_dynamic_scaling)
         problem.add_image_energy(warped_image_energy)
 
