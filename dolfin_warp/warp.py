@@ -57,7 +57,7 @@ def warp(
         gimic=0,
         gimic_texture="no",
         gimic_resample=1,
-        solver="newton", # newton, CMA
+        nonlinearsolver="newton", # newton, CMA
         tol_res=None, # None
         tol_res_rel=None,
         tol_dU=None,
