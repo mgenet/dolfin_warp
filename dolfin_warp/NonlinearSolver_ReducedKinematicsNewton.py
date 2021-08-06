@@ -261,7 +261,7 @@ class ReducedKinematicsNewtonNonlinearSolver(NonlinearSolver):
 
         # linear system: solve
         try:
-            self.reduced_ddisp = numpy.linalg.solve(self.reduced_jac_arr, self.reduced_res_arr)
+            self.reduced_ddisp = numpy.linalg.solve(self.reduced_jac_arr, -self.reduced_res_arr)
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
