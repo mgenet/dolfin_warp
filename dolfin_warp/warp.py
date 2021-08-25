@@ -57,6 +57,7 @@ def warp(
         gimic=0,
         gimic_texture="no",
         gimic_resample=1,
+        nonlinearsolver="newton", # newton, CMA
         tol_res=None, # None
         tol_res_rel=None,
         tol_dU=None,
@@ -168,16 +169,24 @@ def warp(
             else:
                 assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"hyperelastic\", \"discrete-equilibrated\" or \"discrete-elastic\". Aborting."
 
-    solver = dwarp.NonlinearSolver(
-        problem=problem,
-        parameters={
-            "working_folder":working_folder,
-            "working_basename":working_basename,
-            "relax_type":relax_type,
-            "tol_res_rel":tol_res_rel,
-            "tol_dU":tol_dU,
-            "n_iter_max":n_iter_max,
-            "write_iterations":print_iterations})
+    if (nonlinearsolver == "newton"):
+        solver = dwarp.NewtonNonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "relax_type":relax_type,
+                "tol_res_rel":tol_res_rel,
+                "tol_dU":tol_dU,
+                "n_iter_max":n_iter_max,
+                "write_iterations":print_iterations})
+    elif (nonlinearsolver == "cma"):
+        solver = dwarp.CMANonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "write_iterations":print_iterations})
 
     image_iterator = dwarp.ImageIterator(
         problem=problem,

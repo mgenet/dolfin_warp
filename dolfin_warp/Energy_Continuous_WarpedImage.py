@@ -30,6 +30,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             name="im",
             w=1.,
             ref_frame=0,
+            w_char_func=1,
             im_is_cone=0,
             static_scaling=0,
             dynamic_scaling=0):
@@ -223,70 +224,80 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         if (self.dynamic_scaling):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
-        self.printer.dec()
-        self.printer.print_str("Defining characteristic functions…")
-        self.printer.inc()
+        # Charactristic functions
+        if (w_char_func):
 
-        # Phi_ref
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_is_def=0,
-                im_is_cone=im_is_cone)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.Phi_ref = dolfin.CompiledExpression(
-                expr(),
-                element=self.fe)
-        else:
-            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_is_def=0,
-                im_is_cone=im_is_cone)
-            self.Phi_ref = dolfin.Expression(
-                cppcode=cpp,
-                element=self.fe)
-        self.Phi_ref.init_image(self.ref_image_filename)
+            self.printer.dec()
+            self.printer.print_str("Defining characteristic functions…")
+            self.printer.inc()
 
-        self.Phi_ref_int = dolfin.assemble(self.Phi_ref * self.dV)/self.problem.mesh_V0
-        self.printer.print_sci("Phi_ref_int",self.Phi_ref_int)
+            # Phi_ref
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_is_def=0,
+                    im_is_cone=im_is_cone)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.Phi_ref = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.fe)
+            else:
+                cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_is_def=0,
+                    im_is_cone=im_is_cone)
+                self.Phi_ref = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.fe)
+            self.Phi_ref.init_image(self.ref_image_filename)
 
-        # Phi_def
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_is_def=1,
-                im_is_cone=im_is_cone)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.Phi_def = dolfin.CompiledExpression(
-                expr(),
-                element=self.fe)
-            self.Phi_def.init_disp(self.problem.U.cpp_object())
-        else:
-            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_is_def=1,
-                im_is_cone=im_is_cone)
-            self.Phi_def = dolfin.Expression(
-                cppcode=cpp,
-                element=self.fe)
-            self.Phi_def.init_disp(self.problem.U)
-        self.Phi_def.init_image(self.ref_image_filename)
+            self.Phi_ref_int = dolfin.assemble(self.Phi_ref * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Phi_ref_int",self.Phi_ref_int)
 
-        self.Phi_def_int = dolfin.assemble(self.Phi_def * self.dV)/self.problem.mesh_V0
-        self.printer.print_sci("Phi_def_int",self.Phi_def_int)
+            # Phi_def
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_is_def=1,
+                    im_is_cone=im_is_cone)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.Phi_def = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.fe)
+                self.Phi_def.init_disp(self.problem.U.cpp_object())
+            else:
+                cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_is_def=1,
+                    im_is_cone=im_is_cone)
+                self.Phi_def = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.fe)
+                self.Phi_def.init_disp(self.problem.U)
+            self.Phi_def.init_image(self.ref_image_filename)
+
+            self.Phi_def_int = dolfin.assemble(self.Phi_def * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Phi_def_int",self.Phi_def_int)
 
         self.printer.dec()
         self.printer.print_str("Defining correlation energy…")
         self.printer.inc()
 
         # Psi_c
-        self.Psi_c  = self.Phi_def * self.Phi_ref * (self.Idef - self.Iref)**2/2
-        self.DPsi_c = self.Phi_def * self.Phi_ref * (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.Psi_c  = (self.Idef - self.Iref)**2/2
+        self.DPsi_c = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
-        self.DDPsi_c     = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c_ref = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
+        self.DDPsi_c     = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.DDPsi_c_ref = dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
+
+        if (w_char_func):
+            self.Psi_c  *= self.Phi_def * self.Phi_ref
+            self.DPsi_c *= self.Phi_def * self.Phi_ref
+
+            self.DDPsi_c     *= self.Phi_def * self.Phi_ref
+            self.DDPsi_c_ref *= self.Phi_def * self.Phi_ref
 
         # forms
         self.ener_form = self.Psi_c   * self.dV
