@@ -25,24 +25,40 @@ class MotionModel():
             problem,
             type):
 
+        type_list = ["translation","scaling","translation_and_scaling"]
+
         self.problem = problem
 
-        if (type == "transX"):
-            self.modes = []
+        self.modes = []
+        if (type == "scaling" or type == "translation_and_scaling"):
             if   (self.problem.mesh_dimension == 2):
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
-                        ("1.", "0."),
+                        ("x[0]", "0."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "x[1]"),
                         element=self.problem.U_fe),
                     V=self.problem.U_fs))
             elif (self.problem.mesh_dimension == 3):
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
-                        ("1.", "0.", "0."),
+                        ("x[0]", "0.", "0."),
                         element=self.problem.U_fe),
                     V=self.problem.U_fs))
-        elif (type == "translations"):
-            self.modes = []
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "x[1]", "0."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "0.", "x[2]"),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+        if (type == "translation" or type == "translation_and_scaling"):
             if   (self.problem.mesh_dimension == 2):
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
@@ -70,7 +86,7 @@ class MotionModel():
                         ("0.", "0.", "1."),
                         element=self.problem.U_fe),
                     V=self.problem.U_fs))
-        else:
+        if (type not in type_list):
             assert (0),\
                 "Not implemented. Aborting."
         self.n_modes = len(self.modes)
