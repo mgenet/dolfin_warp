@@ -30,34 +30,6 @@ class MotionModel():
         self.problem = problem
 
         self.modes = []
-        if (type == "scaling" or type == "translation_and_scaling"):
-            if   (self.problem.mesh_dimension == 2):
-                self.modes.append(dolfin.interpolate(
-                    v=dolfin.Expression(
-                        ("x[0]", "0."),
-                        element=self.problem.U_fe),
-                    V=self.problem.U_fs))
-                self.modes.append(dolfin.interpolate(
-                    v=dolfin.Expression(
-                        ("0.", "x[1]"),
-                        element=self.problem.U_fe),
-                    V=self.problem.U_fs))
-            elif (self.problem.mesh_dimension == 3):
-                self.modes.append(dolfin.interpolate(
-                    v=dolfin.Expression(
-                        ("x[0]", "0.", "0."),
-                        element=self.problem.U_fe),
-                    V=self.problem.U_fs))
-                self.modes.append(dolfin.interpolate(
-                    v=dolfin.Expression(
-                        ("0.", "x[1]", "0."),
-                        element=self.problem.U_fe),
-                    V=self.problem.U_fs))
-                self.modes.append(dolfin.interpolate(
-                    v=dolfin.Expression(
-                        ("0.", "0.", "x[2]"),
-                        element=self.problem.U_fe),
-                    V=self.problem.U_fs))
         if (type == "translation" or type == "translation_and_scaling"):
             if   (self.problem.mesh_dimension == 2):
                 self.modes.append(dolfin.interpolate(
@@ -84,6 +56,34 @@ class MotionModel():
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
                         ("0.", "0.", "1."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+        if (type == "scaling" or type == "translation_and_scaling"):
+            if   (self.problem.mesh_dimension == 2):
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("x[0]", "0."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "x[1]"),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+            elif (self.problem.mesh_dimension == 3):
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("x[0]", "0.", "0."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "x[1]", "0."),
+                        element=self.problem.U_fe),
+                    V=self.problem.U_fs))
+                self.modes.append(dolfin.interpolate(
+                    v=dolfin.Expression(
+                        ("0.", "0.", "x[2]"),
                         element=self.problem.U_fe),
                     V=self.problem.U_fs))
         if (type not in type_list):

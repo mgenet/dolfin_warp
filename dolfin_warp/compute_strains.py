@@ -41,6 +41,8 @@ def compute_strains(
         ref_mesh_ext="vtk",
         CYL_or_PPS="PPS",
         remove_boundary_layer=1,
+        threshold_value=0.5,
+        threshold_by_upper_or_lower="lower",
         in_place=1,
         write_strains=1,
         temporal_offset=0,
@@ -207,8 +209,8 @@ def compute_strains(
                     ugrid=mesh,
                     field_support="cells",
                     field_name="part_id",
-                    threshold_value=0.5,
-                    threshold_by_upper_or_lower="lower")
+                    threshold_value=threshold_value,
+                    threshold_by_upper_or_lower=threshold_by_upper_or_lower)
                 n_points = mesh.GetNumberOfPoints()
                 n_cells = mesh.GetNumberOfCells()
                 n_part_ids = 0
