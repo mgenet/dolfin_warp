@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="dolfin_warp",
-    version="2021.01.05",
+    version="2021.10.20",
     author="Martin Genet",
     author_email="martin.genet@polytechnique.edu",
     description=open("README.md", "r").readlines()[1][:-1],
