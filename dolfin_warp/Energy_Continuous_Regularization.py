@@ -41,8 +41,8 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.w = w
 
-        assert (type in ("equilibrated", "hyperelastic")),\
-            "\"type\" ("+str(type)+") must be \"equilibrated\" or \"hyperelastic\". Aborting."
+        assert (type in ("equilibrated", "elastic", "hyperelastic")),\
+            "\"type\" ("+str(type)+") must be \"equilibrated\", \"elastic\" or \"hyperelastic\". Aborting."
         self.type = type
 
         assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
@@ -127,7 +127,7 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.printer.print_str("Defining regularization energy…")
 
-        if (self.type == "hyperelastic"):
+        if (self.type in ("elastic", "hyperelastic")):
             self.Psi_m_V = self.Psi_m
             self.Psi_m_F = dolfin.Constant(0)
             self.Psi_m_S = dolfin.Constant(0)
