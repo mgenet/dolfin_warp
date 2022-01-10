@@ -31,6 +31,7 @@ def warp(
         images_expressions_type="cpp", # cpp
         images_static_scaling=0,
         images_dynamic_scaling=0,
+        images_char_func=1,
         images_is_cone=0,
         mesh=None,
         mesh_folder=None,
@@ -137,6 +138,7 @@ def warp(
             quadrature_degree=images_quadrature,
             w=1.-regul_level,
             ref_frame=images_ref_frame,
+            w_char_func=images_char_func,
             im_is_cone=images_is_cone,
             static_scaling=images_static_scaling,
             dynamic_scaling=images_dynamic_scaling)
@@ -182,6 +184,21 @@ def warp(
     if (nonlinearsolver == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
             problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "relax_type":relax_type,
+                "tol_res_rel":tol_res_rel,
+                "tol_dU":tol_dU,
+                "n_iter_max":n_iter_max,
+                "write_iterations":print_iterations})
+    elif (nonlinearsolver == "reduced_kinematic_newton"):
+        motion = dwarp.MotionModel(
+            problem=problem,
+            type="translation_and_scaling")
+        solver = dwarp.ReducedKinematicsNewtonNonlinearSolver(
+            problem=problem,
+            motion_model=motion,
             parameters={
                 "working_folder":working_folder,
                 "working_basename":working_basename,
