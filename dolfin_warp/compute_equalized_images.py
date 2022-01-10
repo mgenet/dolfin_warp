@@ -2,9 +2,10 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Ezgi Berberoğlu, 2018-2021                                    ###
+### Created by Ezgi Berberoğlu, 2017-2021                                    ###
 ###                                                                          ###
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
+### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
 ### And Martin Genet, 2016-2021                                              ###
 ###                                                                          ###

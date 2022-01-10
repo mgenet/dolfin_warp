@@ -6,7 +6,7 @@
 ###                                                                          ###
 ### Pontificia Universidad Católica de Chile, Santiago, Chile                ###
 ###                                                                          ###
-### And Martin Genet, 2016-2020                                              ###
+### And Martin Genet, 2016-2021                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###

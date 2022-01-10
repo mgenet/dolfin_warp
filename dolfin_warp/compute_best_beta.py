@@ -2,33 +2,33 @@
 
 ########################################################################
 ###                                                                  ###
-### Created by Ezgi Berberoglu, 2017-2021                            ###
+### Created by Ezgi Berberoğlu, 2017-2021                            ###
 ###                                                                  ###
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland ###
 ### École Polytechnique, Palaiseau, France                           ###
 ###                                                                  ###
 ########################################################################
 
-from os import path
-import numpy as np
 import glob
-import math
+import numpy
 
-import compute_displacement_infinity_norm as inf_norm
-import compute_displacement_error_field as rmse
+from .compute_displacement_infinity_norm import compute_displacement_infinity_norm as inf_norm
+from .compute_displacement_error_field   import compute_displacement_error_field   as rmse
+
+################################################################################
 
 def compute_best_beta(
-    k_frame,
-    betas,
-    folder,
-    noisy,
-    disp_array_name = "displacement",
-    working_folder = "FEniCS_beta",
-    working_basename = "Cspamm_normalized-equilibrated",
-    working_ext="vtu",
-    ref_mesh_folder="solution_dt_10msec",
-    ref_mesh_basename="solution",
-    ref_mesh_ext="vtk"):
+        k_frame,
+        betas,
+        folder,
+        noisy,
+        disp_array_name = "displacement",
+        working_folder = "FEniCS_beta",
+        working_basename = "Cspamm_normalized-equilibrated",
+        working_ext="vtu",
+        ref_mesh_folder="solution_dt_10msec",
+        ref_mesh_basename="solution",
+        ref_mesh_ext="vtk"):
 
     if noisy == 1:
         folder = folder + "/ver"
@@ -62,15 +62,15 @@ def compute_best_beta(
                 ref_mesh_basename = ref_mesh_basename,
                 ref_mesh_ext = ref_mesh_ext)
 
-            mean_error_norm = np.mean(disp_diff)/infNorm
+            mean_error_norm = numpy.mean(disp_diff)/infNorm
 
             if mean_error_norm < minimum:
                 minimum = mean_error_norm
                 filename_min = working_folder+"_"+betas[k_beta]
                 min_disp_diff = disp_diff
 
-            file.write("Case: " + working_folder + "_" + betas[k_beta] + " " + str(mean_error_norm) + " and std: " + str(np.std(disp_diff)/infNorm) + "\n")
+            file.write("Case: " + working_folder + "_" + betas[k_beta] + " " + str(mean_error_norm) + " and std: " + str(numpy.std(disp_diff)/infNorm) + "\n")
 
-        file.write(filename_min + " has the mininum error: " + str(minimum) + " and std: " + str(np.std(min_disp_diff)/infNorm))
+        file.write(filename_min + " has the mininum error: " + str(minimum) + " and std: " + str(numpy.std(min_disp_diff)/infNorm))
 
         file.close()

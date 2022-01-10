@@ -36,14 +36,14 @@ def compute_displacement_error(
     working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
     ref_filenames = glob.glob(ref_folder+"/"+ref_basename+"_[0-9]*."+ref_ext)
 
+    n_frames = len(working_filenames)
+    assert (len(ref_filenames) == n_frames)
+    if (verbose): print("n_frames = " + str(n_frames))
+
     working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     ref_zfill = len(ref_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
     if (verbose): print("ref_zfill = " + str(ref_zfill))
     if (verbose): print("working_zfill = " + str(working_zfill))
-
-    n_frames = len(working_filenames)
-    assert (len(ref_filenames) == n_frames)
-    if (verbose): print("n_frames = " + str(n_frames))
 
     error_file = open(working_folder+"/"+working_basename+"-displacement_error.dat", "w")
     error_file.write("#t e\n")
@@ -85,14 +85,16 @@ def compute_displacement_error(
 
     error_file.write("\n".join([" ".join([str(val) for val in [k_frame, err_int[k_frame], ref_int[k_frame]]]) for k_frame in range(n_frames)]))
 
-    err_int_int = numpy.mean(err_int**2)**(0.5)
-    ref_int_int = numpy.mean(ref_int**2)**(0.5)
-
+    err_int_int = numpy.sqrt(numpy.mean(numpy.square(err_int)))
+    ref_int_int = numpy.sqrt(numpy.mean(numpy.square(ref_int)))
     # print (err_int_int)
     # print (ref_int_int)
-    print (err_int_int/ref_int_int)
 
     # error_file.write("\n\n")
     # error_file.write(" ".join([str(val) for val in [err_int_int, ref_int_int]]))
 
     error_file.close()
+
+    err = err_int_int/ref_int_int
+    if (verbose): print (err)
+    return err

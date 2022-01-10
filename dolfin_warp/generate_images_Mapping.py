@@ -137,7 +137,7 @@ class Mapping():
             Fxz = self.deformation["Fxz"] if ("Fxz" in self.deformation) else 0.
             self.F = numpy.eye(3) + (numpy.array([[Fxx, Fxy, Fxz],
                                                   [Fyx, Fyy, Fyz],
-                                                  [Fzx, Fzy, Fzz]])-numpy.eye(3))*self.phi(t)
+                                                  [Fzx, Fzy, Fzz]]) - numpy.eye(3))*self.phi(t)
         self.Finv = numpy.linalg.inv(self.F)
 
     def init_t_heart(self, t):

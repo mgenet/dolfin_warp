@@ -2,11 +2,12 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Ezgi Berberoğlu, 2018-2021                                    ###
+### Created by Ezgi Berberoğlu, 2017-2021                                    ###
 ###                                                                          ###
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
+### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2019                                              ###
+### And Martin Genet, 2016-2021                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -15,9 +16,9 @@
 from builtins import range
 
 import glob
+import math
 import numpy
 import vtk
-import math
 
 import myVTKPythonLibrary as myvtk
 
