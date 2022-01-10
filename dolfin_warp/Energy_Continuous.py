@@ -23,35 +23,45 @@ class ContinuousEnergy(Energy):
 
 
 
-    def assemble_ener(self):
+    def assemble_ener(self,
+        w_weight=True):
 
-        return dolfin.assemble(dolfin.Constant(self.w) * self.ener_form)
+        ener = dolfin.assemble(self.ener_form)
+        if (w_weight):
+            ener *= self.w
+        return ener
 
 
 
     def assemble_res(self,
             res_vec,
             add_values=True,
-            finalize_tensor=True):
+            finalize_tensor=True,
+            w_weight=True):
 
         dolfin.assemble(
-            dolfin.Constant(self.w) * self.res_form,
+            form=self.res_form,
             tensor=res_vec,
             add_values=add_values,
             finalize_tensor=finalize_tensor)
+        if (w_weight):
+            res_vec *= self.w
 
 
 
     def assemble_jac(self,
             jac_mat,
             add_values=True,
-            finalize_tensor=True):
+            finalize_tensor=True,
+            w_weight=True):
 
         dolfin.assemble(
-            dolfin.Constant(self.w) * self.jac_form,
+            form=self.jac_form,
             tensor=jac_mat,
             add_values=add_values,
             finalize_tensor=finalize_tensor)
+        if (w_weight):
+            jac_mat *= self.w
 
 
 
@@ -63,7 +73,7 @@ class ContinuousEnergy(Energy):
 
     def get_qoi_values(self):
 
-        self.ener = (dolfin.assemble(self.ener_form)/self.problem.mesh_V0)**(1./2)
+        self.ener = (self.assemble_ener(w_weight=0)/self.problem.mesh_V0)**(1./2)
         self.printer.print_sci(self.name+"_ener",self.ener)
 
         return [self.ener]

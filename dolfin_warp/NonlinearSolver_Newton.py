@@ -40,6 +40,8 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         # linear solver
         self.linear_solver_name = parameters["linear_solver_name"] if ("linear_solver_name" in parameters) else "mumps"
 
+        # self.res_vec = dolfin.PETScVector()
+        # self.jac_mat = dolfin.PETScMatrix()
         self.res_vec = dolfin.Vector()
         self.jac_mat = dolfin.Matrix()
 

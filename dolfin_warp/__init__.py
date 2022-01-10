@@ -17,8 +17,10 @@ from .compute_downsampled_images import *
 from .expressions_images_py import *
 from .compute_quadrature_degree import *
 from .expressions_static_scaling_cpp import *
+from .compute_displacement_error_field import *
 from .compute_warped_images import *
 from .plot_strains import *
+from .compute_strain_error import *
 from .plot_twist_vs_height import *
 from .compute_projected_image import *
 from .Energy import *
@@ -29,10 +31,12 @@ from .write_VTU_file import *
 from .generate_undersampled_images import *
 from .Energy_Continuous_GeneratedImage import *
 from .compute_equalized_images import *
+from .Energy_Discrete_Linear_Regularization import *
 from .NonlinearSolver_ReducedKinematicsNewton import *
 from .Energy_Continuous import *
 from .get_centroids import *
 from .plot_regional_strains import *
+from .compute_displacement_infinity_norm import *
 from .Energy_Discrete_Regularization import *
 from .compute_displacements_from_ref import *
 from .ImageIterator import *
@@ -45,7 +49,9 @@ from .Problem import *
 from .generate_images import *
 from .ImageSeries import *
 from .compute_displacement_error import *
+from .NonlinearSolver_Relaxation import *
 from .MotionModel import *
+from .compute_best_beta import *
 from .expressions_images_cpp import *
 from .compute_strains import *
 from .generate_images_Image import *

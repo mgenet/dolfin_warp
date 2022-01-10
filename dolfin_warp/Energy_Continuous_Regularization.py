@@ -84,46 +84,19 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.printer.print_str("Defining mechanical model…")
 
-        self.E  = dolfin.Constant(self.young)
-        self.nu = dolfin.Constant(self.poisson)
         self.material_parameters = {
-            "E":self.E,
-            "nu":self.nu}
+            "E":self.young,
+            "nu":self.poisson}
+        self.material = dmech.material(
+            model=self.model,
+            parameters=self.material_parameters)
+        self.Psi_m, self.S_m = self.material.get_free_energy(
+            U=self.problem.U)
 
-        if (self.model == "hooke"): # <- super bad
-            self.material = dmech.HookeElasticMaterial(
-                parameters=self.material_parameters)
-            self.Psi_m, self.S_m = self.material.get_free_energy(
-                U=self.problem.U)
+        if (self.model == "hooke"):
             self.P_m = self.S_m
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            if (self.model == "kirchhoff"): # <- pretty bad too
-                self.material = dmech.KirchhoffElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "neohookean"):
-                self.material = dmech.NeoHookeanDevElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "mooneyrivlin"):
-                self.material = dmech.MooneyRivlinDevElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "neohookeanmooneyrivlin"):
-                self.material = dmech.NeoHookeanMooneyRivlinDevElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "ciarletgeymonat"):
-                self.material = dmech.CiarletGeymonatBulkElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "ciarletgeymonatneohookean"):
-                self.material = dmech.CiarletGeymonatNeoHookeanElasticMaterial(
-                    parameters=self.material_parameters)
-            elif (self.model == "ciarletgeymonatneohookeanmooneyrivlin"):
-                self.material = dmech.CiarletGeymonatNeoHookeanMooneyRivlinElasticMaterial(
-                    parameters=self.material_parameters)
-            self.Psi_m, self.S_m = self.material.get_free_energy(
-                U=self.problem.U)
-            self.dim = self.problem.U.ufl_shape[0]
-            self.I = dolfin.Identity(self.dim)
-            self.F = self.I + dolfin.grad(self.problem.U)
-            self.P_m = self.F * self.S_m
+            self.P_m = self.problem.F * self.S_m
 
         self.printer.print_str("Defining regularization energy…")
 
