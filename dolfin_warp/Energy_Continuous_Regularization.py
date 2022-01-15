@@ -90,48 +90,48 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
         self.material = dmech.material(
             model=self.model,
             parameters=self.material_parameters)
-        self.Psi_m, self.S_m = self.material.get_free_energy(
+        self.Psi, self.S = self.material.get_free_energy(
             U=self.problem.U)
 
         if (self.model == "hooke"):
-            self.P_m = self.S_m
+            self.P = self.S
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            self.P_m = self.problem.F * self.S_m
+            self.P = self.problem.F * self.S
 
         self.printer.print_str("Defining regularization energy…")
 
         if (self.type in ("elastic", "hyperelastic")):
-            self.Psi_m_V = self.Psi_m
-            self.Psi_m_F = dolfin.Constant(0)
-            self.Psi_m_S = dolfin.Constant(0)
+            self.Psi_V = self.Psi
+            self.Psi_F = dolfin.Constant(0)
+            self.Psi_S = dolfin.Constant(0)
         elif (self.type == "equilibrated"):
-            self.Div_P = dolfin.div(self.P_m)
-            self.Psi_m_V = dolfin.inner(self.Div_P,
+            self.Div_P = dolfin.div(self.P)
+            self.Psi_V = dolfin.inner(self.Div_P,
                                         self.Div_P)
             self.N = dolfin.FacetNormal(self.problem.mesh)
-            self.Jump_P_N = dolfin.jump(self.P_m,
+            self.Jump_P_N = dolfin.jump(self.P,
                                         self.N)
             self.cell_h = dolfin.Constant(self.problem.mesh.hmin())
-            self.Psi_m_F = dolfin.inner(self.Jump_P_N,
+            self.Psi_F = dolfin.inner(self.Jump_P_N,
                                         self.Jump_P_N)/self.cell_h
-            # self.P_N = self.P_m * self.N
+            # self.P_N = self.P * self.N
             # self.P_N_N = dolfin.dot(self.N,
             #                         self.P_N)
             # self.P_N_T = self.P_N - self.P_N_N * self.N
-            # self.Psi_m_S = dolfin.inner(self.P_N_T,
+            # self.Psi_S = dolfin.inner(self.P_N_T,
             #                             self.P_N_T)/self.cell_h
-            # self.Psi_m_S = dolfin.inner(self.P_N,
+            # self.Psi_S = dolfin.inner(self.P_N,
             #                             self.P_N)/self.cell_h
-            self.Psi_m_S = dolfin.Constant(0)
+            self.Psi_S = dolfin.Constant(0)
 
-        self.DPsi_m_V  = dolfin.derivative( self.Psi_m_V, self.problem.U, self.problem.dU_test )
-        self.DPsi_m_F  = dolfin.derivative( self.Psi_m_F, self.problem.U, self.problem.dU_test )
-        self.DPsi_m_S  = dolfin.derivative( self.Psi_m_S, self.problem.U, self.problem.dU_test )
+        self.DPsi_m_V  = dolfin.derivative( self.Psi_V, self.problem.U, self.problem.dU_test )
+        self.DPsi_m_F  = dolfin.derivative( self.Psi_F, self.problem.U, self.problem.dU_test )
+        self.DPsi_m_S  = dolfin.derivative( self.Psi_S, self.problem.U, self.problem.dU_test )
         self.DDPsi_m_V = dolfin.derivative(self.DPsi_m_V, self.problem.U, self.problem.dU_trial)
         self.DDPsi_m_F = dolfin.derivative(self.DPsi_m_F, self.problem.U, self.problem.dU_trial)
         self.DDPsi_m_S = dolfin.derivative(self.DPsi_m_S, self.problem.U, self.problem.dU_trial)
 
-        self.ener_form =   self.Psi_m_V * self.dV +   self.Psi_m_F * self.dF +   self.Psi_m_S * self.dS
+        self.ener_form =   self.Psi_V * self.dV +   self.Psi_F * self.dF +   self.Psi_S * self.dS
         self.res_form  =  self.DPsi_m_V * self.dV +  self.DPsi_m_F * self.dF +  self.DPsi_m_S * self.dS
         self.jac_form  = self.DDPsi_m_V * self.dV + self.DDPsi_m_F * self.dF + self.DDPsi_m_S * self.dS
 

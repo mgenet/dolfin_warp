@@ -9,6 +9,7 @@ from .MeshSeries import *
 from .plot_strains_vs_radius import *
 from .NonlinearSolver_Newton import *
 from .NonlinearSolver_CMA import *
+from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete import *
 from .compute_unwarped_images import *
 from .mesh2ugrid import *
@@ -21,17 +22,18 @@ from .compute_displacement_error_field import *
 from .compute_warped_images import *
 from .plot_strains import *
 from .compute_strain_error import *
+from .Energy_Discrete_LinearRegularization import *
 from .plot_twist_vs_height import *
 from .compute_projected_image import *
 from .Energy import *
 from .compute_normalized_images import *
+from .Energy_Discrete_VolumeRegularization import *
 from .compute_warped_mesh import *
 from .Energy_Continuous_WarpedImage import *
 from .write_VTU_file import *
 from .generate_undersampled_images import *
 from .Energy_Continuous_GeneratedImage import *
 from .compute_equalized_images import *
-from .Energy_Discrete_Linear_Regularization import *
 from .NonlinearSolver_ReducedKinematicsNewton import *
 from .Energy_Continuous import *
 from .get_centroids import *

@@ -37,15 +37,17 @@ def warp(
         mesh_basename=None,
         mesh_degree=1,
         regul_type="equilibrated", # equilibrated, elastic, hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated
+        regul_types=None,
         regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
         regul_models=None,
         regul_quadrature=None,
-        regul_level=0.1,
-        regul_poisson=0.0,
+        regul_level=0.,
+        regul_levels=None,
+        regul_poisson=0.,
         tangent_type="Idef", # Idef
         residual_type="Iref", # Iref
         relax_type="gss", # constant, aitken, gss
-        relax_init=1.0, # 1.0
+        relax_init=1., # 1.
         initialize_U_from_file=0,
         initialize_U_folder=None,
         initialize_U_basename=None,
@@ -88,6 +90,44 @@ def warp(
     assert (print_refined_mesh == 0),\
         "print_refined_mesh is deprecated. Aborting."
 
+    # assert (regul_type is not None) or (regul_types is not None),\
+    #     "Must provide \"regul_type\" or \"regul_types\". Aborting."
+    # assert (regul_model is not None) or (regul_models is not None),\
+    #     "Must provide \"regul_model\" or \"regul_models\". Aborting."
+    # assert (regul_level is not None) or (regul_levels is not None),\
+    #     "Must provide \"regul_level\" or \"regul_levels\". Aborting."
+
+    # assert (regul_type is None) or (regul_types is None),\
+    #     "Cannot provide both \"regul_type\" and \"regul_types\". Aborting."
+    # assert (regul_model is None) or (regul_models is None),\
+    #     "Cannot provide both \"regul_model\" and \"regul_models\". Aborting."
+    # assert (regul_level is None) or (regul_levels is None),\
+    #     "Cannot provide both \"regul_level\" and \"regul_levels\". Aborting."
+
+    if (regul_types is not None):
+        if (regul_models is not None):
+            assert (len(regul_models) == len(regul_types))
+        else:
+            regul_models = [regul_model]*len(regul_types)
+        if (regul_levels is not None):
+            assert (len(regul_levels) == len(regul_types))
+        else:
+            regul_levels = [regul_level]*len(regul_types)
+    else:
+        if (regul_models is not None) and (regul_levels is not None):
+            assert (len(regul_models) == len(regul_levels))
+            regul_types = [regul_type]*len(regul_models)
+        elif (regul_models is not None):
+            regul_types  = [regul_type ]*len(regul_models)
+            regul_levels = [regul_level]*len(regul_models)
+        elif (regul_levels is not None):
+            regul_types  = [regul_type ]*len(regul_levels)
+            regul_models = [regul_model]*len(regul_levels)
+        else:
+            regul_types  = [regul_type ]
+            regul_models = [regul_model]
+            regul_levels = [regul_level]
+
     problem = dwarp.ImageRegistrationProblem(
         mesh=mesh,
         mesh_folder=mesh_folder,
@@ -110,7 +150,7 @@ def warp(
                 image_filename=image_series.get_image_filename(images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
-        elif (method == "integral"):
+        elif (images_quadrature_from == "integral"):
             images_quadrature = dwarp.compute_quadrature_degree_from_integral(
                 image_filename=self.get_image_filename(images_ref_frame),
                 mesh=problem.mesh,
@@ -120,13 +160,17 @@ def warp(
         problem.printer.print_var("images_quadrature",images_quadrature)
         problem.printer.dec()
 
+    image_w = 1.-sum(regul_levels)
+    assert (image_w > 0.),\
+        "1.-sum(regul_levels) must be positive. Aborting."
+
     if (gimic):
         generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
             texture=gimic_texture,
-            w=1.-regul_level,
+            w=image_w,
             ref_frame=images_ref_frame,
             resample=gimic_resample)
         problem.add_image_energy(generated_image_energy)
@@ -135,20 +179,22 @@ def warp(
             problem=problem,
             image_series=image_series,
             quadrature_degree=images_quadrature,
-            w=1.-regul_level,
+            w=image_w,
             ref_frame=images_ref_frame,
             im_is_cone=images_is_cone,
             static_scaling=images_static_scaling,
             dynamic_scaling=images_dynamic_scaling)
         problem.add_image_energy(warped_image_energy)
 
-    if (regul_level>0):
-        if (regul_models is None):
-            regul_models = [regul_model]
-        for regul_model in regul_models:
+    for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
+        if (regul_level>0):
+            name_suffix  = ""
+            name_suffix += ("_"+    regul_type  )*(len(regul_types )>1)
+            name_suffix += ("_"+    regul_model )*(len(regul_models)>1)
+            name_suffix += ("_"+str(regul_level))*(len(regul_levels)>1)
             if (regul_type in ("equilibrated", "elastic", "hyperelastic")):
                 regularization_energy = dwarp.RegularizationContinuousEnergy(
-                    name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                    name="reg"+name_suffix,
                     problem=problem,
                     w=regul_level,
                     type=regul_type,
@@ -157,8 +203,8 @@ def warp(
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
             elif (regul_type in ("discrete-linear-equilibrated", "discrete-linear-elastic")):
-                regularization_energy = dwarp.RegularizationLinearDiscreteEnergy(
-                    name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                regularization_energy = dwarp.LinearRegularizationDiscreteEnergy(
+                    name="reg"+name_suffix,
                     problem=problem,
                     w=regul_level,
                     type=regul_type.split("-")[2],
@@ -167,8 +213,18 @@ def warp(
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
             elif (regul_type in ("discrete-equilibrated")):
-                regularization_energy = dwarp.RegularizationDiscreteEnergy(
-                    name="reg"+("_"+regul_model)*(len(regul_models)>1),
+                regularization_energy = dwarp.VolumeRegularizationDiscreteEnergy(
+                    name="reg"+name_suffix,
+                    problem=problem,
+                    w=regul_level,
+                    type=regul_type.split("-")[1],
+                    model=regul_model,
+                    poisson=regul_poisson,
+                    quadrature_degree=regul_quadrature)
+                problem.add_regul_energy(regularization_energy)
+            elif (regul_type in ("discrete-tractions")):
+                regularization_energy = dwarp.SurfaceRegularizationDiscreteEnergy(
+                    name="reg"+name_suffix,
                     problem=problem,
                     w=regul_level,
                     type=regul_type.split("-")[1],

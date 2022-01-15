@@ -110,8 +110,8 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
             im_is_def=self.resample,
             im_texture=self.texture,
             verbose=0)
-        # print (name)
-        # print (cpp)
+        # print(name)
+        # print(cpp)
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
         self.Igen = dolfin.CompiledExpression(

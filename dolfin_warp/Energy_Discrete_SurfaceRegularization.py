@@ -22,7 +22,7 @@ from .Energy_Discrete import DiscreteEnergy
 
 ################################################################################
 
-class RegularizationDiscreteEnergy(DiscreteEnergy):
+class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
@@ -30,7 +30,7 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
             problem,
             name="reg",
             w=1.,
-            type="equilibrated",
+            type="tractions",
             model="ciarletgeymonatneohookeanmooneyrivlin",
             young=1.,
             poisson=0.,
@@ -43,8 +43,8 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.w = w
 
-        assert (type in ("equilibrated")),\
-            "\"type\" ("+str(type)+") must be \"equilibrated\". Aborting."
+        assert (type in ("tractions")),\
+            "\"type\" ("+str(type)+") must be \"tractions\". Aborting."
         self.type = type
 
         assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
@@ -66,10 +66,10 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.quadrature_degree = quadrature_degree
         form_compiler_parameters = {
-            "representation":"uflacs", # MG20180327: Is that needed?
+            # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
-        dV = dolfin.Measure(
-            "dx",
+        self.dS = dolfin.Measure(
+            "ds",
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
@@ -79,47 +79,92 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
         self.material = dmech.material(
             model=self.model,
             parameters=self.material_parameters)
-        self.Psi_m, self.S_m = self.material.get_free_energy(
+        self.Psi, self.S = self.material.get_free_energy(
             U=self.problem.U)
-        self.Psi_m = self.Psi_m * dV
-        self.Wint  = dolfin.derivative(self.Psi_m, self.problem.U, self.problem.dU_test )
-        self.dWint = dolfin.derivative(self.Wint , self.problem.U, self.problem.dU_trial)
+        self.P = self.problem.F * self.S
+        self.N = dolfin.FacetNormal(self.problem.mesh)
+        self.T = dolfin.dot(self.P, self.N)
+
+        self.R_fe = dolfin.TensorElement(
+            family="Lagrange",
+            cell=self.problem.mesh.ufl_cell(),
+            degree=self.problem.U_degree)
+        self.R_fs = dolfin.FunctionSpace(
+            self.problem.mesh,
+            self.R_fe)
+        self.R = dolfin.Function(
+            self.R_fs,
+            name="tractions gradient projection")
+        self.R_vec = self.R.vector()
+        self.MR_vec = self.R_vec.copy()
+        self.dR_mat = dolfin.PETScMatrix()
+        self.dRMR_vec = self.problem.U.vector().copy()
+
+        self.R_tria = dolfin.TrialFunction(self.R_fs)
+        self.R_test = dolfin.TestFunction(self.R_fs)
+        self.proj_op = dolfin.Identity(self.problem.mesh_dimension) - dolfin.outer(self.N, self.N)
+
+        vi = self.R_test[0,:]
+        # print(vi)
+        grad_vi = dolfin.grad(vi)
+        # print(grad_vi)
+        grads_vi = dolfin.dot(self.proj_op, dolfin.dot(grad_vi, self.proj_op))
+        # print(grads_vi)
+        divs_vi = dolfin.tr(grads_vi)
+        # print(divs_vi)
+
+        divs_R_test = dolfin.as_vector(
+            [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
+             for i in range(self.problem.mesh_dimension)])
+        self.R_form = dolfin.inner(
+            self.T,
+            divs_R_test) * self.dS
+        self.dR_form = dolfin.derivative(self.R_form, self.problem.U, self.problem.dU_trial)
+
+        # dolfin.assemble(
+        #     form=self.R_form,
+        #     tensor=self.R_vec)
+        # print(f"R_vec.get_local() = {self.R_vec.get_local()}")
+        # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
+        # dolfin.assemble(
+        #     form=self.R_form,
+        #     tensor=self.R_vec)
+        # print(f"R_vec.get_local() = {self.R_vec.get_local()}")
 
         M_lumped_form = dolfin.inner(
-            self.problem.dU_trial,
-            self.problem.dU_test) * dolfin.dx(
+            self.R_tria,
+            self.R_test) * dolfin.ds(
                 domain=self.problem.mesh,
                 scheme="vertex",
                 metadata={
                     "degree":1,
                     "representation":"quadrature"})
+        M_lumped_form += dolfin.Constant(0.) * dolfin.inner(self.R_tria, self.R_test) * dolfin.dx(domain=self.problem.mesh, scheme="vertex", metadata={"degree":1, "representation":"quadrature"}) # MG20220114: For some reason this might be needed, cf. https://fenicsproject.discourse.group/t/petsc-error-code-63-argument-out-of-range/1564
         self.M_lumped_mat = dolfin.PETScMatrix()
         dolfin.assemble(
             form=M_lumped_form,
             tensor=self.M_lumped_mat)
-        # print (self.M_lumped_mat.array())
-        self.M_lumped_vec = self.problem.U.vector().copy()
+        print(self.M_lumped_mat.size(0))
+        print(self.M_lumped_mat.size(1))
+        # print(self.M_lumped_mat.array())
+        self.M_lumped_vec = self.R_vec.copy()
         self.M_lumped_mat.get_diagonal(self.M_lumped_vec)
-        # print (self.M_lumped_vec.get_local())
+        print(self.M_lumped_vec.size())
+        # print(self.M_lumped_vec.get_local())
         self.M_lumped_inv_vec = self.M_lumped_vec.copy()
         self.M_lumped_inv_vec[:] = 1.
         self.M_lumped_inv_vec.vec().pointwiseDivide(
             self.M_lumped_inv_vec.vec(),
             self.M_lumped_vec.vec())
-        # print (self.M_lumped_inv_vec.get_local())
+        print(self.M_lumped_inv_vec.size())
+        # print(self.M_lumped_inv_vec.get_local())
         self.M_lumped_inv_mat = self.M_lumped_mat.copy()
+        print(self.M_lumped_inv_mat.size(0))
+        print(self.M_lumped_inv_mat.size(1))
         self.M_lumped_inv_mat.set_diagonal(self.M_lumped_inv_vec)
-        # print (self.M_lumped_inv_mat.array())
+        # print(self.M_lumped_inv_mat.array())
 
-        self.R_vec = self.problem.U.vector().copy()
-        self.MR_vec = self.problem.U.vector().copy()
-        self.dRMR_vec = self.problem.U.vector().copy()
-
-        self.dR_mat = dolfin.PETScMatrix()
-
-        sd = dolfin.CompiledSubDomain("on_boundary")
-        self.bc = dolfin.DirichletBC(self.problem.U_fs, [0]*self.problem.mesh_dimension, sd)
-
+        # self.problem.U.vector()[:] = 0.
         # self.assemble_ener()
         # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
@@ -132,14 +177,12 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
             w_weight=True):
 
         dolfin.assemble(
-            form=self.Wint,
+            form=self.R_form,
             tensor=self.R_vec)
-        # print(self.R_vec.get_local())
-        self.bc.apply(self.R_vec)
         # print(self.R_vec.get_local())
         self.MR_vec.vec().pointwiseDivide(self.R_vec.vec(), self.M_lumped_vec.vec())
         # print(self.MR_vec.get_local())
-        ener = self.R_vec.inner(self.MR_vec)
+        ener  = self.R_vec.inner(self.MR_vec)
         ener /= 2
         # print(ener)
         if (w_weight):
@@ -158,20 +201,16 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
         assert (add_values == True)
 
         dolfin.assemble(
-            form=self.Wint,
+            form=self.R_form,
             tensor=self.R_vec)
-        # print(self.R_vec.get_local())
-        self.bc.apply(self.R_vec)
         # print(self.R_vec.get_local())
 
         self.MR_vec.vec().pointwiseDivide(self.R_vec.vec(), self.M_lumped_vec.vec())
         # print(self.MR_vec.get_local())
 
         dolfin.assemble(
-            form=self.dWint,
+            form=self.dR_form,
             tensor=self.dR_mat)
-        # print(self.dR_mat.array())
-        self.bc.zero(self.dR_mat)
         # print(self.dR_mat.array())
 
         self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
@@ -193,10 +232,8 @@ class RegularizationDiscreteEnergy(DiscreteEnergy):
         assert (add_values == True)
 
         dolfin.assemble(
-            form=self.dWint,
+            form=self.dR_form,
             tensor=self.dR_mat)
-        # print(self.dR_mat.array())
-        self.bc.zero(self.dR_mat)
         # print(self.dR_mat.array())
 
         self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())

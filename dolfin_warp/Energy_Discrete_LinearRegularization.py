@@ -22,7 +22,7 @@ from .Energy_Discrete import DiscreteEnergy
 
 ################################################################################
 
-class RegularizationLinearDiscreteEnergy(DiscreteEnergy):
+class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
