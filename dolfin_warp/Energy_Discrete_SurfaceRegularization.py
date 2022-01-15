@@ -40,8 +40,8 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.w = w
 
-        assert (type in ("tractions")),\
-            "\"type\" ("+str(type)+") must be \"tractions\". Aborting."
+        assert (type in ("tractions", "tractions-normal", "tractions-normal-tangential")),\
+            "\"type\" ("+str(type)+") must be \"tractions\", \"tractions-normal\" or \"tractions-normal-tangential\", . Aborting."
         self.type = type
 
         assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
@@ -79,19 +79,34 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.Psi, self.S = self.material.get_free_energy(
             U=self.problem.U)
         self.P = self.problem.F * self.S
-        self.N = dolfin.FacetNormal(self.problem.mesh)
-        self.T = dolfin.dot(self.P, self.N)
 
-        self.R_fe = dolfin.TensorElement(
-            family="Lagrange",
-            cell=self.problem.mesh.ufl_cell(),
-            degree=self.problem.U_degree)
+        self.N = dolfin.FacetNormal(self.problem.mesh)
+        assert (self.problem.mesh_dimension == 2)
+        ez = dolfin.as_vector([0, 0, 1])
+        N3D = dolfin.as_vector([self.N[0], self.N[1], 0])
+        T3D = dolfin.cross(ez, N3D)
+        self.T = dolfin.as_vector([T3D[0], T3D[1]])
+
+        self.F = dolfin.dot(self.P, self.N)
+        self.Fn = dolfin.inner(self.N, self.F)
+        self.Ft = dolfin.inner(self.T, self.F)
+
+        if (type == "tractions"):
+            self.R_fe = dolfin.TensorElement(
+                family="Lagrange",
+                cell=self.problem.mesh.ufl_cell(),
+                degree=self.problem.U_degree)
+        elif (type in ("tractions-normal", "tractions-normal-tangential")):
+            self.R_fe = dolfin.VectorElement(
+                family="Lagrange",
+                cell=self.problem.mesh.ufl_cell(),
+                degree=self.problem.U_degree)
         self.R_fs = dolfin.FunctionSpace(
             self.problem.mesh,
             self.R_fe)
         self.R = dolfin.Function(
             self.R_fs,
-            name="tractions gradient projection")
+            name="traction gradient projection")
         self.R_vec = self.R.vector()
         self.MR_vec = self.R_vec.copy()
         self.dR_mat = dolfin.PETScMatrix()
@@ -101,21 +116,34 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.R_test = dolfin.TestFunction(self.R_fs)
         self.proj_op = dolfin.Identity(self.problem.mesh_dimension) - dolfin.outer(self.N, self.N)
 
-        vi = self.R_test[0,:]
-        # print(vi)
-        grad_vi = dolfin.grad(vi)
-        # print(grad_vi)
-        grads_vi = dolfin.dot(self.proj_op, dolfin.dot(grad_vi, self.proj_op))
-        # print(grads_vi)
-        divs_vi = dolfin.tr(grads_vi)
-        # print(divs_vi)
-
-        divs_R_test = dolfin.as_vector(
-            [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
-             for i in range(self.problem.mesh_dimension)])
-        self.R_form = dolfin.inner(
-            self.T,
-            divs_R_test) * self.dS
+        if (type == "tractions"):
+            # vi = self.R_test[0,:]
+            # print(vi)
+            # grad_vi = dolfin.grad(vi)
+            # print(grad_vi)
+            # grads_vi = dolfin.dot(self.proj_op, dolfin.dot(grad_vi, self.proj_op))
+            # print(grads_vi)
+            # divs_vi = dolfin.tr(grads_vi)
+            # print(divs_vi)
+            divs_R_test = dolfin.as_vector(
+                [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
+                 for i in range(self.problem.mesh_dimension)])
+            self.R_form = dolfin.inner(
+                self.F,
+                divs_R_test) * self.dS
+        elif (type == "tractions-normal"):
+            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
+            self.R_form = dolfin.inner(
+                self.Fn,
+                divs_R_test) * self.dS
+        elif (type == "tractions-normal-tangential"):
+            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
+            self.R_form =  dolfin.inner(
+                self.Fn,
+                divs_R_test) * self.dS
+            self.R_form += dolfin.inner(
+                self.Ft,
+                divs_R_test) * self.dS
         self.dR_form = dolfin.derivative(self.R_form, self.problem.U, self.problem.dU_trial)
 
         # dolfin.assemble(
@@ -141,23 +169,17 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         dolfin.assemble(
             form=M_lumped_form,
             tensor=self.M_lumped_mat)
-        print(self.M_lumped_mat.size(0))
-        print(self.M_lumped_mat.size(1))
         # print(self.M_lumped_mat.array())
         self.M_lumped_vec = self.R_vec.copy()
         self.M_lumped_mat.get_diagonal(self.M_lumped_vec)
-        print(self.M_lumped_vec.size())
         # print(self.M_lumped_vec.get_local())
         self.M_lumped_inv_vec = self.M_lumped_vec.copy()
         self.M_lumped_inv_vec[:] = 1.
         self.M_lumped_inv_vec.vec().pointwiseDivide(
             self.M_lumped_inv_vec.vec(),
             self.M_lumped_vec.vec())
-        print(self.M_lumped_inv_vec.size())
         # print(self.M_lumped_inv_vec.get_local())
         self.M_lumped_inv_mat = self.M_lumped_mat.copy()
-        print(self.M_lumped_inv_mat.size(0))
-        print(self.M_lumped_inv_mat.size(1))
         self.M_lumped_inv_mat.set_diagonal(self.M_lumped_inv_vec)
         # print(self.M_lumped_inv_mat.array())
 

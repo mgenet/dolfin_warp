@@ -219,12 +219,12 @@ def warp(
                     poisson=regul_poisson,
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
-            elif (regul_type in ("discrete-tractions")):
+            elif (regul_type in ("discrete-tractions", "discrete-tractions-normal", "discrete-tractions-normal-tangential")):
                 regularization_energy = dwarp.SurfaceRegularizationDiscreteEnergy(
                     name="reg"+name_suffix,
                     problem=problem,
                     w=regul_level,
-                    type=regul_type.split("-")[1],
+                    type=regul_type.split("-",1)[1],
                     model=regul_model,
                     poisson=regul_poisson,
                     quadrature_degree=regul_quadrature)
