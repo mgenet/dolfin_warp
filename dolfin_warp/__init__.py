@@ -36,8 +36,8 @@ from .NonlinearSolver_ReducedKinematicsNewton import *
 from .Energy_Continuous import *
 from .get_centroids import *
 from .plot_regional_strains import *
+from .get_filenames import *
 from .compute_displacement_infinity_norm import *
-from .Energy_Discrete_Regularization import *
 from .compute_displacements_from_ref import *
 from .ImageIterator import *
 from .compute_selective_image_gradient import *
