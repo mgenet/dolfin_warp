@@ -210,7 +210,7 @@ class ImageRegistrationProblem(Problem):
 
         ener = 0.
         for energy in self.energies:
-            # print (energy.name)
+            # print(energy.name)
             ener_ = energy.assemble_ener(w_weight=1)
             self.printer.print_sci("ener_"+energy.name,ener_)
             ener += ener_
@@ -224,7 +224,7 @@ class ImageRegistrationProblem(Problem):
 
         if (res_vec.size() > 0): res_vec.zero()
         for energy in self.energies:
-            # print (energy.name)
+            # print(energy.name)
             energy.assemble_res(
                 res_vec=res_vec,
                 add_values=1,
@@ -238,15 +238,15 @@ class ImageRegistrationProblem(Problem):
 
         if (jac_mat.nnz() > 0): jac_mat.zero()
         for energy in self.energies:
-            # print (energy.name)
-            # print (jac_mat.nnz())
-            # print (jac_mat.array())
+            # print(energy.name)
+            # print(jac_mat.nnz())
+            # print(jac_mat.array())
             energy.assemble_jac(
                 jac_mat=jac_mat,
                 add_values=1,
                 w_weight=1)
-            # print (jac_mat.nnz())
-            # print (jac_mat.array())
+            # print(jac_mat.nnz())
+            # print(jac_mat.array())
         # self.printer.print_var("jac_mat",jac_mat.array())
 
 

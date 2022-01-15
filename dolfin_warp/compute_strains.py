@@ -188,18 +188,16 @@ def compute_strains(
             strain_array_name=strain_array_name,
             mesh_w_local_basis=ref_mesh,
             verbose=verbose)
-        ### 20210601 Modif CL
         myvtk.addJacobiansFromDeformationGradients(
-                mesh=mesh,
-                defo_grad_array_name=defo_grad_array_name,
-                jacobian_array_name=jacobian_array_name,
-                verbose=verbose)
+            mesh=mesh,
+            defo_grad_array_name=defo_grad_array_name,
+            jacobian_array_name=jacobian_array_name,
+            verbose=verbose)
         myvtk.addEquivDeviatoricStrainsFromDeformationGradients(
-                mesh=mesh,
-                defo_grad_array_name=defo_grad_array_name,
-                equiv_dev_strain_array_basename=equiv_dev_strain_array_basename,
-                verbose=verbose)
-        ###
+            mesh=mesh,
+            defo_grad_array_name=defo_grad_array_name,
+            equiv_dev_strain_array_basename=equiv_dev_strain_array_basename,
+            verbose=verbose)
         if (ref_mesh is not None):
             if  (iarray_ref_part_id is not None)\
             and (remove_boundary_layer         ):

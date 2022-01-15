@@ -30,13 +30,13 @@ def compute_strain_error(
 
     if (noisy == 1):
         folder = folder + "/ver"
-        n_realizations = len(glob.glob("./"+folder+"*"))
+        n_realizations = len(glob.glob( folder+"*"))
         assert (n_realizations), "There is no analysis folder for noisy images. Aborting."
     elif (noisy == 0):
         n_realizations = 1
 
     for k_realization in range(n_realizations):
-        dat_file = "./"+folder+"%s/GlobalNormalizedRMSE_forES.dat"%(str(k_realization+1) if noisy else "")
+        dat_file = folder+"%s/GlobalNormalizedRMSE_forES.dat"%(str(k_realization+1) if noisy else "")
 
         with open(dat_file, 'r') as f:
             lines = f.read().splitlines()
@@ -49,24 +49,24 @@ def compute_strain_error(
         assert (len(ref_filenames) > 0), "There is no working file in the reference mesh folder ("+working_folder+"/"+working_basename+"_[0-9]*."+working_ext+"). Aborting."
         ref_zfill = len(ref_filenames[0].rsplit("_",1)[-1].split(".")[0])
 
-        ref_mesh_file = "./"+ref_mesh_folder+"/"+ref_mesh_basename+"_"+str(k_frame).zfill(ref_zfill)+"."+ref_mesh_ext
+        ref_mesh_file = ref_mesh_folder+"/"+ref_mesh_basename+"_"+str(k_frame).zfill(ref_zfill)+"."+ref_mesh_ext
         ref_mesh = myvtk.readUGrid(filename=ref_mesh_file)
         n_cells = ref_mesh.GetNumberOfCells()
         farray_ref_strain = ref_mesh.GetCellData().GetArray('Strain_PPS')
 
-        dat_file = "./"+folder+"%s/GlobalNormalizedRMSE_forES.dat"%(str(k_realization+1) if noisy else "")
+        dat_file = folder+"%s/GlobalNormalizedRMSE_forES.dat"%(str(k_realization+1) if noisy else "")
 
-        file = open("./"+folder+"%s/strainerror.dat"%(str(k_realization+1) if noisy else ""), "w")
+        file = open(folder+"%s/strainerror.dat"%(str(k_realization+1) if noisy else ""), "w")
 
-        working_filenames_beta0 = glob.glob("./"+folder+"%s/"%(str(k_realization+1) if noisy else "") +working_folder+"0/"+working_basename+"_[0-9]*."+working_ext)
+        working_filenames_beta0 = glob.glob(folder+"%s/"%(str(k_realization+1) if noisy else "") +working_folder+"0/"+working_basename+"_[0-9]*."+working_ext)
         assert (len(working_filenames_beta0) > 0), "There is no working file in the analysis folder with beta = 0. Aborting."
         working_zfill = len(working_filenames_beta0[0].rsplit("_",1)[-1].split(".")[0])
-        beta_0_mesh_file = "./"+folder+"%s/"%(str(k_realization+1) if noisy else "") +working_folder+"0/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
+        beta_0_mesh_file = folder+"%s/"%(str(k_realization+1) if noisy else "") +working_folder+"0/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
 
-        working_filenames_betabest = glob.glob("./"+folder+"%s/"%(str(k_realization+1) if noisy else "")+working_folder+str(beta_best)+"/"+working_basename+"_[0-9]*."+working_ext)
+        working_filenames_betabest = glob.glob(folder+"%s/"%(str(k_realization+1) if noisy else "")+working_folder+str(beta_best)+"/"+working_basename+"_[0-9]*."+working_ext)
         assert (len(working_filenames_betabest) > 0), "There is no working file in the analysis folder with optimal beta. Aborting."
         working_zfill = len(working_filenames_betabest[0].rsplit("_",1)[-1].split(".")[0])
-        beta_best_mesh_file = "./"+folder+"%s/"%(str(k_realization+1) if noisy else "")+working_folder+str(beta_best)+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
+        beta_best_mesh_file = folder+"%s/"%(str(k_realization+1) if noisy else "")+working_folder+str(beta_best)+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
 
         if os.path.exists(beta_0_mesh_file):
             mesh_beta_0 = myvtk.readUGrid(filename=beta_0_mesh_file)

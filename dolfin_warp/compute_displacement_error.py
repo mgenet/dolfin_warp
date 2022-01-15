@@ -87,8 +87,8 @@ def compute_displacement_error(
 
     err_int_int = numpy.sqrt(numpy.mean(numpy.square(err_int)))
     ref_int_int = numpy.sqrt(numpy.mean(numpy.square(ref_int)))
-    # print (err_int_int)
-    # print (ref_int_int)
+    # print(err_int_int)
+    # print(ref_int_int)
 
     # error_file.write("\n\n")
     # error_file.write(" ".join([str(val) for val in [err_int_int, ref_int_int]]))
@@ -96,5 +96,5 @@ def compute_displacement_error(
     error_file.close()
 
     err = err_int_int/ref_int_int
-    if (verbose): print (err)
+    if (verbose): print(err)
     return err

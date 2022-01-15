@@ -25,22 +25,18 @@ def compute_displacement_infinity_norm(
         ref_mesh_ext="vtk"):
 
     ref_filenames = glob.glob(ref_mesh_folder+"/"+ref_mesh_basename+"_[0-9]*."+ref_mesh_ext)
-    assert (len(ref_filenames) > 0), "There is no working file in the reference mesh folder ("+working_folder+"/"+working_basename+"_[0-9]*."+working_ext+"). Aborting."
-
+    assert (len(ref_filenames) > 0), "There is no working file in the reference mesh folder ("+ref_mesh_folder+"/"+ref_mesh_basename+"_[0-9]*."+ref_mesh_ext+"). Aborting."
     ref_zfill = len(ref_filenames[0].rsplit("_",1)[-1].split(".")[0])
 
-    ref_mesh_filename = "./" + ref_mesh_folder + "/" + ref_mesh_basename + "_" + str(k_frame).zfill(ref_zfill) + "." + ref_mesh_ext
-    ref_mesh = myvtk.readUGrid(
-        ref_mesh_filename)
-
+    ref_mesh_filename = ref_mesh_folder+"/"+ref_mesh_basename+"_"+str(k_frame).zfill(ref_zfill)+"."+ref_mesh_ext
+    ref_mesh = myvtk.readUGrid(ref_mesh_filename)
     n_points = ref_mesh.GetNumberOfPoints()
     farray_U = ref_mesh.GetPointData().GetArray(disp_array_name)
 
     inf_norm = float("-Inf")
-
     for k_point in range(n_points):
-        max =  math.sqrt(numpy.sum(numpy.square(farray_U.GetTuple(k_point))))
-        if max > inf_norm:
+        max = math.sqrt(numpy.sum(numpy.square(farray_U.GetTuple(k_point))))
+        if (max > inf_norm):
             inf_norm = max
 
     return inf_norm

@@ -65,9 +65,9 @@ class Modal_analysis():
 
         # BCs
         bcs = self.set_bc(fixed_points=fixed_points)
-        print ("dofs with Dirichlet BCs for modal analysis:")
+        print("dofs with Dirichlet BCs for modal analysis:")
         for b_cond in bcs:
-            print (b_cond.get_boundary_values())
+            print(b_cond.get_boundary_values())
 
         k_form = dolfin.inner(sigma(du),eps(u_))*dolfin.dx
         l_form = dolfin.Constant(1.)*u_[0]*dolfin.dx

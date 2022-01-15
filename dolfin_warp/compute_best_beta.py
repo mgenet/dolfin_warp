@@ -30,11 +30,11 @@ def compute_best_beta(
         ref_mesh_basename="solution",
         ref_mesh_ext="vtk"):
 
-    if noisy == 1:
+    if (noisy):
         folder = folder + "/ver"
-        n_realizations = len(glob.glob("./"+folder+"*"))
+        n_realizations = len(glob.glob(folder+"*"))
         assert (n_realizations), "There is no analysis folder for noisy images. Aborting."
-    elif noisy == 0:
+    else:
         n_realizations = 1
 
     infNorm = inf_norm.compute_displacement_infinity_norm(
@@ -49,13 +49,13 @@ def compute_best_beta(
         filename_min = " "
         min_disp_diff = []
 
-        file = open("./"+folder+"%s/globalNormalizedRMSE_forES.dat" %(str(k_realization+1) if noisy else ""), "w")
+        file = open(folder+"%s/globalNormalizedRMSE_forES.dat" %(str(k_realization+1) if noisy else ""), "w")
 
         for k_beta in range(len(betas)):
             disp_diff = rmse.compute_displacement_error_field(
                 k_frame = k_frame,
                 disp_array_name = disp_array_name,
-                working_folder = "./"+folder+"%s/" %(str(k_realization+1) if noisy else "") +working_folder+betas[k_beta],
+                working_folder = folder+"%s/" %(str(k_realization+1) if noisy else "") +working_folder+betas[k_beta],
                 working_basename = working_basename,
                 working_ext = working_ext,
                 ref_mesh_folder = ref_mesh_folder,
