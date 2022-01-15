@@ -18,7 +18,6 @@ from builtins import range
 import glob
 import math
 import numpy
-import vtk
 
 import myVTKPythonLibrary as myvtk
 

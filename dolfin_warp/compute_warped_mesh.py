@@ -15,12 +15,12 @@ from builtins import range
 import dolfin
 import numpy
 import os
-import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
+
 from .generate_images import *
 
 ################################################################################

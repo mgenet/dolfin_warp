@@ -12,9 +12,9 @@ import dolfin
 import os
 
 import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
+
 from .Problem import Problem
 
 ################################################################################

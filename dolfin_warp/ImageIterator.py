@@ -14,11 +14,9 @@ import dolfin
 import glob
 import numpy
 import os
-import time
 import vtk
 
 import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
 

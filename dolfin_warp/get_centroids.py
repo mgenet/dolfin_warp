@@ -13,6 +13,8 @@
 ###                                                                          ###
 ################################################################################
 
+from builtins import range
+
 import numpy
 
 import myVTKPythonLibrary as myvtk

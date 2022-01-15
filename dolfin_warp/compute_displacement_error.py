@@ -10,14 +10,10 @@
 
 from builtins import range
 
-import dolfin
 import glob
 import numpy
 
-import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
-
-import dolfin_warp as dwarp
 
 ################################################################################
 

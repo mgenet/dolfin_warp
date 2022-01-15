@@ -9,6 +9,8 @@
 ###                                                                  ###
 ########################################################################
 
+from builtins import range
+
 import dolfin_warp as dwarp
 
 ########################################################################
@@ -27,7 +29,7 @@ es_tf = 55
 
 for k_folder in range(len(folders)):
     folder = folders[k_folder]
-    print "Displacement error computation for: " + folder
+    print("Displacement error computation for: "+folder)
     dwarp.compute_best_beta(
         es_tf,
         betas,

@@ -12,11 +12,6 @@ import dolfin
 import os
 import shutil
 
-import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
-
-import dolfin_warp as dwarp
-
 ################################################################################
 
 def write_VTU_file(

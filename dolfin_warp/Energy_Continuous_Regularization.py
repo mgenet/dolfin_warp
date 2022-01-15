@@ -10,12 +10,8 @@
 
 import dolfin
 
-import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
-
 import dolfin_mech as dmech
 
-import dolfin_warp as dwarp
 from .Energy_Continuous import ContinuousEnergy
 
 ################################################################################

@@ -10,12 +10,9 @@
 
 from builtins import range
 
-import dolfin
 import glob
-import math
 import numpy
 import os
-import random
 import shutil
 import vtk
 
@@ -23,6 +20,7 @@ import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
+
 from .generate_images_Image   import Image
 from .generate_images_Mapping import Mapping
 

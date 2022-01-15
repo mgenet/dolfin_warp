@@ -12,7 +12,7 @@
 ###                                                                          ###
 ################################################################################
 
-# from builtins import range
+from builtins import range
 
 import dolfin
 import numpy
@@ -24,6 +24,7 @@ except ImportError:
     has_cma = False
 
 import dolfin_warp as dwarp
+
 from .NonlinearSolver import NonlinearSolver
 
 ################################################################################

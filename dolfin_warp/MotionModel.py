@@ -8,12 +8,9 @@
 ###                                                                          ###
 ################################################################################
 
-# from builtins import range
+from builtins import range
 
 import dolfin
-import numpy
-
-import dolfin_warp as dwarp
 
 ################################################################################
 

@@ -9,6 +9,8 @@
 ###                                                                  ###
 ########################################################################
 
+from builtins import range
+
 import dolfin_warp as dwarp
 
 ########################################################################
@@ -26,7 +28,7 @@ noisy = 0
 
 for k_folder in range(len(folders)):
     folder = folders[k_folder]
-    print "Strain error computation for: " + folder
+    print("Strain error computation for: "+folder)
     dwarp.compute_strain_error(
         k_frame,
         folder,

@@ -10,15 +10,13 @@
 
 from builtins import range
 
-import dolfin
 import glob
 import math
 import numpy
 import scipy
-from scipy.interpolate import InterpolatedUnivariateSpline # MG20200616: Is that needed?
+import scipy.interpolate
 import vtk
 
-import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 import vtkpython_cbl      as cbl
 
@@ -322,22 +320,22 @@ def compute_strains(
                     verbose=verbose-1)
 
                 if (twist_vs_height_interpolation == "piecewiseLinear"):
-                    warped_sector_centroids_x = InterpolatedUnivariateSpline(
+                    warped_sector_centroids_x = scipy.interpolate.InterpolatedUnivariateSpline(
                         numpy.flip(warped_sector_centroids[:,2]),
                         numpy.flip(warped_sector_centroids[:,0]),
                         k=1,
                         ext=0)
-                    warped_sector_centroids_y =  InterpolatedUnivariateSpline(
+                    warped_sector_centroids_y = scipy.interpolate.InterpolatedUnivariateSpline(
                         numpy.flip(warped_sector_centroids[:,2]),
                         numpy.flip(warped_sector_centroids[:,1]),
                         k=1,
                         ext=0)
-                    ref_sector_centroids_x = InterpolatedUnivariateSpline(
+                    ref_sector_centroids_x = scipy.interpolate.InterpolatedUnivariateSpline(
                         numpy.flip(ref_sector_centroids[:,2]),
                         numpy.flip(ref_sector_centroids[:,0]),
                         k=1,
                         ext=0)
-                    ref_sector_centroids_y = InterpolatedUnivariateSpline(
+                    ref_sector_centroids_y = scipy.interpolate.InterpolatedUnivariateSpline(
                         numpy.flip(ref_sector_centroids[:,2]),
                         numpy.flip(ref_sector_centroids[:,1]),
                         k=1,

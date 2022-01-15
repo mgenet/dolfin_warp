@@ -14,12 +14,6 @@
 ################################################################################
 
 import dolfin
-import numpy
-
-import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
-
-import dolfin_warp as dwarp
 
 ################################################################################
 

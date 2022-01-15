@@ -12,15 +12,14 @@ from builtins import range
 
 import dolfin
 import glob
-import math
 import numpy
 import os
 import time
 
 import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
+
 from .NonlinearSolver import NonlinearSolver
 from .NonlinearSolver_Relaxation import RelaxationNonlinearSolver
 
