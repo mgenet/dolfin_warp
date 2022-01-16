@@ -40,8 +40,8 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.w = w
 
-        assert (type in ("tractions", "tractions-normal", "tractions-normal-tangential")),\
-            "\"type\" ("+str(type)+") must be \"tractions\", \"tractions-normal\" or \"tractions-normal-tangential\", . Aborting."
+        assert (type in ("tractions", "tractions-normal", "tractions-tangential", "tractions-normal-tangential")),\
+            "\"type\" ("+str(type)+") must be \"tractions\", \"tractions-normal\", \"tractions-tangential\" or \"tractions-normal-tangential\", . Aborting."
         self.type = type
 
         assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
@@ -96,7 +96,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
                 family="Lagrange",
                 cell=self.problem.mesh.ufl_cell(),
                 degree=self.problem.U_degree)
-        elif (type in ("tractions-normal", "tractions-normal-tangential")):
+        elif (type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
             self.R_fe = dolfin.VectorElement(
                 family="Lagrange",
                 cell=self.problem.mesh.ufl_cell(),
@@ -135,6 +135,11 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
             self.R_form = dolfin.inner(
                 self.Fn,
+                divs_R_test) * self.dS
+        elif (type == "tractions-tangential"):
+            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
+            self.R_form = dolfin.inner(
+                self.Ft,
                 divs_R_test) * self.dS
         elif (type == "tractions-normal-tangential"):
             divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))

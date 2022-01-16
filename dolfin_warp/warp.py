@@ -32,7 +32,7 @@ def warp(
         mesh_folder=None,
         mesh_basename=None,
         mesh_degree=1,
-        regul_type="equilibrated", # equilibrated, elastic, hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated
+        regul_type="equilibrated", # equilibrated, elastic, hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
         regul_types=None,
         regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
         regul_models=None,
@@ -219,7 +219,7 @@ def warp(
                     poisson=regul_poisson,
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
-            elif (regul_type in ("discrete-tractions", "discrete-tractions-normal", "discrete-tractions-normal-tangential")):
+            elif (regul_type in ("discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential")):
                 regularization_energy = dwarp.SurfaceRegularizationDiscreteEnergy(
                     name="reg"+name_suffix,
                     problem=problem,
