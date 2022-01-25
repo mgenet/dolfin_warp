@@ -35,7 +35,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.printer = self.problem.printer
 
         # linear solver
-        self.linear_solver_name = parameters["linear_solver_name"] if ("linear_solver_name" in parameters) else "mumps"
+        self.linear_solver_name = parameters["linear_solver_name"] if ("linear_solver_name" in parameters) and (parameters["linear_solver_name"] is not None) else "mumps"
 
         # self.res_vec = dolfin.PETScVector()
         # self.jac_mat = dolfin.PETScMatrix()
@@ -60,7 +60,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.n_iter_max  = parameters["n_iter_max"]  if ("n_iter_max"  in parameters) else 32
 
         # write iterations
-        self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) else False
+        self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
         if (self.write_iterations):
             self.working_folder   = parameters["working_folder"]

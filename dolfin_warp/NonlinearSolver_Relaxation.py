@@ -29,16 +29,26 @@ class RelaxationNonlinearSolver(NonlinearSolver):
 
         self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "gss"
 
-        if   (self.relax_type == "aitken"):
-            self.compute_relax = self.compute_relax_aitken
-        elif (self.relax_type == "constant"):
+        if (self.relax_type == "constant"):
             self.compute_relax = self.compute_relax_constant
             self.relax_val = parameters["relax"] if ("relax" in parameters) and (parameters["relax"] is not None) else 1.
+        elif (self.relax_type == "aitken"):
+            self.compute_relax = self.compute_relax_aitken
+        elif (self.relax_type == "backtracking"):
+            self.compute_relax = self.compute_relax_backtracking
+            self.relax_backtracking_factor = parameters["relax_backtracking_factor"] if ("relax_backtracking_factor" in parameters) and (parameters["relax_backtracking_factor"] is not None) else 2.
+            self.relax_n_iter_max          = parameters["relax_n_iter_max"]          if ("relax_n_iter_max"          in parameters) and (parameters["relax_n_iter_max"]          is not None) else 8
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
             self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 0
             self.relax_n_iter_max   = parameters["relax_n_iter_max"]   if ("relax_n_iter_max"   in parameters) and (parameters["relax_n_iter_max"]   is not None) else 9
-            self.relax_must_advance = parameters["relax_must_advance"] if ("relax_must_advance" in parameters) and (parameters["relax_must_advance"] is not None) else False
+
+
+
+    def compute_relax_constant(self):
+
+        self.relax = self.relax_val
+        self.printer.print_sci("relax",self.relax)
 
 
 
@@ -52,10 +62,33 @@ class RelaxationNonlinearSolver(NonlinearSolver):
 
 
 
-    def compute_relax_constant(self):
+    def compute_relax_backtracking(self):
 
-        self.relax = self.relax_val
-        self.printer.print_sci("relax",self.relax)
+        relax = 0.
+        ener0 = self.problem.assemble_ener()
+        self.printer.print_sci("ener0",ener0)
+        relax_cur = 0.
+        self.printer.inc()
+        k_relax = 1
+        while (True):
+            self.printer.print_var("k_relax",k_relax,-1)
+            relax = 1./self.relax_backtracking_factor**(k_relax-1)
+            self.printer.print_sci("relax",relax)
+            self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
+            ener = self.problem.assemble_ener()
+            self.printer.print_sci("ener",ener)
+            relax_cur = relax
+            if (ener < ener0):
+                self.relax = relax
+                break
+            if (k_relax == self.relax_n_iter_max):
+                self.relax = 0.
+                self.printer.print_str("Warning! Optimal relaxation is null…")
+                break
+            k_relax += 1
+        self.printer.dec()
+        relax = 0.
+        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
 
 
 

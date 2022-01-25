@@ -42,8 +42,9 @@ def warp(
         regul_poisson=0.,
         tangent_type="Idef", # Idef
         residual_type="Iref", # Iref
-        relax_type=None, # constant, aitken, gss
+        relax_type=None, # constant, aitken, backtracking, gss
         relax_init=1., # 1.
+        relax_backtracking_factor=None,
         relax_tol=None,
         relax_n_iter_max=None,
         relax_must_advance=None,
@@ -242,6 +243,7 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax_backtracking_factor":relax_backtracking_factor,
                 "relax_tol":relax_tol,
                 "relax_n_iter_max":relax_n_iter_max,
                 "relax_must_advance":relax_must_advance,
@@ -260,6 +262,7 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax_backtracking_factor":relax_backtracking_factor,
                 "relax_tol":relax_tol,
                 "relax_n_iter_max":relax_n_iter_max,
                 "relax_must_advance":relax_must_advance,
