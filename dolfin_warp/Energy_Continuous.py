@@ -19,7 +19,7 @@ class ContinuousEnergy(Energy):
 
 
     def assemble_ener(self,
-        w_weight=True):
+            w_weight=True):
 
         ener = dolfin.assemble(self.ener_form)
         if (w_weight):

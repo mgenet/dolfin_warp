@@ -27,17 +27,18 @@ class RelaxationNonlinearSolver(NonlinearSolver):
     def __init__(self,
             parameters={}):
 
-        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) else "gss"
+        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "gss"
 
         if   (self.relax_type == "aitken"):
             self.compute_relax = self.compute_relax_aitken
         elif (self.relax_type == "constant"):
             self.compute_relax = self.compute_relax_constant
-            self.relax_val = parameters["relax"] if ("relax" in parameters) else 1.
+            self.relax_val = parameters["relax"] if ("relax" in parameters) and (parameters["relax"] is not None) else 1.
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
-            self.relax_tol        = parameters["relax_tol"]        if ("relax_tol"        in parameters) else 0
-            self.relax_n_iter_max = parameters["relax_n_iter_max"] if ("relax_n_iter_max" in parameters) else 9
+            self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 0
+            self.relax_n_iter_max   = parameters["relax_n_iter_max"]   if ("relax_n_iter_max"   in parameters) and (parameters["relax_n_iter_max"]   is not None) else 9
+            self.relax_must_advance = parameters["relax_must_advance"] if ("relax_must_advance" in parameters) and (parameters["relax_must_advance"] is not None) else False
 
 
 
@@ -115,8 +116,12 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 self.printer.print_sci("relax_err",relax_err)
                 if (relax_min != 0.) and (abs(relax_err) < self.relax_tol):
                     break
-            if (k_relax == self.relax_n_iter_max):
-                break
+            if (k_relax >= self.relax_n_iter_max):
+                if (self.relax_must_advance):
+                    if (relax_min != 0.):
+                        break
+                else:
+                    break
             if (relax_fc < relax_fd):
                 relax_b = relax_d
                 relax_d = relax_c

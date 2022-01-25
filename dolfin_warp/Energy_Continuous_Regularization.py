@@ -102,32 +102,26 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
             self.Psi_S = dolfin.Constant(0)
         elif (self.type == "equilibrated"):
             self.Div_P = dolfin.div(self.P)
-            self.Psi_V = dolfin.inner(self.Div_P,
-                                        self.Div_P)
+            self.Psi_V = dolfin.inner(self.Div_P, self.Div_P)
             self.N = dolfin.FacetNormal(self.problem.mesh)
-            self.Jump_P_N = dolfin.jump(self.P,
-                                        self.N)
+            self.Jump_P_N = dolfin.jump(self.P, self.N)
             self.cell_h = dolfin.Constant(self.problem.mesh.hmin())
-            self.Psi_F = dolfin.inner(self.Jump_P_N,
-                                        self.Jump_P_N)/self.cell_h
+            self.Psi_F = dolfin.inner(self.Jump_P_N, self.Jump_P_N)/self.cell_h
             # self.P_N = self.P * self.N
-            # self.P_N_N = dolfin.dot(self.N,
-            #                         self.P_N)
+            # self.P_N_N = dolfin.dot(self.N, self.P_N)
             # self.P_N_T = self.P_N - self.P_N_N * self.N
-            # self.Psi_S = dolfin.inner(self.P_N_T,
-            #                             self.P_N_T)/self.cell_h
-            # self.Psi_S = dolfin.inner(self.P_N,
-            #                             self.P_N)/self.cell_h
+            # self.Psi_S = dolfin.inner(self.P_N_T, self.P_N_T)/self.cell_h
+            # self.Psi_S = dolfin.inner(self.P_N, self.P_N)/self.cell_h
             self.Psi_S = dolfin.Constant(0)
 
-        self.DPsi_m_V  = dolfin.derivative( self.Psi_V, self.problem.U, self.problem.dU_test )
-        self.DPsi_m_F  = dolfin.derivative( self.Psi_F, self.problem.U, self.problem.dU_test )
-        self.DPsi_m_S  = dolfin.derivative( self.Psi_S, self.problem.U, self.problem.dU_test )
+        self.DPsi_m_V  = dolfin.derivative( self.Psi_V  , self.problem.U, self.problem.dU_test )
+        self.DPsi_m_F  = dolfin.derivative( self.Psi_F  , self.problem.U, self.problem.dU_test )
+        self.DPsi_m_S  = dolfin.derivative( self.Psi_S  , self.problem.U, self.problem.dU_test )
         self.DDPsi_m_V = dolfin.derivative(self.DPsi_m_V, self.problem.U, self.problem.dU_trial)
         self.DDPsi_m_F = dolfin.derivative(self.DPsi_m_F, self.problem.U, self.problem.dU_trial)
         self.DDPsi_m_S = dolfin.derivative(self.DPsi_m_S, self.problem.U, self.problem.dU_trial)
 
-        self.ener_form =   self.Psi_V * self.dV +   self.Psi_F * self.dF +   self.Psi_S * self.dS
+        self.ener_form =   self.Psi_V   * self.dV +   self.Psi_F   * self.dF +   self.Psi_S   * self.dS
         self.res_form  =  self.DPsi_m_V * self.dV +  self.DPsi_m_F * self.dF +  self.DPsi_m_S * self.dS
         self.jac_form  = self.DDPsi_m_V * self.dV + self.DDPsi_m_F * self.dF + self.DDPsi_m_S * self.dS
 

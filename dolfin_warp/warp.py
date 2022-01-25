@@ -42,8 +42,11 @@ def warp(
         regul_poisson=0.,
         tangent_type="Idef", # Idef
         residual_type="Iref", # Iref
-        relax_type="gss", # constant, aitken, gss
+        relax_type=None, # constant, aitken, gss
         relax_init=1., # 1.
+        relax_tol=None,
+        relax_n_iter_max=None,
+        relax_must_advance=None,
         initialize_U_from_file=0,
         initialize_U_folder=None,
         initialize_U_basename=None,
@@ -239,6 +242,9 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax_tol":relax_tol,
+                "relax_n_iter_max":relax_n_iter_max,
+                "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
                 "n_iter_max":n_iter_max,
@@ -254,6 +260,9 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax_tol":relax_tol,
+                "relax_n_iter_max":relax_n_iter_max,
+                "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
                 "n_iter_max":n_iter_max,
