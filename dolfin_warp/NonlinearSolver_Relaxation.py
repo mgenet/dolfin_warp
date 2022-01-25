@@ -40,8 +40,9 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             self.relax_n_iter_max          = parameters["relax_n_iter_max"]          if ("relax_n_iter_max"          in parameters) and (parameters["relax_n_iter_max"]          is not None) else 8
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
-            self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 0
             self.relax_n_iter_max   = parameters["relax_n_iter_max"]   if ("relax_n_iter_max"   in parameters) and (parameters["relax_n_iter_max"]   is not None) else 9
+            # self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 0
+            # self.relax_must_advance = parameters["relax_must_advance"] if ("relax_must_advance" in parameters) and (parameters["relax_must_advance"] is not None) else False
 
 
 
@@ -136,25 +137,27 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 ener_list.append(relax_fd)
             # self.printer.print_var("relax_list",relax_list)
             # self.printer.print_var("ener_list",ener_list)
-            if (k_relax > 1):
-                ener_min_old = ener_min
-            ener_min = min(ener_list)
+            # if (k_relax > 1):
+            #     ener_min_old = ener_min
+            # ener_min = min(ener_list)
             # self.printer.print_sci("ener_min",ener_min)
             relax_min = relax_list[numpy.argmin(ener_list)]
             # self.printer.print_sci("relax_min",relax_min)
-            if (ener_list[0] > 0) and (k_relax > 1):
-                dener_min = ener_min-ener_min_old
-                self.printer.print_sci("dener_min",dener_min)
-                relax_err = dener_min/ener_list[0]
-                self.printer.print_sci("relax_err",relax_err)
-                if (relax_min != 0.) and (abs(relax_err) < self.relax_tol):
-                    break
-            if (k_relax >= self.relax_n_iter_max):
-                if (self.relax_must_advance):
-                    if (relax_min != 0.):
-                        break
-                else:
-                    break
+            if (relax_min != 0.) or (k_relax == self.relax_n_iter_max):
+                break
+            # if (ener_list[0] > 0) and (k_relax > 1) and (ener_min < ener_min_old):
+            #     dener_min = ener_min-ener_min_old
+            #     self.printer.print_sci("dener_min",dener_min)
+            #     relax_err = dener_min/ener_list[0]
+            #     self.printer.print_sci("relax_err",relax_err)
+            #     if (abs(relax_err) < self.relax_tol):
+            #         break
+            # if (k_relax >= self.relax_n_iter_max):
+            #     if (self.relax_must_advance):
+            #         if (relax_min != 0.):
+            #             break
+            #     else:
+            #         break
             if (relax_fc < relax_fd):
                 relax_b = relax_d
                 relax_d = relax_c
@@ -170,7 +173,8 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             else: assert(0)
             k_relax += 1
         self.printer.dec()
-        self.problem.U.vector().axpy(-relax_cur, self.problem.dU.vector())
+        relax = 0.
+        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
         #self.printer.print_var("ener_list",ener_list)
 
         if (self.write_iterations):
