@@ -55,14 +55,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.n_iter_max  = parameters["n_iter_max"]  if ("n_iter_max"  in parameters) else 32
 
         # relaxation
-        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) else "gss"
-        if (self.relax_type == "constant"):
-            self.compute_relax = self.compute_relax_constant
-            self.relax_val = parameters["relax"] if ("relax" in parameters) else 1.
-        elif (self.relax_type == "gss"):
-            self.compute_relax = self.compute_relax_gss
-            self.relax_tol        = parameters["relax_tol"]        if ("relax_tol"        in parameters) else 0
-            self.relax_n_iter_max = parameters["relax_n_iter_max"] if ("relax_n_iter_max" in parameters) else 9
+        RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) else False
