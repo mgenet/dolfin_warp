@@ -92,7 +92,7 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
         if (self.model == "hooke"):
             self.P = self.S
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            self.P = self.problem.F * self.S
+            self.P = dolfin.dot(self.problem.F, self.S)
 
         self.printer.print_str("Defining regularization energy…")
 
@@ -107,8 +107,8 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
             self.Jump_P_N = dolfin.jump(self.P, self.N)
             self.cell_h = dolfin.Constant(self.problem.mesh.hmin())
             self.Psi_F = dolfin.inner(self.Jump_P_N, self.Jump_P_N)/self.cell_h
-            # self.P_N = self.P * self.N
-            # self.P_N_N = dolfin.dot(self.N, self.P_N)
+            # self.P_N = dolfin.dot(self.P, self.N)
+            # self.P_N_N = dolfin.inner(self.N, self.P_N)
             # self.P_N_T = self.P_N - self.P_N_N * self.N
             # self.Psi_S = dolfin.inner(self.P_N_T, self.P_N_T)/self.cell_h
             # self.Psi_S = dolfin.inner(self.P_N, self.P_N)/self.cell_h

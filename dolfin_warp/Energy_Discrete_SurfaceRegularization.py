@@ -78,7 +78,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             parameters=self.material_parameters)
         self.Psi, self.S = self.material.get_free_energy(
             U=self.problem.U)
-        self.P = self.problem.F * self.S
+        self.P = dolfin.dot(self.problem.F, self.S)
 
         self.N = dolfin.FacetNormal(self.problem.mesh)
         self.F = dolfin.dot(self.P, self.N)
@@ -92,7 +92,9 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             self.Ft = dolfin.inner(self.T, self.F)
         elif (self.problem.mesh_dimension == 3):
             self.T = self.F - self.Fn * self.N
-            self.Ft = dolfin.sqrt(dolfin.inner(self.T, self.T))
+            self.Ft = dolfin.inner(self.T, self.T)
+            self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0), dolfin.sqrt(self.Ft), 0)
+            # self.Ft = dolfin.sqrt(self.Ft)
 
         if (type == "tractions"):
             self.R_fe = dolfin.TensorElement(
@@ -227,6 +229,8 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         assert (add_values == True)
 
+        # print(res_vec.get_local())
+
         dolfin.assemble(
             form=self.R_form,
             tensor=self.R_vec)
@@ -247,6 +251,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             res_vec.axpy(self.w, self.dRMR_vec)
         else:
             res_vec.axpy(     1, self.dRMR_vec)
+        # print(res_vec.get_local())
 
 
 
