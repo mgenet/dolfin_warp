@@ -195,6 +195,9 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         # res_norm
         self.res_norm = self.res_vec.norm("l2")
         self.printer.print_sci("res_norm",self.res_norm)
+        if not (numpy.isfinite(self.res_norm)):
+            self.printer.print_str("Warning! Residual is NaN!",tab=False)
+            return False
 
         # dres
         if (self.k_iter > 1):
@@ -244,6 +247,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         if not (numpy.isfinite(self.problem.dU_norm)):
             self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
             self.problem.dU.vector().zero()
+            return False
 
         self.printer.dec()
 
