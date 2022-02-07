@@ -161,6 +161,7 @@ class ImageIterator():
                 self.printer.print_var("k_frame",k_frame,-1)
 
                 if (self.initialize_U_from_file):
+                    self.printer.print_str("Initializing displacement…")
                     mesh = mesh_series.get_mesh(k_frame)
                     array_U = mesh.GetPointData().GetArray(self.initialize_U_array_name)
                     array_U = vtk.util.numpy_support.vtk_to_numpy(array_U)[:,:self.problem.mesh_dimension]
