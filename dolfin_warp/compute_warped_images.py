@@ -36,7 +36,7 @@ def compute_warped_images(
         verbose=0):
 
     assert ((ref_image is not None)
-         or ((ref_image_folder is not None)
+         or ((ref_image_folder   is not None)
          and (ref_image_basename is not None))), "Must provide a ref_image or a ref_image_folder and a ref_image_basename. Aborting."
 
     if (ref_image is None):
@@ -69,7 +69,7 @@ def compute_warped_images(
         reader = vtk.vtkUnstructuredGridReader()
     elif (working_ext == "vtu"):
         reader = vtk.vtkXMLUnstructuredGridReader()
-    reader.UpdateDataObject();
+    reader.UpdateDataObject()
     ugrid = reader.GetOutput()
 
     warp = vtk.vtkWarpVector()

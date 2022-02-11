@@ -171,6 +171,7 @@ class ImageIterator():
                     array_U = numpy.reshape(array_U, array_U.size)
                     # print(array_U)
                     self.problem.U.vector()[:] = array_U[dof_to_vertex_map]
+                    self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
