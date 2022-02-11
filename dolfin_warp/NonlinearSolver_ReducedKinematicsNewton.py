@@ -131,6 +131,14 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
                 self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
+            # self.problem.DU_old.vector()[:] = self.problem.U.vector()[:]
+            # self.problem.DU_old.vector().axpy(-1., self.problem.U_old.vector())
+            # self.problem.DU_old_norm = self.problem.DU_old.vector().norm("l2")
+            # if (self.problem.DU_old_norm == 0.):
+            #     self.problem.dU_err = 0.
+            # else:
+            #     self.problem.dU_err = self.problem.dU_norm/self.problem.DU_old_norm
+
             if (self.write_iterations):
                 self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
 
