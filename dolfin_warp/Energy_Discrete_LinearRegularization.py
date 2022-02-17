@@ -105,6 +105,12 @@ class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
         self.K_mat.mult(self.U_vec, self.KU_vec)
         ener  = self.U_vec.inner(self.KU_vec)
         ener /= 2
+
+        try:
+            ener /= self.ener0
+        except AttributeError:
+            pass
+
         if (w_weight):
             ener *= self.w
         return ener
@@ -120,6 +126,12 @@ class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
         assert (add_values == True)
 
         self.K_mat.mult(self.U_vec, self.KU_vec)
+
+        try:
+            res_vec /= self.ener0
+        except AttributeError:
+            pass
+
         if (w_weight):
             res_vec.axpy(self.w, self.KU_vec)
         else:
@@ -134,6 +146,11 @@ class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
             w_weight=True):
 
         assert (add_values == True)
+
+        try:
+            jac_mat /= self.ener0
+        except AttributeError:
+            pass
 
         if (w_weight):
             jac_mat.axpy(self.w, self.K_mat, False)

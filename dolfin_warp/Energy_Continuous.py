@@ -22,6 +22,12 @@ class ContinuousEnergy(Energy):
             w_weight=True):
 
         ener = dolfin.assemble(self.ener_form)
+
+        try:
+            ener /= self.ener0
+        except AttributeError:
+            pass
+ 
         if (w_weight):
             ener *= self.w
         return ener
@@ -39,6 +45,12 @@ class ContinuousEnergy(Energy):
             tensor=res_vec,
             add_values=add_values,
             finalize_tensor=finalize_tensor)
+
+        try:
+            res_vec /= self.ener0
+        except AttributeError:
+            pass
+
         if (w_weight):
             res_vec *= self.w
 
@@ -55,6 +67,12 @@ class ContinuousEnergy(Energy):
             tensor=jac_mat,
             add_values=add_values,
             finalize_tensor=finalize_tensor)
+
+        try:
+            jac_mat /= self.ener0
+        except AttributeError:
+            pass
+          
         if (w_weight):
             jac_mat *= self.w
 

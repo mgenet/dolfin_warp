@@ -137,6 +137,12 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         ener = self.R_vec.inner(self.MR_vec)
         ener /= 2
         # print(ener)
+
+        try:
+            ener /= self.ener0
+        except AttributeError:
+            pass
+
         if (w_weight):
             ener *= self.w
             # print(ener)
@@ -172,6 +178,11 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
         # print(self.dRMR_vec.get_local())
 
+        try:
+            res_vec /= self.ener0
+        except AttributeError:
+            pass
+
         if (w_weight):
             res_vec.axpy(self.w, self.dRMR_vec)
         else:
@@ -196,6 +207,11 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
         self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+
+        try:
+            jac_mat /= self.ener0
+        except AttributeError:
+            pass
 
         if (w_weight):
             jac_mat.axpy(self.w, self.K_mat, False) # MG20220107: cannot provide same_nonzero_pattern as kwarg

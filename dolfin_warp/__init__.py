@@ -58,3 +58,4 @@ from .expressions_images_cpp import *
 from .compute_strains import *
 from .generate_images_Image import *
 from .Energy_Continuous_Regularization import *
+from .compute_energies_normalization import *

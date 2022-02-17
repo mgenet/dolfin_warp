@@ -40,6 +40,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.name              = name
         self.w                 = w
         self.ref_frame         = ref_frame
+        self.w_char_func       = w_char_func
         self.static_scaling    = static_scaling
         self.dynamic_scaling   = dynamic_scaling
 
@@ -223,7 +224,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
         # Charactristic functions
-        if (w_char_func):
+        if (self.w_char_func):
 
             self.printer.dec()
             self.printer.print_str("Defining characteristic functions…")
@@ -290,7 +291,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.DDPsi_c     = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
         self.DDPsi_c_ref = dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
 
-        if (w_char_func):
+        if (self.w_char_func):
             self.Psi_c  *= self.Phi_def * self.Phi_ref
             self.DPsi_c *= self.Phi_def * self.Phi_ref
 
@@ -323,6 +324,9 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         # Idef
         self.def_image_filename = self.image_series.get_image_filename(k_frame)
         self.Idef.init_image(self.def_image_filename)
+
+        if (self.w_char_func):
+            self.Phi_def.init_image(self.def_image_filename)
 
         # DIdef
         self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame)
@@ -366,7 +370,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
     def get_qoi_values(self):
 
-        self.ener = (dolfin.assemble(self.ener_form)/self.problem.mesh_V0)**(1./2)
+        self.ener = (self.assemble_ener(w_weight=0)/self.problem.mesh_V0)**(1./2)
         self.printer.print_sci(self.name+"_ener",self.ener)
         self.err = self.ener/self.Iref_norm
         self.printer.print_sci(self.name+"_err",self.err)

@@ -332,7 +332,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
     def get_qoi_values(self):
 
-        self.ener = (dolfin.assemble(self.ener_form)/self.problem.mesh_V0)**(1./2)
+        self.ener = (self.assemble_ener(w_weight=0)/self.problem.mesh_V0)**(1./2)
         self.printer.print_sci(self.name+"_ener",self.ener)
 
         self.ener_norm = self.ener/self.Idef_norm0

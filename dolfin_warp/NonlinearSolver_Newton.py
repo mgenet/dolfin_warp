@@ -129,7 +129,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
             # self.problem.DUold.vector()[:] = self.problem.U.vector()[:]
-            # self.problem.DUold.vector().axpy(-1., self.problem.U_old.vector())
+            # self.problem.DUold.vector().axpy(-1., self.problem.Uold.vector())
             # self.problem.DUold_norm = self.problem.DUold.vector().norm("l2")
             # if (self.problem.DUold_norm == 0.):
             #     self.problem.dU_err = 0.

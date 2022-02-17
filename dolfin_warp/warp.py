@@ -48,6 +48,7 @@ def warp(
         relax_tol=None,
         relax_n_iter_max=None,
         relax_must_advance=None,
+        normalize_energies=0,
         initialize_U_from_file=0,
         initialize_U_folder=None,
         initialize_U_basename=None,
@@ -152,7 +153,7 @@ def warp(
                 verbose=1)
         elif (images_quadrature_from == "integral"):
             images_quadrature = dwarp.compute_quadrature_degree_from_integral(
-                image_filename=self.get_image_filename(images_ref_frame),
+                image_filename=image_series.get_image_filename(images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
         else:
@@ -235,6 +236,10 @@ def warp(
                 problem.add_regul_energy(regularization_energy)
             else:
                 assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"elastic\", \"hyperelastic\", \"discrete-linear-equilibrated\", \"discrete-linear-elastic\" or \"discrete-equilibrated\". Aborting."
+
+    if (normalize_energies):
+        dwarp.compute_energies_normalization(
+            problem=problem)
 
     if (nonlinearsolver == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
