@@ -1,6 +1,9 @@
 build:
-  image: docker:19.03.11
   stage: build
+  tags:
+    - ci.inria.fr
+    - small
+  image: docker:19.03.11
   services:
     - docker:19.03.11-dind
   script:
