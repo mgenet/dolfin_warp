@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2021                                       ###
+### Created by Martin Genet, 2016-2022                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -11,7 +11,7 @@
 import dolfin
 import os
 
-import myPythonLibrary    as mypy
+import myPythonLibrary as mypy
 
 import dolfin_warp as dwarp
 

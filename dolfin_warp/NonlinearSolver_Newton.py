@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2021                                       ###
+### Created by Martin Genet, 2016-2022                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -245,7 +245,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
-        #self.printer.print_var("dU",dU.vector().array())
+        #self.printer.print_var("dU",dU.vector().get_local())
 
         self.printer.inc()
 
