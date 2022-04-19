@@ -45,7 +45,7 @@ class Mapping():
             self.X = self.X_homogeneous
             self.x = self.x_homogeneous
         elif (self.deformation["type"] == "heart"):
-            assert (structure["type"] == "heart"), "structure type must be \"heart\" for \"heart\" type deformation. Aborting."
+            assert (structure["type"] == "heart"), "structure type must be \"heart\" for \"heart\" type deformation, not \""+str(structure["type"])+"\". Aborting."
             self.init_t = self.init_t_heart
             self.X = self.X_heart
             self.x = self.x_heart
@@ -58,7 +58,7 @@ class Mapping():
             self.Re = structure["Re"]
             self.R = numpy.empty((3,3))
         else:
-            assert (0), "deformation type must be \"no\", \"translation\", \"rotation\", \"homogeneous\" or \"heart\". Aborting."
+            assert (0), "deformation type must be \"no\", \"translation\", \"rotation\", \"homogeneous\" or \"heart\", not \""+str(self.deformation["type"])+"\". Aborting."
 
         if (evolution["type"] == "linear"):
             self.phi = self.phi_linear
@@ -66,7 +66,7 @@ class Mapping():
             self.phi = self.phi_sine
             self.T = evolution["T"]
         else:
-            assert (0), "evolution ("+evolution["type"]+") type must be \"linear\" or \"sine\". Aborting."
+            assert (0), "evolution type must be \"linear\" or \"sine\", not \""+str(evolution["type"])+"\". Aborting."
 
     def phi_linear(self, t):
         return t

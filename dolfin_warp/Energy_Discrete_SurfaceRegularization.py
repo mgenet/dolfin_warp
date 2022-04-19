@@ -70,15 +70,16 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
-        self.material_parameters = {
-            "E":self.young,
-            "nu":self.poisson}
-        self.material = dmech.material(
+        self.material = dmech.material_factory(
+            kinematics=dmech.Kinematics(
+                U=self.problem.U),
             model=self.model,
-            parameters=self.material_parameters)
-        self.Psi, self.S = self.material.get_free_energy(
-            U=self.problem.U)
-        self.P = dolfin.dot(self.problem.F, self.S)
+            parameters={
+                "E":self.young,
+                "nu":self.poisson})
+        self.Psi   = self.material.Psi
+        self.Sigma = self.material.Sigma
+        self.P     = self.material.P
 
         self.N = dolfin.FacetNormal(self.problem.mesh)
         self.F = dolfin.dot(self.P, self.N)

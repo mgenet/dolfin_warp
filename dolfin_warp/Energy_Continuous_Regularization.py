@@ -80,19 +80,20 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.printer.print_str("Defining mechanical model…")
 
-        self.material_parameters = {
-            "E":self.young,
-            "nu":self.poisson}
-        self.material = dmech.material(
+        self.material = dmech.material_factory(
+            kinematics=dmech.Kinematics(
+                U=self.problem.U),
             model=self.model,
-            parameters=self.material_parameters)
-        self.Psi, self.S = self.material.get_free_energy(
-            U=self.problem.U)
+            parameters={
+                "E":self.young,
+                "nu":self.poisson})
+        self.Psi   = self.material.Psi
+        self.Sigma = self.material.Sigma
 
         if (self.model == "hooke"):
-            self.P = self.S
+            self.P = self.Sigma
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            self.P = dolfin.dot(self.problem.F, self.S)
+            self.P = dolfin.dot(self.problem.F, self.Sigma)
 
         self.printer.print_str("Defining regularization energy…")
 

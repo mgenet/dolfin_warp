@@ -68,14 +68,14 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
-        self.material_parameters = {
-            "E":self.young,
-            "nu":self.poisson}
-        self.material = dmech.material(
+        self.material = dmech.material_factory(
+            kinematics=dmech.Kinematics(
+                U=self.problem.U),
             model=self.model,
-            parameters=self.material_parameters)
-        self.Psi, self.S = self.material.get_free_energy(
-            U=self.problem.U)
+            parameters={
+                "E":self.young,
+                "nu":self.poisson})
+        self.Psi = self.material.Psi
         self.Psi = self.Psi * dV
         self.Wint  = dolfin.derivative(self.Psi , self.problem.U, self.problem.dU_test )
         self.dWint = dolfin.derivative(self.Wint, self.problem.U, self.problem.dU_trial)
