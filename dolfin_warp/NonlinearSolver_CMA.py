@@ -79,11 +79,11 @@ class CMANonlinearSolver(NonlinearSolver):
             self.save_modes       = modal_parameters["save_modes"] if ("save_modes" in modal_parameters) else True
             self.folder_modes     = self.working_folder+"/mesh_modes/"
 
-            Modal_analysis_mesh = dwarp.Modal_analysis(problem=self.problem, n_mod=self.n_modes, norm_mod=self.norm_modes)
-            self.eigen_modes = Modal_analysis_mesh.find_modes(fixed_points=self.modes_fix_points, mat_params=self.modes_mat_par)
+            ModalAnalysis_mesh = dwarp.ModalAnalysis(problem=self.problem, n_mod=self.n_modes, norm_mod=self.norm_modes)
+            self.eigen_modes = ModalAnalysis_mesh.find_modes(fixed_points=self.modes_fix_points, mat_params=self.modes_mat_par)
 
             if self.save_modes:
-                Modal_analysis_mesh.save_modes(self.folder_modes)
+                ModalAnalysis_mesh.save_modes(self.folder_modes)
 
 
         # initial guess for cma.fmin

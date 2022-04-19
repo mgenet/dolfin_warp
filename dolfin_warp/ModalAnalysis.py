@@ -20,7 +20,7 @@ import shutil
 
 ################################################################################
 
-class Modal_analysis():
+class ModalAnalysis():
 
 
     def __init__(self,
