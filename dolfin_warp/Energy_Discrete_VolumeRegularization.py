@@ -29,6 +29,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             model="ciarletgeymonatneohookeanmooneyrivlin",
             young=1.,
             poisson=0.,
+            b=None,
             quadrature_degree=None):
 
         self.problem = problem
@@ -56,6 +57,8 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             "\"poisson\" ("+str(poisson)+") must be < 0.5. Aborting."
         self.poisson = poisson
 
+        self.b = b
+
         self.printer.print_str("Defining regularization energy…")
         self.printer.inc()
 
@@ -77,6 +80,8 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
                 "nu":self.poisson})
         self.Psi = self.material.Psi
         self.Psi = self.Psi * dV
+        if (self.b is not None):
+            self.Psi += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * dV
         self.Wint  = dolfin.derivative(self.Psi , self.problem.U, self.problem.dU_test )
         self.dWint = dolfin.derivative(self.Wint, self.problem.U, self.problem.dU_trial)
 
