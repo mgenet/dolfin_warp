@@ -40,7 +40,7 @@ class ImageIterator():
         self.register_ref_frame           = parameters.get("register_ref_frame"          , False         )
         self.initialize_U_from_file       = parameters.get("initialize_U_from_file"      , False         )
         self.initialize_U_folder          = parameters.get("initialize_U_folder"         , "."           )
-        self.initialize_U_basename        = parameters.get("initialize_U_basename"       , None          )
+        self.initialize_U_basename        = parameters.get("initialize_U_basename"       , "init"        )
         self.initialize_U_ext             = parameters.get("initialize_U_ext"            , "vtu"         )
         self.initialize_U_array_name      = parameters.get("initialize_U_array_name"     , "displacement")
         self.initialize_DU_with_DUold     = parameters.get("initialize_DU_with_DUold"    , False         )

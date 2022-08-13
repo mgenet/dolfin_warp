@@ -50,15 +50,15 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.reduced_jac_arr = numpy.zeros((self.n_motion_modes, self.n_motion_modes))
 
         # iterations control
-        self.tol_dU      = parameters["tol_dU"]      if ("tol_dU"      in parameters) else None
-        self.tol_res_rel = parameters["tol_res_rel"] if ("tol_res_rel" in parameters) else None
-        self.n_iter_max  = parameters["n_iter_max"]  if ("n_iter_max"  in parameters) else 32
+        self.tol_dU      = parameters.get("tol_dU"     , None)
+        self.tol_res_rel = parameters.get("tol_res_rel", None)
+        self.n_iter_max  = parameters.get("n_iter_max" , 32  )
 
         # relaxation
         RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # write iterations
-        self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) else False
+        self.write_iterations = parameters.get("write_iterations", False)
 
         if (self.write_iterations):
             self.working_folder   = parameters["working_folder"]

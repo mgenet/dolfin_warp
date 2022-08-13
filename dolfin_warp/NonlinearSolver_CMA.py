@@ -44,43 +44,48 @@ class CMANonlinearSolver(NonlinearSolver):
         self.mesh     = self.problem.mesh
         self.printer  = self.problem.printer
         self.U_degree = self.problem.U_degree
-        self.U_tot = self.problem.U
-        self.J     = self.problem.J
+        self.U_tot    = self.problem.U
+        self.J        = self.problem.J
 
         self.fs_J  = dolfin.FunctionSpace(self.mesh, "DG", 0)
 
-        self.working_folder   = parameters["working_folder"]
-        self.working_basename = parameters["working_basename"]
+        self.working_folder   = parameters.get("working_folder"  , "."  )
+        self.working_basename = parameters.get("working_basename", "sol")
 
-        # cma.fmin parameters
         assert (parameters["x_0"] is not None) and (parameters["x_0_range"] is not None)
-
         self.x_0_real       = parameters["x_0"]       # x_0: Initial guess, not normalized
         self.x_0_real_range = parameters["x_0_range"] # x_0_range = [range for displacement, range for modal coeffs]
 
-        self.sigma0    = parameters["sigma0"]  if ("sigma0" in parameters)  else 2.
-        self.bounds    = parameters["bounds"]  if ("bounds" in parameters)  else [0,10]
-        self.ftarget   = parameters["ftarget"] if ("ftarget" in parameters) else 1E-6
-        self.tolfun    = parameters["tolfun"]  if ("tolfun"  in parameters) else 1E-11
+        self.sigma0  = parameters.get("sigma0" , 2.     )
+        self.bounds  = parameters.get("bounds" , [0, 10])
+        self.ftarget = parameters.get("ftarget", 1e-6   )
+        self.tolfun  = parameters.get("tolfun" , 1e-11  )
 
-        self.motion_model = parameters["motion_model"] if ("motion_model" in parameters) else "rbm"
+        self.motion_model = parameters.get("motion_model", "rbm")
 
         if (self.motion_model == "rbm+eigenmodes"):
-            assert ("modal_params" in parameters), "Specify parameters for modal analysis"
+            assert ("modal_params" in parameters),\
+                "Specify parameters for modal analysis. Aborting."
             modal_parameters = parameters["modal_params"]
 
             self.n_modes     = len(self.x_0_real["modal_factors"])
 
-            assert ("modes_fixed_points" in modal_parameters) and ("material_params" in modal_parameters), "Specify boundary conditions and material parameters for modal analysis"
+            assert ("modes_fixed_points" in modal_parameters) and ("material_params" in modal_parameters),\
+                "Specify boundary conditions and material parameters for modal analysis. Aborting."
             self.modes_fix_points = modal_parameters["modes_fixed_points"]
             self.modes_mat_par    = modal_parameters["material_params"]
 
-            self.norm_modes       = modal_parameters["norm_modes"] if ("norm_modes" in modal_parameters) else 1.
-            self.save_modes       = modal_parameters["save_modes"] if ("save_modes" in modal_parameters) else True
-            self.folder_modes     = self.working_folder+"/mesh_modes/"
+            self.norm_modes   = modal_parameters.get("norm_modes", 1.  )
+            self.save_modes   = modal_parameters.get("save_modes", True)
+            self.folder_modes = self.working_folder+"/"+"mesh_modes"+"/"
 
-            ModalAnalysis_mesh = dwarp.ModalAnalysis(problem=self.problem, n_mod=self.n_modes, norm_mod=self.norm_modes)
-            self.eigen_modes = ModalAnalysis_mesh.find_modes(fixed_points=self.modes_fix_points, mat_params=self.modes_mat_par)
+            ModalAnalysis_mesh = dwarp.ModalAnalysis(
+                problem=self.problem,
+                n_mod=self.n_modes,
+                norm_mod=self.norm_modes)
+            self.eigen_modes = ModalAnalysis_mesh.find_modes(
+                fixed_points=self.modes_fix_points,
+                mat_params=self.modes_mat_par)
 
             if self.save_modes:
                 ModalAnalysis_mesh.save_modes(self.folder_modes)
@@ -88,56 +93,56 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # initial guess for cma.fmin
         if (self.motion_model == "full") or (self.motion_model == "trans") or (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
-            # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame
-            #             And by default, the range used is previous_result +- 0.07
-            self.restrict_x0_range       = parameters["restrict_x0_range"] if ("restrict_x0_range" in parameters) else True
-            self.restrict_x0_range_bound = parameters["restrict_x0_range_bound"] if ("restrict_x0_range_bound" in parameters) else 0.07
+            # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame. And by default, the range used is previous_result +- 0.07
+            self.restrict_x0_range       = parameters.get("restrict_x0_range"      , True)
+            self.restrict_x0_range_bound = parameters.get("restrict_x0_range_bound", 0.07)
 
-            if (self.motion_model == "full" and self.restrict_x0_range == False) or self.motion_model != "full":
-                # FA20200221: "full" use the same initial guess, and range, as the one used for displacements
-                self.range_disp  = self.x_0_real_range["trans"]
+            if ((self.motion_model == "full") and (self.restrict_x0_range == False)) or (self.motion_model != "full"):
+                # FA20200221: "full" use the same initial guess, and range, as the one used for displacements.
+                self.range_disp = self.x_0_real_range["trans"]
 
         if (self.motion_model == "full"):
-            assert (len(self.x_0_real) == 2), "2 values for initial guess required"
+            assert (len(self.x_0_real) == 2),\
+                "2 values for initial guess required. Aborting."
             self.n_dofs = len(self.U_tot.vector()[:])
             self.dofs = numpy.zeros(self.n_dofs)
             self.x_0  = numpy.zeros(self.n_dofs)
 
-            if self.restrict_x0_range:
+            if (self.restrict_x0_range):
                 self.x_real     = numpy.zeros(self.n_dofs)
                 self.range_disp = [self.x_0_real_range["trans"]]*(self.n_dofs)
                 for dof in range(int(self.n_dofs/2)):
-                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[2*dof][0], self.range_disp[2*dof][1])
+                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[2*dof][0]  , self.range_disp[2*dof  ][1])
                     self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
-
             else:
                 for dof in range(int(self.n_dofs/2)):
                     self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
                     self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
 
         elif (self.motion_model == "trans"):
-            assert (len(self.x_0_real) == 2), "2 values for initial guess required"
-            self.x_0 = numpy.zeros(len(self.x_0_real))
+            assert (len(self.x_0_real) == 2),\
+                "2 values for initial guess required. Aborting."
+            self.x_0    = numpy.zeros(len(self.x_0_real))
             self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
             self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
 
         elif (self.motion_model == "rbm"):
-            assert (len(self.x_0_real) == 3), "3 values for initial guess required"
-            self.x_0 = numpy.zeros(len(self.x_0_real))
-            self.range_theta = self.x_0_real_range["rot"] if ("rot" in self.x_0_real_range) else [0., 360.]
-
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0],  self.range_disp[1])
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0],  self.range_disp[1])
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"], self.range_theta[0], self.range_theta[1])
+            assert (len(self.x_0_real) == 3),\
+                "3 values for initial guess required. Aborting."
+            self.range_theta = self.x_0_real_range.get("rot", [0., 360.])
+            self.x_0    = numpy.zeros(len(self.x_0_real))
+            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0] , self.range_disp[1] )
+            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0] , self.range_disp[1] )
+            self.x_0[2] = self.real2norm(self.x_0_real["rot"]    , self.range_theta[0], self.range_theta[1])
 
         elif (self.motion_model == "rbm+eigenmodes"):
             self.range_modal = self.x_0_real_range["modal_factors"]
-            self.range_theta = self.x_0_real_range["rot"] if ("rot" in self.x_0_real_range) else [0., 360.]
+            self.range_theta = self.x_0_real_range.get("rot", [0., 360.])
 
-            self.x_0 = numpy.zeros(3+self.n_modes)
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"], self.range_theta[0], self.range_theta[1])
+            self.x_0    = numpy.zeros(3+self.n_modes)
+            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0] , self.range_disp[1] )
+            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0] , self.range_disp[1] )
+            self.x_0[2] = self.real2norm(self.x_0_real["rot"]    , self.range_theta[0], self.range_theta[1])
 
             for ind in range(self.n_modes):
                 self.x_0[3+ind] = self.real2norm(self.x_0_real["modal_factors"][ind], self.range_modal[0], self.range_modal[1])
@@ -149,7 +154,7 @@ class CMANonlinearSolver(NonlinearSolver):
         # print k_frame
         self.k_frame = k_frame
 
-        if self.k_frame is not None:
+        if (self.k_frame is not None):
             self.printer.print_str("k_frame: "+str(k_frame))
 
         # solve with cma.fmin
