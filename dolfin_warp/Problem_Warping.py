@@ -19,7 +19,7 @@ from .Problem import Problem
 
 ################################################################################
 
-class ImageRegistrationProblem(Problem):
+class WarpingProblem(Problem):
 
 
 

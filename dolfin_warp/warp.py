@@ -129,7 +129,7 @@ def warp(
             regul_models = [regul_model]
             regul_levels = [regul_level]
 
-    problem = dwarp.ImageRegistrationProblem(
+    problem = dwarp.WarpingProblem(
         mesh=mesh,
         mesh_folder=mesh_folder,
         mesh_basename=mesh_basename,
