@@ -35,18 +35,19 @@ class ImageIterator():
         self.printer = self.problem.printer
         self.solver  = solver
 
-        self.working_folder           = parameters["working_folder"]           if ("working_folder"           in parameters) else "."
-        self.working_basename         = parameters["working_basename"]         if ("working_basename"         in parameters) else "sol"
-        self.register_ref_frame       = parameters["register_ref_frame"]       if ("register_ref_frame"       in parameters) else False
-        self.initialize_U_from_file   = parameters["initialize_U_from_file"]   if ("initialize_U_from_file"   in parameters) else False
-        self.initialize_U_folder      = parameters["initialize_U_folder"]      if ("initialize_U_folder"      in parameters) else "."
-        self.initialize_U_basename    = parameters["initialize_U_basename"]    if ("initialize_U_basename"    in parameters) else None
-        self.initialize_U_ext         = parameters["initialize_U_ext"]         if ("initialize_U_ext"         in parameters) else "vtu"
-        self.initialize_U_array_name  = parameters["initialize_U_array_name"]  if ("initialize_U_array_name"  in parameters) else "displacement"
-        self.initialize_DU_with_DUold = parameters["initialize_DU_with_DUold"] if ("initialize_DU_with_DUold" in parameters) else False
-        self.write_VTU_file           = parameters["write_VTU_file"]           if ("write_VTU_file"           in parameters) else True
-        self.write_XML_file           = parameters["write_XML_file"]           if ("write_XML_file"           in parameters) else False
-        self.iteration_mode           = parameters["iteration_mode"]           if ("iteration_mode"           in parameters) else "normal" # MG20200616: This should be a bool
+        self.working_folder               = parameters.get("working_folder"              , "."           )
+        self.working_basename             = parameters.get("working_basename"            , "sol"         )
+        self.register_ref_frame           = parameters.get("register_ref_frame"          , False         )
+        self.initialize_U_from_file       = parameters.get("initialize_U_from_file"      , False         )
+        self.initialize_U_folder          = parameters.get("initialize_U_folder"         , "."           )
+        self.initialize_U_basename        = parameters.get("initialize_U_basename"       , None          )
+        self.initialize_U_ext             = parameters.get("initialize_U_ext"            , "vtu"         )
+        self.initialize_U_array_name      = parameters.get("initialize_U_array_name"     , "displacement")
+        self.initialize_DU_with_DUold     = parameters.get("initialize_DU_with_DUold"    , False         )
+        self.write_qois_limited_precision = parameters.get("write_qois_limited_precision", False         )
+        self.write_VTU_file               = parameters.get("write_VTU_file"              , True          )
+        self.write_XML_file               = parameters.get("write_XML_file"              , False         )
+        self.iteration_mode               = parameters.get("iteration_mode"              , "normal"      ) # MG20200616: This should be a bool
 
 
 
@@ -65,7 +66,8 @@ class ImageIterator():
         qoi_filebasename = self.working_folder+"/"+self.working_basename+"-qoi"
         qoi_printer = mypy.DataPrinter(
             names=qoi_names,
-            filename=qoi_filebasename+".dat")
+            filename=qoi_filebasename+".dat",
+            limited_precision=self.write_qois_limited_precision)
 
         if not (self.register_ref_frame):
             self.printer.dec()
