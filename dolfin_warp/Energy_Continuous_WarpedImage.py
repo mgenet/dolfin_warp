@@ -370,8 +370,13 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
     def get_qoi_values(self):
 
-        self.ener = (self.assemble_ener(w_weight=0)/self.problem.mesh_V0)**(1./2)
+        self.ener  = self.assemble_ener(w_weight=0)
+        self.ener /= self.problem.mesh_V0
+        assert (self.ener >= 0.),\
+            "ener (="+str(self.ener)+") should be non negative. Aborting."
+        self.ener  = self.ener**(1./2)
         self.printer.print_sci(self.name+"_ener",self.ener)
+
         self.err = self.ener/self.Iref_norm
         self.printer.print_sci(self.name+"_err",self.err)
 
