@@ -1,4 +1,4 @@
-FROM registry.gitlab.inria.fr/mgenet/dolfin_warp/dolfin_warp-dev
+FROM registry.gitlab.inria.fr/mgenet/dolfin_warp/dolfin_warp-2019.1.0-dev
 
 # RUN pip install myPythonLibrary
 # RUN pip install myVTKPythonLibrary

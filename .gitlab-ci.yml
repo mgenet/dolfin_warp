@@ -15,11 +15,11 @@ build:
     - echo Build dolfin_warp-2017.2.0
     - docker build -t $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2017.2.0 -f Docker/dolfin_warp-2017.2.0/Dockerfile .
     - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2017.2.0
-    - echo Build dolfin_warp-dev
-    - docker build -t $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-dev -f Docker/dolfin_warp-dev/Dockerfile .
-    - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-dev
-    - echo Build dolfin_warp
-    - docker build -t $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp -f Docker/dolfin_warp/Dockerfile .
-    - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp
+    - echo Build dolfin_warp-2019.1.0-dev
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2019.1.0-dev -f Docker/dolfin_warp-2019.1.0-dev/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2019.1.0-dev
+    - echo Build dolfin_warp-2019.1.0
+    - docker build -t $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2019.1.0 -f Docker/dolfin_warp-2019.1.0/Dockerfile .
+    - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2019.1.0
     - echo Docker logout
     - docker logout $CI_REGISTRY
