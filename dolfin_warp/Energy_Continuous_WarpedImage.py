@@ -23,7 +23,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
     def __init__(self,
             problem,
-            image_series,
+            images_series,
             quadrature_degree,
             name="im",
             w=1.,
@@ -35,7 +35,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
         self.problem           = problem
         self.printer           = self.problem.printer
-        self.image_series      = image_series
+        self.images_series      = images_series
         self.quadrature_degree = quadrature_degree
         self.name              = name
         self.w                 = w
@@ -94,15 +94,15 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.printer.inc()
 
         # ref_frame
-        assert (abs(self.ref_frame) < self.image_series.n_frames),\
-            "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.image_series.n_frames)+" = image_series.n_frames. Aborting."
-        self.ref_frame = self.ref_frame%self.image_series.n_frames
+        assert (abs(self.ref_frame) < self.images_series.n_frames),\
+            "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.images_series.n_frames)+" = images_series.n_frames. Aborting."
+        self.ref_frame = self.ref_frame%self.images_series.n_frames
         self.printer.print_var("ref_frame",self.ref_frame)
 
         # Iref
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
+                im_dim=self.images_series.dimension,
                 im_type="im",
                 im_is_def=0,
                 static_scaling_factor=self.static_scaling)
@@ -113,14 +113,14 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 element=self.fe)
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
+                im_dim=self.images_series.dimension,
                 im_type="im",
                 im_is_def=0,
                 static_scaling_factor=self.static_scaling)
             self.Iref = dolfin.Expression(
                 cppcode=cpp,
                 element=self.fe)
-        self.ref_image_filename = self.image_series.get_image_filename(self.ref_frame)
+        self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
         self.Iref.init_image(self.ref_image_filename)
 
         self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
@@ -134,8 +134,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         # DIref
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                im_dim=self.images_series.dimension,
+                im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=0,
                 static_scaling_factor=self.static_scaling)
             module = dolfin.compile_cpp_code(cpp)
@@ -145,14 +145,14 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 element=self.ve)
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                im_dim=self.images_series.dimension,
+                im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=0,
                 static_scaling_factor=self.static_scaling)
             self.DIref = dolfin.Expression(
                 cppcode=cpp,
                 element=self.ve)
-        self.ref_image_grad_filename = self.image_series.get_image_grad_filename(self.ref_frame)
+        self.ref_image_grad_filename = self.images_series.get_image_grad_filename(k_frame=self.ref_frame)
         self.DIref.init_image(self.ref_image_grad_filename)
 
         self.printer.dec()
@@ -167,7 +167,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         # Idef
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
+                im_dim=self.images_series.dimension,
                 im_type="im",
                 im_is_def=1,
                 static_scaling_factor=self.static_scaling,
@@ -180,7 +180,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             self.Idef.init_disp(self.problem.U.cpp_object())
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
+                im_dim=self.images_series.dimension,
                 im_type="im",
                 im_is_def=1,
                 static_scaling_factor=self.static_scaling)
@@ -198,8 +198,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         # DIdef
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                im_dim=self.images_series.dimension,
+                im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1,
                 static_scaling_factor=self.static_scaling,
                 dynamic_scaling=self.dynamic_scaling)
@@ -211,8 +211,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             self.DIdef.init_disp(self.problem.U.cpp_object())
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                im_dim=self.images_series.dimension,
+                im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
                 im_is_def=1,
                 static_scaling_factor=self.static_scaling)
             self.DIdef = dolfin.Expression(
@@ -233,7 +233,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             # Phi_ref
             if (int(dolfin.__version__.split('.')[0]) >= 2018):
                 name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-                    im_dim=self.image_series.dimension,
+                    im_dim=self.images_series.dimension,
                     im_is_def=0,
                     im_is_cone=im_is_cone)
                 module = dolfin.compile_cpp_code(cpp)
@@ -243,7 +243,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                     element=self.fe)
             else:
                 cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
-                    im_dim=self.image_series.dimension,
+                    im_dim=self.images_series.dimension,
                     im_is_def=0,
                     im_is_cone=im_is_cone)
                 self.Phi_ref = dolfin.Expression(
@@ -257,7 +257,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
             # Phi_def
             if (int(dolfin.__version__.split('.')[0]) >= 2018):
                 name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-                    im_dim=self.image_series.dimension,
+                    im_dim=self.images_series.dimension,
                     im_is_def=1,
                     im_is_cone=im_is_cone)
                 module = dolfin.compile_cpp_code(cpp)
@@ -268,7 +268,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 self.Phi_def.init_disp(self.problem.U.cpp_object())
             else:
                 cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
-                    im_dim=self.image_series.dimension,
+                    im_dim=self.images_series.dimension,
                     im_is_def=1,
                     im_is_cone=im_is_cone)
                 self.Phi_def = dolfin.Expression(
@@ -322,14 +322,14 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.printer.print_str("Loading deformed image for correlation energy…")
 
         # Idef
-        self.def_image_filename = self.image_series.get_image_filename(k_frame)
+        self.def_image_filename = self.images_series.get_image_filename(k_frame=k_frame)
         self.Idef.init_image(self.def_image_filename)
 
         if (self.w_char_func):
             self.Phi_def.init_image(self.def_image_filename)
 
         # DIdef
-        self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame)
+        self.def_grad_image_filename = self.images_series.get_image_grad_filename(k_frame=k_frame)
         self.DIdef.init_image(self.def_grad_image_filename)
 
 

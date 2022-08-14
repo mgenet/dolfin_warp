@@ -22,7 +22,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
     def __init__(self,
             problem,
-            image_series,
+            images_series,
             quadrature_degree,
             texture,
             name="gen_im",
@@ -34,7 +34,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         self.problem           = problem
         self.printer           = self.problem.printer
-        self.image_series      = image_series
+        self.images_series      = images_series
         self.quadrature_degree = quadrature_degree
         self.texture           = texture
         self.name              = name
@@ -94,15 +94,15 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         self.printer.inc()
 
         # ref_frame
-        assert (abs(self.ref_frame) < self.image_series.n_frames),\
-            "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.image_series.n_frames)+" = image_series.n_frames. Aborting."
-        self.ref_frame = self.ref_frame%self.image_series.n_frames
-        self.ref_image_filename = self.image_series.get_image_filename(self.ref_frame)
+        assert (abs(self.ref_frame) < self.images_series.n_frames),\
+            "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.images_series.n_frames)+" = images_series.n_frames. Aborting."
+        self.ref_frame = self.ref_frame%self.images_series.n_frames
+        self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
         self.printer.print_var("ref_frame",self.ref_frame)
 
         # Igen
         name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
-            im_dim=self.image_series.dimension,
+            im_dim=self.images_series.dimension,
             im_type="im",
             im_is_def=self.resample,
             im_texture=self.texture,
@@ -154,7 +154,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
             if (self.compute_DIgen):
                 # DIgen
                 name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
-                    im_dim=self.image_series.dimension,
+                    im_dim=self.images_series.dimension,
                     im_type="grad",
                     im_is_def=1,
                     im_texture=self.texture,
@@ -177,7 +177,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # Idef
         name, cpp = dwarp.get_ExprIm_cpp_pybind(
-            im_dim=self.image_series.dimension,
+            im_dim=self.images_series.dimension,
             im_type="im",
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)
@@ -198,8 +198,8 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # DIdef
         name, cpp = dwarp.get_ExprIm_cpp_pybind(
-            im_dim=self.image_series.dimension,
-            im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+            im_dim=self.images_series.dimension,
+            im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
@@ -217,7 +217,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # Phi_ref
         name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-            im_dim=self.image_series.dimension,
+            im_dim=self.images_series.dimension,
             im_is_def=0)
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
@@ -232,7 +232,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # Phi_def
         name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-            im_dim=self.image_series.dimension,
+            im_dim=self.images_series.dimension,
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
@@ -277,13 +277,13 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         self.printer.print_str("Loading deformed image for correlation energy…")
 
         # Idef
-        self.def_image_filename = self.image_series.get_image_filename(k_frame)
+        self.def_image_filename = self.images_series.get_image_filename(k_frame=k_frame)
 
         self.Idef.init_image(
             filename=self.def_image_filename)
 
         # DIdef
-        self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame)
+        self.def_grad_image_filename = self.images_series.get_image_grad_filename(k_frame=k_frame)
         self.DIdef.init_image(
             filename=self.def_grad_image_filename)
 

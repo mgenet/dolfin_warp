@@ -107,49 +107,41 @@ def compute_strains(
         n_part_ids = 0
         n_sector_ids = 0
 
-    working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
-    assert (len(working_filenames) > 0), "There is no working file ("+working_folder+"/"+working_basename+"_[0-9]*."+working_ext+"). Aborting."
-
-    working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])
-    if (verbose): print("working_zfill = " + str(working_zfill))
-
-    n_frames = len(working_filenames)
-    if (verbose): print("n_frames = " + str(n_frames))
+    working_series = dwarp.MeshesSeries(
+        folder=working_folder,
+        basename=working_basename,
+        ext=working_ext)
+    if (verbose): print("n_frames = " + str(working_series.n_frames))
+    if (verbose): print("zfill = " + str(working_series.zfill))
 
     if (write_strains):
         strain_file = open(working_folder+"/"+working_basename+"-strains.dat", "w")
-        strain_file.write("#t Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std\n")
+        strain_file.write("#k_frame Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std\n")
 
     if (write_strains_vs_radius):
         strains_vs_radius_file = open(working_folder+"/"+working_basename+"-strains_vs_radius.dat", "w")
-        strains_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
+        strains_vs_radius_file.write("#k_frame rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (write_binned_strains_vs_radius):
         binned_strains_vs_radius_file = open(working_folder+"/"+working_basename+"-binned_strains_vs_radius.dat", "w")
-        binned_strains_vs_radius_file.write("#t rr Err Ecc Ell Erc Erl Ecl\n")
+        binned_strains_vs_radius_file.write("#k_frame rr Err Ecc Ell Erc Erl Ecl\n")
 
     if (write_twist_vs_height):
         twist_vs_height_file = open(working_folder+"/"+working_basename+"-twist_vs_height.dat", "w")
-        twist_vs_height_file.write("#t z beta\n")
+        twist_vs_height_file.write("#k_frame z beta\n")
 
     if (ref_frame is not None):
-        mesh0_filename = working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext
-        mesh0 = myvtk.readUGrid(
-            filename=mesh0_filename,
-            verbose=verbose)
+        mesh0 = working_series.get_mesh(k_frame=ref_frame)
         myvtk.addDeformationGradients(
             mesh=mesh0,
             disp_array_name=disp_array_name,
             verbose=verbose)
         farray_F0 = mesh0.GetCellData().GetArray(defo_grad_array_name)
 
-    for k_frame in range(n_frames):
+    for k_frame in range(working_series.n_frames):
         print("k_frame = "+str(k_frame))
 
-        mesh_filename = working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
-        mesh = myvtk.readUGrid(
-            filename=mesh_filename,
-            verbose=verbose)
+        mesh = working_series.get_mesh(k_frame=k_frame)
         n_points = mesh.GetNumberOfPoints()
         n_cells = mesh.GetNumberOfCells()
         if (ref_mesh is not None):
@@ -214,7 +206,7 @@ def compute_strains(
                     iarray_sector_id = mesh.GetCellData().GetArray("sector_id")
             else:
                 iarray_sector_id = iarray_ref_sector_id
-        mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
+        mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_series.zfill)+"."+working_ext
         myvtk.writeUGrid(
             ugrid=mesh,
             filename=mesh_filename,
@@ -405,7 +397,7 @@ def compute_strains(
                 if (r < 15.): continue
                 # if (ll < 1./3): continue
                 twist_vs_height_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, ll, beta]]) + "\n")
-            mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext
+            mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_series.zfill)+"."+working_ext
             myvtk.writeUGrid(
                 ugrid=mesh,
                 filename=mesh_filename,

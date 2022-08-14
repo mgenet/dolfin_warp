@@ -114,11 +114,11 @@ class ImageIterator():
         self.printer.print_str("Looping over frames…")
 
         if (self.initialize_U_from_file):
-            mesh_series = dwarp.MeshSeries(
-                problem=self.problem,
+            meshes_series = dwarp.MeshesSeries(
                 folder=self.initialize_U_folder,
                 basename=self.initialize_U_basename,
-                ext=self.initialize_U_ext)
+                ext=self.initialize_U_ext,
+                printer=self.problem.printer)
 
             dof_to_vertex_map = dolfin.dof_to_vertex_map(self.problem.U_fs)
 
@@ -164,7 +164,7 @@ class ImageIterator():
 
                 if (self.initialize_U_from_file):
                     self.printer.print_str("Initializing displacement…")
-                    mesh = mesh_series.get_mesh(k_frame)
+                    mesh = meshes_series.get_mesh(k_frame=k_frame)
                     array_U = mesh.GetPointData().GetArray(self.initialize_U_array_name)
                     array_U = vtk.util.numpy_support.vtk_to_numpy(array_U)[:,:self.problem.mesh_dimension]
                     # print(array_U)

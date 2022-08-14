@@ -136,25 +136,25 @@ def warp(
         mesh_basename=mesh_basename,
         U_degree=mesh_degree)
 
-    image_series = dwarp.ImageSeries(
-        problem=problem,
+    images_series = dwarp.ImagesSeries(
         folder=images_folder,
         basename=images_basename,
         grad_basename=images_grad_basename,
         n_frames=images_n_frames,
-        ext=images_ext)
+        ext=images_ext,
+        printer=problem.printer)
 
     if (images_quadrature is None):
         problem.printer.print_str("Computing quadrature degree…")
         problem.printer.inc()
         if (images_quadrature_from == "points_count"):
             images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
-                image_filename=image_series.get_image_filename(images_ref_frame),
+                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
         elif (images_quadrature_from == "integral"):
             images_quadrature = dwarp.compute_quadrature_degree_from_integral(
-                image_filename=image_series.get_image_filename(images_ref_frame),
+                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
                 mesh=problem.mesh,
                 verbose=1)
         else:
@@ -169,7 +169,7 @@ def warp(
     if (gimic):
         generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
             problem=problem,
-            image_series=image_series,
+            images_series=images_series,
             quadrature_degree=images_quadrature,
             texture=gimic_texture,
             w=image_w,
@@ -179,7 +179,7 @@ def warp(
     else:
         warped_image_energy = dwarp.WarpedImageContinuousEnergy(
             problem=problem,
-            image_series=image_series,
+            images_series=images_series,
             quadrature_degree=images_quadrature,
             w=image_w,
             ref_frame=images_ref_frame,

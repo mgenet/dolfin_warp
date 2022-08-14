@@ -15,10 +15,11 @@
 
 from builtins import range
 
-import glob
 import numpy
 
 import myVTKPythonLibrary as myvtk
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -27,19 +28,16 @@ def compute_equalized_images(
         images_basename,
         images_ext="vti",
         array_name="scalars",
-        suffix="",
+        suffix=None,
         verbose=0):
 
-    image_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
-    n_frames = len(image_filenames)
-    images_zfill = len(image_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+    images_series = dwarp.ImagesSeries(
+        folder=images_folder,
+        basename=images_basename,
+        ext=images_ext)
 
-    for k_frame in range(n_frames):
-        image_filename = images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext
-        image = myvtk.readImage(
-            filename=image_filename,
-            verbose=verbose-1)
-
+    for k_frame in range(images_series.n_frames):
+        image = images_series.get_image(k_frame=k_frame)
         scalars = image.GetPointData().GetArray(array_name)
         n_points = scalars.GetNumberOfTuples()
 
@@ -62,4 +60,4 @@ def compute_equalized_images(
 
         myvtk.writeImage(
             image=image,
-            filename=images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            filename=images_series.get_image_filename(k_frame=k_frame, suffix=suffix))

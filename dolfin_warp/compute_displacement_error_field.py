@@ -11,41 +11,41 @@
 
 from builtins import range
 
-import glob
 import math
 import numpy
 
-import myVTKPythonLibrary as myvtk
+import dolfin_warp as dwarp
 
 ################################################################################
 
 def compute_displacement_error_field(
-        k_frame,
-        disp_array_name,
         working_folder,
         working_basename,
-        working_ext,
-        ref_mesh_folder,
-        ref_mesh_basename,
-        ref_mesh_ext="vtk"):
+        ref_folder,
+        ref_basename,
+        k_frame,
+        working_ext="vtk",
+        ref_ext="vtk",
+        disp_array_name="displacement"):
 
-    working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
-    assert (len(working_filenames) > 0), "There is no working file in the analysis folder. Aborting."
-    working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])
+    working_series = dwarp.MeshesSeries(
+        folder=working_folder,
+        basename=working_basename,
+        ext=working_ext)
 
-    working_mesh = myvtk.readUGrid(
-        filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
-        verbose=0)
+    working_mesh = working_series.get_mesh(k_frame=k_frame)
     n_points = working_mesh.GetNumberOfPoints()
 
-    ref_mesh = myvtk.readUGrid(
-        filename=ref_mesh_folder+"/"+ref_mesh_basename+"_"+str(k_frame).zfill(working_zfill)+"."+ref_mesh_ext,
-        verbose=0)
+    ref_series = dwarp.MeshesSeries(
+        folder=ref_folder,
+        basename=ref_basename,
+        ext=ref_ext)
 
-    assert (ref_mesh.GetNumberOfPoints() == n_points),\
+    ref = ref_series.get_mesh(k_frame=k_frame)
+    assert (ref.GetNumberOfPoints() == n_points),\
         "Reference and working meshes should have the same number of points. Aborting."
 
-    farray_U_ref = ref_mesh.GetPointData().GetArray(disp_array_name)
+    farray_U_ref = ref.GetPointData().GetArray(disp_array_name)
     farray_U = working_mesh.GetPointData().GetArray(disp_array_name)
 
     disp_diff = numpy.empty(n_points)

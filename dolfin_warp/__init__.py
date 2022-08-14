@@ -9,9 +9,10 @@ from .Energy_Discrete import *
 from .Energy_Discrete_LinearRegularization import *
 from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete_VolumeRegularization import *
+from .FilesSeries import *
+from .FilesSeries_Images import *
+from .FilesSeries_Meshes import *
 from .ImageIterator import *
-from .ImageSeries import *
-from .MeshSeries import *
 from .ModalAnalysis import *
 from .MotionModel import *
 from .NonlinearSolver import *
@@ -49,7 +50,6 @@ from .generate_images_Image import *
 from .generate_images_Mapping import *
 from .generate_undersampled_images import *
 from .get_centroids import *
-from .get_filenames import *
 from .mesh2ugrid import *
 from .plot_binned_strains_vs_radius import *
 from .plot_displacement_error import *

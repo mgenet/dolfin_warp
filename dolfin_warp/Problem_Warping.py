@@ -162,10 +162,10 @@ class WarpingProblem(Problem):
 
         if (hasattr(self, "images_n_frames")
         and hasattr(self, "images_ref_frame")):
-            assert (energy.image_series.n_frames  == self.images_n_frames)
+            assert (energy.images_series.n_frames  == self.images_n_frames)
             assert (energy.ref_frame == self.images_ref_frame)
         else:
-            self.images_n_frames = energy.image_series.n_frames
+            self.images_n_frames = energy.images_series.n_frames
             self.images_ref_frame = energy.ref_frame
 
         self.energies += [energy]

@@ -12,12 +12,13 @@
 
 from builtins import range
 
-import glob
 import numpy
 import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -29,6 +30,7 @@ def compute_warped_images(
         ref_image=None,
         ref_image_folder=None,
         ref_image_basename=None,
+        ref_image_ext="vti",
         ref_image_model=None,
         ref_frame=0,
         suffix="warped",
@@ -40,10 +42,11 @@ def compute_warped_images(
          and (ref_image_basename is not None))), "Must provide a ref_image or a ref_image_folder and a ref_image_basename. Aborting."
 
     if (ref_image is None):
-        ref_image_zfill = len(glob.glob(ref_image_folder+"/"+ref_image_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
-        ref_image_filename = ref_image_folder+"/"+ref_image_basename+"_"+str(ref_frame).zfill(ref_image_zfill)+".vti"
-        ref_image = myvtk.readImage(
-            filename=ref_image_filename)
+        ref_images_series = dwarp.ImagesSeries(
+            folder=ref_image_folder,
+            basename=ref_image_basename,
+            ext=ref_image_ext)
+        ref_image = ref_images_series.get_image(k_frame=ref_frame)
 
     if (ref_image_model is None):
         ref_image_interpolator = myvtk.getImageInterpolator(
@@ -61,9 +64,10 @@ def compute_warped_images(
         image.AllocateScalars()
     scalars = image.GetPointData().GetScalars()
 
-    working_zfill = len(glob.glob(working_folder+"/"+working_basename+"_*."+working_ext)[0].rsplit("_")[-1].split(".")[0])
-    n_frames = len(glob.glob(working_folder+"/"+working_basename+"_"+"[0-9]"*working_zfill+"."+working_ext))
-    # n_frames = 1
+    working_series = dwarp.MeshesSeries(
+        folder=working_folder,
+        basename=working_basename,
+        ext=working_ext)
 
     if   (working_ext == "vtk"):
         reader = vtk.vtkUnstructuredGridReader()
@@ -95,14 +99,15 @@ def compute_warped_images(
     x = numpy.empty(3)
     I = numpy.empty(1)
     m = numpy.empty(1)
-    for k_frame in range(n_frames):
+    for k_frame in range(working_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        reader.SetFileName(working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
+        reader.SetFileName(working_series.get_mesh_filename(k_frame=k_frame))
         reader.Update()
         # print(ugrid)
 
-        assert (ugrid.GetPointData().HasArray(working_displacement_field_name)), "no array '" + working_displacement_field_name + "' in ugrid"
+        assert (ugrid.GetPointData().HasArray(working_displacement_field_name)),\
+            "no array '" + working_displacement_field_name + "' in ugrid. Aborting."
         ugrid.GetPointData().SetActiveVectors(working_displacement_field_name)
         warp.Update()
         probe.Update()
@@ -111,10 +116,10 @@ def compute_warped_images(
         if (print_warped_mesh):
             myvtk.writeUGrid(
                 ugrid=warped_ugrid,
-                filename=working_folder+"/"+working_basename+"-warped_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
+                filename=working_series.get_mesh_filename(k_frame=k_frame, suffix="warped"))
         #myvtk.writeImage(
             #image=probed_image,
-            #filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+".vti")
+            #filename=working_series.get_mesh_filename(k_frame=k_frame, ext="vti"))
 
         for k_point in range(image.GetNumberOfPoints()):
             scalars_mask.GetTuple(k_point, m)
@@ -132,4 +137,4 @@ def compute_warped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=working_folder+"/"+working_basename+("-"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(working_zfill)+".vti")
+            filename=working_series.get_mesh_filename(k_frame=k_frame, suffix=suffix, ext="vti"))

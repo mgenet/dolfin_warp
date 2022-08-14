@@ -12,12 +12,13 @@
 
 from builtins import range
 
-import glob
 import numpy
 import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -26,14 +27,16 @@ def compute_unwarped_images(
         images_basename,
         working_folder,
         working_basename,
+        images_ext="vti",
         working_ext="vtu",
+        suffix="unwarped",
         verbose=0):
 
-    ref_image_zfill = len(glob.glob(images_folder+"/"+images_basename+"_*.vti")[0].rsplit("_")[-1].split(".")[0])
-    ref_image_filename = images_folder+"/"+images_basename+"_"+str(0).zfill(ref_image_zfill)+".vti"
-    ref_image = myvtk.readImage(
-        filename=ref_image_filename)
-
+    images_series = dwarp.ImagesSeries(
+        folder=images_folder,
+        basename=images_basename,
+        ext=images_ext)
+    ref_image = images_series.get_image(k_frame=0)
     image = vtk.vtkImageData()
     image.SetOrigin(ref_image.GetOrigin())
     image.SetSpacing(ref_image.GetSpacing())
@@ -46,26 +49,25 @@ def compute_unwarped_images(
         image.AllocateScalars()
     scalars = image.GetPointData().GetScalars()
 
-    working_zfill = len(glob.glob(working_folder+"/"+working_basename+"_*."+working_ext)[0].rsplit("_")[-1].split(".")[0])
-    n_frames = len(glob.glob(working_folder+"/"+working_basename+"_"+"[0-9]"*working_zfill+"."+working_ext))
-    #n_frames = 1
+    working_series = dwarp.MeshesSeries(
+        folder=working_folder,
+        basename=working_basename,
+        ext=working_ext)
 
     X = numpy.empty(3)
     U = numpy.empty(3)
     x = numpy.empty(3)
     I = numpy.empty(1)
     m = numpy.empty(1)
-    for k_frame in range(n_frames):
+    for k_frame in range(working_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        def_image = myvtk.readImage(
-            filename=images_folder+"/"+images_basename+"_"+str(k_frame).zfill(ref_image_zfill)+".vti")
+        def_image = images_series.get_image(k_frame=k_frame)
 
         interpolator = myvtk.getImageInterpolator(
             image=def_image)
 
-        mesh = myvtk.readUGrid(
-            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext)
+        mesh = working_series.get_mesh(k_frame=k_frame)
 
         probe = vtk.vtkProbeFilter()
         if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
@@ -92,4 +94,4 @@ def compute_unwarped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=working_folder+"/"+working_basename+"-unwarped_"+str(k_frame).zfill(working_zfill)+".vti")
+            filename=images_series.get_mesh_filename(k_frame=k_frame, suffix=suffix))

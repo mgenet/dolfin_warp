@@ -8,15 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
-import glob
-
 ################################################################################
 
-def get_filenames(
-        folder,
-        basename,
-        ext,
-        separator="_",
-        indices="[0-9]*"):
+class FilesSeries():
 
-    return glob.glob(folder+"/"+basename+separator+indices+"."+ext)
+    pass

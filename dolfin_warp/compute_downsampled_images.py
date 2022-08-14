@@ -10,12 +10,13 @@
 
 from builtins import range
 
-import glob
 import numpy
 import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -26,18 +27,17 @@ def compute_downsampled_images(
         images_ext="vti",
         keep_resolution=0,
         write_temp_images=0,
-        suffix="",
+        suffix=None,
         verbose=0):
 
     mypy.my_print(verbose, "*** compute_downsampled_images ***")
 
-    images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
-    images_nframes = len(images_filenames)
-    images_zfill = len(images_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+    images_series = dwarp.ImagesSeries(
+        folder=images_folder,
+        basename=images_basename,
+        ext=images_ext)
 
-    image = myvtk.readImage(
-        filename=images_folder+"/"+images_basename+"_"+str(0).zfill(images_zfill)+"."+images_ext,
-        verbose=0)
+    image = images_series.get_image(k_frame=0)
     images_ndim = myvtk.getImageDimensionality(
         image=image,
         verbose=0)
@@ -81,10 +81,7 @@ def compute_downsampled_images(
         writer_fft.SetInputData(fft.GetOutput())
 
     if (keep_resolution):
-        image_filename = images_folder+"/"+images_basename+"_"+str(0).zfill(images_zfill)+"."+images_ext
-        mask_image = myvtk.readImage(
-            filename=image_filename,
-            verbose=0)
+        mask_image = images_series.get_image(k_frame=0)
         mask_scalars = myvtk.createDoubleArray(
             name="ImageScalars",
             n_components=2,
@@ -107,7 +104,7 @@ def compute_downsampled_images(
         if (write_temp_images):
             myvtk.writeImage(
                 image=mask_image,
-                filename=images_folder+"/"+images_basename+"_mask"+"."+images_ext,
+                filename=images_series.get_image_filename(k_frame=None, suffix="mask"),
                 verbose=0)
 
         mult = vtk.vtkImageMathematics()
@@ -163,22 +160,22 @@ def compute_downsampled_images(
     writer = writer_type()
     writer.SetInputData(extract.GetOutput())
 
-    for k_frame in range(images_nframes):
+    for k_frame in range(images_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        reader.SetFileName(images_series.get_image_filename(k_frame=k_frame))
         reader.Update()
 
         fft.Update()
         if (write_temp_images):
-            writer_fft.SetFileName(images_folder+"/"+images_basename+"_fft"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+            writer_fft.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix="fft"))
             writer_fft.Write()
 
         if (keep_resolution):
 
             mult.Update()
             if (write_temp_images):
-                writer_mul.SetFileName(images_folder+"/"+images_basename+"_mul"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+                writer_mul.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix="mul"))
                 writer_mul.Write()
 
         else:
@@ -199,12 +196,12 @@ def compute_downsampled_images(
             image_downsampled.Modified()
 
             if (write_temp_images):
-                writer_sel.SetFileName(images_folder+"/"+images_basename+"_sel"+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+                writer_sel.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix="sel"))
                 writer_sel.Write()
 
         rfft.Update()
 
         extract.Update()
 
-        writer.SetFileName(images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        writer.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix=suffix))
         writer.Write()

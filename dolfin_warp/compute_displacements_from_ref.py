@@ -10,11 +10,12 @@
 
 from builtins import range
 
-import glob
 import numpy
 import vtk
 
 import myVTKPythonLibrary as myvtk
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -23,17 +24,16 @@ def compute_displacements_from_ref(
         working_basename,
         ref_frame,
         working_ext="vtu",
-        suffix="",
+        suffix=None,
         verbose=0):
 
-    working_filenames = glob.glob(working_folder+"/"+working_basename+"_[0-9]*."+working_ext)
-    working_zfill = len(working_filenames[0].rsplit("_",1)[-1].split(".")[0])
-    n_frames = len(working_filenames)
-    if (verbose): print("n_frames = "+str(n_frames))
+    working_series = dwarp.MeshesSeries(
+        folder=working_folder,
+        basename=working_basename,
+        ext=working_ext)
+    if (verbose): print("n_frames = "+str(working_series.n_frames))
 
-    ref_mesh = myvtk.readUGrid(
-        filename=working_folder+"/"+working_basename+"_"+str(ref_frame).zfill(working_zfill)+"."+working_ext,
-        verbose=verbose)
+    ref_mesh = working_series.get_mesh(k_frame=ref_frame)
     n_points = ref_mesh.GetNumberOfPoints()
     n_cells = ref_mesh.GetNumberOfCells()
 
@@ -49,10 +49,8 @@ def compute_displacements_from_ref(
     warped_mesh = warper.GetOutput()
     warped_disp_farray = warped_mesh.GetPointData().GetVectors()
 
-    for k_frame in range(n_frames):
-        cur_mesh = myvtk.readUGrid(
-            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
-            verbose=verbose)
+    for k_frame in range(working_series.n_frames):
+        cur_mesh = working_series.get_mesh(k_frame=k_frame)
         cur_disp_farray = cur_mesh.GetPointData().GetVectors()
         [warped_disp_farray.SetTuple(
             k_point,
@@ -61,5 +59,5 @@ def compute_displacements_from_ref(
                 ref_disp_farray.GetTuple(k_point))) for k_point in range(n_points)]
         myvtk.writeUGrid(
             ugrid=warped_mesh,
-            filename=working_folder+"/"+working_basename+("-"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(working_zfill)+"."+working_ext,
+            filename=working_series.get_mesh_filename(k_frame=ref_frame, suffix=suffix),
             verbose=verbose)

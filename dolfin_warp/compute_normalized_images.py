@@ -10,12 +10,12 @@
 
 from builtins import range
 
-import glob
 import numpy
 import vtk
 
-import myPythonLibrary    as mypy
-import myVTKPythonLibrary as myvtk
+import myPythonLibrary as mypy
+
+import dolfin_warp as dwarp
 
 ################################################################################
 
@@ -24,20 +24,17 @@ def compute_normalized_images(
         images_basename,
         images_datatype,
         images_ext="vti",
-        suffix="",
+        suffix=None,
         verbose=0):
 
     mypy.my_print(verbose, "*** compute_normalized_images ***")
 
-    images_filenames = glob.glob(images_folder+"/"+images_basename+"_[0-9]*"+"."+images_ext)
-    images_nframes = len(images_filenames)
-    images_zfill = len(images_filenames[0].rsplit("_",1)[-1].split(".",1)[0])
-
-    image_filename = images_folder+"/"+images_basename+"_"+str(0).zfill(images_zfill)+"."+images_ext
-    image = myvtk.readImage(
-        filename=image_filename,
-        verbose=0)
-    images_npoints = image.GetNumberOfPoints()
+    images_series = dwarp.ImagesSeries(
+        folder=images_folder,
+        basename=images_basename,
+        ext=images_ext)
+    image = images_series.get_image(k_frame=0)
+    image_npoints = image.GetNumberOfPoints()
 
     if   (images_ext == "vtk"):
         reader = vtk.vtkImageReader()
@@ -50,15 +47,14 @@ def compute_normalized_images(
 
     global_min = float("+Inf")
     global_max = float("-Inf")
-    for k_frame in range(images_nframes):
-        reader.SetFileName(images_folder+"/"+images_basename+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+    for k_frame in range(images_series.n_frames):
+        reader.SetFileName(images_series.get_image_filename(k_frame=k_frame))
         reader.Update()
 
         image_scalars = reader.GetOutput().GetPointData().GetScalars()
         I = numpy.empty(image_scalars.GetNumberOfComponents())
-        for k_point in range(images_npoints):
+        for k_point in range(image_npoints):
             image_scalars.GetTuple(k_point, I)
-
             global_min = min(global_min, I[0])
             global_max = max(global_max, I[0])
     mypy.my_print(verbose, "global_min = "+str(global_min))
@@ -85,9 +81,9 @@ def compute_normalized_images(
 
     writer.SetInputConnection(shifter.GetOutputPort())
 
-    for k_frame in range(images_nframes):
+    for k_frame in range(images_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        reader.SetFileName(images_folder+"/"+images_basename              +"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
-        writer.SetFileName(images_folder+"/"+images_basename+("_"+suffix)*(suffix!="")+"_"+str(k_frame).zfill(images_zfill)+"."+images_ext)
+        reader.SetFileName(images_series.get_image_filename(k_frame=k_frame               ))
+        writer.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix=suffix))
         writer.Write()
