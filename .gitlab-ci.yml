@@ -1,5 +1,29 @@
-build:
-  stage: build
+stages:
+  - test
+  - deploy
+
+tests:
+  stage: test
+  tags:
+    - ci.inria.fr
+    - large
+  image: ubuntu:20.04
+  script:
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y git python3-matplotlib python3-numpy python3-pandas python3-pip # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics
+    - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install --upgrade numpy # MG20220814: meshio needs latest numpy apparently
+    - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git
+    - pip install git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git
+    - pip install git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git
+    - pip install git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - cd Tests; ln -s ../dolfin_warp; make
+
+docker:
+  stage: deploy
+  only:
+    - tags
   tags:
     - ci.inria.fr
     - small
@@ -23,3 +47,19 @@ build:
     - docker push $CI_REGISTRY/mgenet/dolfin_warp/dolfin_warp-2019.1.0
     - echo Docker logout
     - docker logout $CI_REGISTRY
+
+pypi:
+  stage: deploy
+  only:
+    - tags
+  tags:
+    - ci.inria.fr
+    - small
+  image: python
+  variables:
+    TWINE_USERNAME: $PYPI_USER
+    TWINE_PASSWORD: $PYPI_PASS
+  script:
+    - pip install -U twine
+    - python setup.py sdist bdist_wheel
+    - twine upload dist/*

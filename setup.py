@@ -1,8 +1,13 @@
+import datetime
+import os
 import setuptools
+
+# version = os.environ['CI_COMMIT_TAG']
+version = datetime.date.today().strftime("%Y.%m.%d")
 
 setuptools.setup(
     name="dolfin_warp",
-    version="2021.10.20",
+    version=version,
     author="Martin Genet",
     author_email="martin.genet@polytechnique.edu",
     description=open("README.md", "r").readlines()[1][:-1],
@@ -18,8 +23,3 @@ setuptools.setup(
     ],
     install_requires=["numpy", "scipy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "vtkpython_cbl", "dolfin_mech"],
 )
-
-# python -m keyring set https://upload.pypi.org/legacy/ username
-
-# python setup.py sdist bdist_wheel
-# python -m twine upload dist/*
