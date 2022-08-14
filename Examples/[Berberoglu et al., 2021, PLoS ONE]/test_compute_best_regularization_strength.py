@@ -23,13 +23,15 @@ folders  = []
 folders += ["resolution_3.0x3.0_noNoise"]
 # folders += ["resolution_3.5x3.5_noNoise"]
 
-k_frame = 55
+betas = ["0","0.1","0.2","0.3","0.4","0.5","0.025","0.05","0.075"]
 noisy = 0
+es_tf = 55
 
 for k_folder in range(len(folders)):
     folder = folders[k_folder]
-    print("Strain error computation for: "+folder)
-    dwarp.compute_strain_error(
-        k_frame,
+    print("Displacement error computation for: "+folder)
+    dwarp.compute_best_regularization_strength(
+        es_tf,
+        betas,
         folder,
         noisy)

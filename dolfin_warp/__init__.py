@@ -21,7 +21,7 @@ from .NonlinearSolver_ReducedKinematicsNewton import *
 from .NonlinearSolver_Relaxation import *
 from .Problem import *
 from .Problem_Warping import *
-from .compute_best_beta import *
+from .compute_best_regularization_strength import *
 from .compute_displacement_error import *
 from .compute_displacement_error_field import *
 from .compute_displacement_infinity_norm import *

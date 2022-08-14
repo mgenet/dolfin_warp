@@ -1,13 +1,13 @@
 #coding=utf8
 
-########################################################################
-###                                                                  ###
-### Created by Ezgi Berberoğlu, 2017-2021                            ###
-###                                                                  ###
-### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland ###
-### École Polytechnique, Palaiseau, France                           ###
-###                                                                  ###
-########################################################################
+################################################################################
+###                                                                          ###
+### Created by Ezgi Berberoğlu, 2017-2021                                    ###
+###                                                                          ###
+### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
+### École Polytechnique, Palaiseau, France                                   ###
+###                                                                          ###
+################################################################################
 
 from builtins import range
 
@@ -17,7 +17,7 @@ import os
 
 import myVTKPythonLibrary as myvtk
 
-########################################################################
+################################################################################
 
 def compute_strain_error(
     k_frame,
