@@ -173,14 +173,18 @@ class WarpingProblem(Problem):
 
 
     def add_regul_energy(self,
-            energy):
+            energy: dwarp.Energy,
+            order_by_type: bool = True):
 
-        if isinstance(energy, dwarp.ContinuousEnergy):
-            self.energies.insert(0, energy)
-        elif isinstance(energy, dwarp.DiscreteEnergy):
-            self.energies.append(energy)
+        if (order_by_type):
+            if isinstance(energy, dwarp.ContinuousEnergy):
+                self.energies.insert(0, energy)
+            elif isinstance(energy, dwarp.DiscreteEnergy):
+                self.energies.append(energy)
+            else:
+                assert (0), "Wrong energy type \""+str(type(energy))+"\". Aborting."
         else:
-            assert (0), "Wrong energy type \""+str(type(energy))+"\". Aborting."
+            self.energies.append(energy)
 
 
 

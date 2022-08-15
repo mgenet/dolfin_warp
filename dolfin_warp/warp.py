@@ -32,7 +32,7 @@ def warp(
         mesh_folder=None,
         mesh_basename=None,
         mesh_degree=1,
-        regul_type="equilibrated", # equilibrated, elastic, hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_type="continuous-equilibrated", # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
         regul_types=None,
         regul_model="ciarletgeymonatneohookeanmooneyrivlin", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
         regul_models=None,
@@ -195,12 +195,12 @@ def warp(
             name_suffix += ("_"+    regul_type  )*(len(regul_types )>1)
             name_suffix += ("_"+    regul_model )*(len(regul_models)>1)
             name_suffix += ("_"+str(regul_level))*(len(regul_levels)>1)
-            if (regul_type in ("equilibrated", "elastic", "hyperelastic")):
+            if (regul_type in ("continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic")):
                 regularization_energy = dwarp.RegularizationContinuousEnergy(
                     name="reg"+name_suffix,
                     problem=problem,
                     w=regul_level,
-                    type=regul_type,
+                    type=regul_type.split("-")[1],
                     model=regul_model,
                     poisson=regul_poisson,
                     quadrature_degree=regul_quadrature)
@@ -236,7 +236,7 @@ def warp(
                     quadrature_degree=regul_quadrature)
                 problem.add_regul_energy(regularization_energy)
             else:
-                assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"equilibrated\", \"elastic\", \"hyperelastic\", \"discrete-linear-equilibrated\", \"discrete-linear-elastic\" or \"discrete-equilibrated\". Aborting."
+                assert (0), "\"regul_type\" (="+str(regul_type)+") must be \"continuous-equilibrated\", \"continuous-elastic\", \"continuous-hyperelastic\", \"discrete-linear-equilibrated\", \"discrete-linear-elastic\" or \"discrete-equilibrated\". Aborting."
 
     if (normalize_energies):
         dwarp.compute_energies_normalization(

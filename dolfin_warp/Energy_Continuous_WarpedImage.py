@@ -13,7 +13,9 @@ import numpy
 
 import dolfin_warp as dwarp
 
-from .Energy_Continuous import ContinuousEnergy
+from .Energy_Continuous  import ContinuousEnergy
+from .FilesSeries_Images import ImagesSeries
+from .Problem            import Problem
 
 ################################################################################
 
@@ -22,16 +24,16 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
 
     def __init__(self,
-            problem,
-            images_series,
-            quadrature_degree,
-            name="im",
-            w=1.,
-            ref_frame=0,
-            w_char_func=1,
-            im_is_cone=0,
-            static_scaling=0,
-            dynamic_scaling=0):
+            problem: Problem,
+            images_series: ImagesSeries,
+            quadrature_degree: int,
+            name: str = "im",
+            w: float = 1.,
+            ref_frame: int = 0,
+            w_char_func: bool = True,
+            im_is_cone: bool = False,
+            static_scaling: bool = False,
+            dynamic_scaling: bool = False):
 
         self.problem           = problem
         self.printer           = self.problem.printer

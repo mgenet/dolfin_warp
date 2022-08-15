@@ -62,12 +62,22 @@ class MeshesSeries(FilesSeries):
 
 
 
+    def get_mesh_filebasename(self,
+            k_frame = None,
+            suffix = None):
+
+        return self.folder+"/"+self.basename+("-"+suffix if bool(suffix) else "")+("_"+str(k_frame).zfill(self.zfill) if (k_frame is not None) else "")
+
+
+
     def get_mesh_filename(self,
             k_frame = None,
             suffix = None,
             ext = None):
 
-        return self.folder+"/"+self.basename+("-"+suffix if bool(suffix) else "")+("_"+str(k_frame).zfill(self.zfill) if (k_frame is not None) else "")+"."+(ext if bool(ext) else self.ext)
+        return self.get_mesh_filebasename(
+            k_frame=k_frame,
+            suffix=suffix)+"."+(ext if bool(ext) else self.ext)
 
 
 

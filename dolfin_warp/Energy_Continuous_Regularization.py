@@ -9,10 +9,13 @@
 ################################################################################
 
 import dolfin
+import typing
 
 import dolfin_mech as dmech
+import dolfin_warp as dwarp
 
 from .Energy_Continuous import ContinuousEnergy
+from .Problem           import Problem
 
 ################################################################################
 
@@ -21,14 +24,14 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
 
     def __init__(self,
-            problem,
-            name="reg",
-            w=1.,
-            type="equilibrated",
-            model="ciarletgeymonatneohookeanmooneyrivlin",
-            young=1.,
-            poisson=0.,
-            quadrature_degree=None):
+            problem: Problem,
+            name: str = "reg",
+            w: float = 1.,
+            type: str = "equilibrated",
+            model: str = "ciarletgeymonatneohookeanmooneyrivlin",
+            young: float = 1.,
+            poisson: float = 0.,
+            quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
 
         self.problem = problem
         self.printer = problem.printer

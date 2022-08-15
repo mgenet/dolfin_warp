@@ -92,8 +92,8 @@ for n_dim in n_dim_lst:
             n_cells, n_cells, n_cells)
 
     regul_type_lst = []
-    regul_type_lst += ["equilibrated"]
-    regul_type_lst += ["elastic"]
+    regul_type_lst += ["continuous-equilibrated"]
+    regul_type_lst += ["continuous-elastic"]
     regul_type_lst += ["discrete-linear-equilibrated"]
     regul_type_lst += ["discrete-linear-elastic"]
     regul_type_lst += ["discrete-equilibrated"]

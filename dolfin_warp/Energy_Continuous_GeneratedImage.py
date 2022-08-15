@@ -12,7 +12,9 @@ import dolfin
 
 import dolfin_warp as dwarp
 
-from .Energy_Continuous import ContinuousEnergy
+from .Energy_Continuous  import ContinuousEnergy
+from .FilesSeries_Images import ImagesSeries
+from .Problem            import Problem
 
 ################################################################################
 
@@ -21,16 +23,16 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
 
     def __init__(self,
-            problem,
-            images_series,
-            quadrature_degree,
-            texture,
-            name="gen_im",
-            w=1.,
-            ref_frame=0,
-            resample=1,
-            compute_DIgen=1,
-            n_resampling_Igen=1):
+            problem: Problem,
+            images_series: ImagesSeries,
+            quadrature_degree: int,
+            texture: str,
+            name: str = "gen_im",
+            w: float = 1.,
+            ref_frame: int = 0,
+            resample: bool = True,
+            compute_DIgen: bool = True,
+            n_resampling_Igen: int = 1):
 
         self.problem           = problem
         self.printer           = self.problem.printer
