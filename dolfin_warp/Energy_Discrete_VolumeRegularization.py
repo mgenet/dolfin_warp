@@ -29,7 +29,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             name: str = "reg",
             w: float = 1.,
             type: str = "equilibrated",
-            model: str = "ciarletgeymonatneohookeanmooneyrivlin",
+            model: str = "ciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
             b: typing.Optional["list[float]"] = None,

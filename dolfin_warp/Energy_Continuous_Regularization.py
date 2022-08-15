@@ -28,7 +28,7 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
             name: str = "reg",
             w: float = 1.,
             type: str = "equilibrated",
-            model: str = "ciarletgeymonatneohookeanmooneyrivlin",
+            model: str = "ciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
             quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
