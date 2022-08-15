@@ -44,7 +44,6 @@ from .expressions_generated_images_cpp import *
 from .expressions_images_cpp import *
 from .expressions_images_py import *
 from .expressions_static_scaling_cpp import *
-from .fedic import *
 from .generate_images import *
 from .generate_images_Image import *
 from .generate_images_Mapping import *
