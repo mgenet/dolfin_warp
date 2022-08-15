@@ -4,6 +4,9 @@ stages:
 
 tests:
   stage: test
+  only:
+    - devel
+    - /^devel-.*/
   tags:
     - ci.inria.fr
     - large
