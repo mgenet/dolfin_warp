@@ -100,36 +100,13 @@ def generate_images(
         evolution,
         generate_gradient)
 
-    vtk_image = vtk.vtkImageData()
-
-    n_voxels           =                     images["n_voxels"]
-    n_voxels_upsampled = list(numpy.multiply(images["n_voxels"], images["upsampling_factors"]))
-
-    dimensions           = n_voxels          +[1]*(3-images["n_dim"])
-    dimensions_upsampled = n_voxels_upsampled+[1]*(3-images["n_dim"])
-    mypy.my_print(verbose, "dimensions_upsampled = "+str(dimensions_upsampled))
-    vtk_image.SetDimensions(dimensions_upsampled)
-
-    delta           = list(numpy.divide(images["L"], n_voxels          ))
-    delta_upsampled = list(numpy.divide(images["L"], n_voxels_upsampled))
-
-    spacing           = delta          +[1.]*(3-images["n_dim"])
-    spacing_upsampled = delta_upsampled+[1.]*(3-images["n_dim"])
-    mypy.my_print(verbose, "spacing_upsampled = "+str(spacing_upsampled))
-    vtk_image.SetSpacing(spacing_upsampled)
-
-    origin           = list(numpy.divide(delta, 2))+[0.]*(3-images["n_dim"])
-    origin_upsampled = origin
-    mypy.my_print(verbose, "origin_upsampled = "+str(origin_upsampled))
-    vtk_image.SetOrigin(origin_upsampled)
-
+    vtk_image = myvtk.createImageFromSizeAndRes(
+        dim  = images["n_dim"],
+        size = images["L"],
+        res  = images["n_voxels"],
+        up   = images["upsampling_factors"])
     n_points_upsampled = vtk_image.GetNumberOfPoints()
-    vtk_scalars = myvtk.createDoubleArray(
-        name="ImageScalars",
-        n_components=1,
-        n_tuples=n_points_upsampled,
-        verbose=verbose-1)
-    vtk_image.GetPointData().SetScalars(vtk_scalars)
+    vtk_scalars = vtk_image.GetPointData().GetScalars()
 
     if (generate_gradient):
         vtk_gradient = vtk.vtkImageData()

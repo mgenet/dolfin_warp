@@ -161,7 +161,7 @@ def compute_regularization_energy(
         for k, regul_type in enumerate(regul_types):
             ener_data.plot(x="k_frame", y=regul_type, dashes=[len(regul_types)-k, 2], ax=ener_axes, ylabel="regularization energy")
             # ener_data.plot(x="k_frame", y=regul_type, dashes=[len(regul_types)-k, 2], sketch_params=0.3, ax=ener_axes, ylabel="regularization energy")
-        ener_axes.set_ylim([-0.001,0.1])
+        # ener_axes.set_ylim([-0.001,0.1])
         # ener_axes.set_sketch_params(1.) # Does nothing
         ener_fig.savefig(regul_ener_filebasename+".pdf")
 

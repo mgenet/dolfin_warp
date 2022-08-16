@@ -127,7 +127,7 @@ def compute_downsampled_images(
         images_downsampled_spacing = list(numpy.multiply(images_spacing, downsampling_factors))
         mypy.my_print(verbose, "images_downsampled_spacing = "+str(images_downsampled_spacing))
 
-        image_downsampled = vtk.vtkImageData()
+        image_downsampled = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
         image_downsampled.SetDimensions(images_downsampled_dimensions)
         image_downsampled.SetOrigin(images_downsampled_origin)
         image_downsampled.SetSpacing(images_downsampled_spacing)

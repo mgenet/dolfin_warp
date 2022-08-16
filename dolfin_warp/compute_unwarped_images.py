@@ -37,7 +37,7 @@ def compute_unwarped_images(
         basename=images_basename,
         ext=images_ext)
     ref_image = images_series.get_image(k_frame=0)
-    image = vtk.vtkImageData()
+    image = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
     image.SetOrigin(ref_image.GetOrigin())
     image.SetSpacing(ref_image.GetSpacing())
     image.SetExtent(ref_image.GetExtent())

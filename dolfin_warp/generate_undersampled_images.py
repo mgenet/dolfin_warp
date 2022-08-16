@@ -104,7 +104,7 @@ def generateUndersampledImages(
         iY = numpy.empty(1)
 
         if (images["n_dim"] == 2):
-            imageXY = vtk.vtkImageData()
+            imageXY = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
             imageXY.SetExtent([0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, 0])
             imageXY.SetSpacing([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], 1.])
             imageXY.SetOrigin([images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, 0.])
@@ -138,7 +138,7 @@ def generateUndersampledImages(
                 verbose=verbose-1)
             iZ = numpy.empty(1)
 
-            imageXYZ = vtk.vtkImageData()
+            imageXYZ = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
             imageXYZ.SetExtent([0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, images["n_voxels"][2]-1])
             imageXYZ.SetSpacing([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], images["L"][2]/images["n_voxels"][2]])
             imageXYZ.SetOrigin([images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, images["L"][2]/images["n_voxels"][2]/2])
