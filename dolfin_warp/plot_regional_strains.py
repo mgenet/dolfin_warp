@@ -8,8 +8,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import math
 import matplotlib.pyplot
 import numpy

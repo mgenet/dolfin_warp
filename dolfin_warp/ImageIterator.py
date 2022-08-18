@@ -8,8 +8,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import dolfin
 import glob
 import numpy

@@ -10,8 +10,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import dolfin
 import numpy
 import os

@@ -12,8 +12,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import dolfin
 import os
 import shutil

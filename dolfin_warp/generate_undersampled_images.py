@@ -8,9 +8,8 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import numpy
+import os
 import vtk
 
 import myPythonLibrary    as mypy

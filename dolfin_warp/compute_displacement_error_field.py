@@ -9,8 +9,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import math
 import numpy
 

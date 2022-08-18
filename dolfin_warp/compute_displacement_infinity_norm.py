@@ -9,8 +9,6 @@
 ###                                                                          ###
 ################################################################################
 
-from builtins import range
-
 import numpy
 
 import dolfin_warp as dwarp
