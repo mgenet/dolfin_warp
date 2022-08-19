@@ -2,7 +2,7 @@ stages:
   - test
   - deploy
 
-tests:
+tests-on-ubuntu-20.04:
   stage: test
   only:
     - devel
@@ -15,6 +15,27 @@ tests:
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y git python3-matplotlib python3-numpy python3-pandas python3-pip # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics
     - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install --upgrade numpy # MG20220814: meshio needs latest numpy apparently
+    - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git
+    - pip install git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git
+    - pip install git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git
+    - pip install git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - cd Tests; ln -s ../dolfin_warp; make
+
+tests-on-ubuntu-22.04:
+  stage: test
+  only:
+    - devel
+    - /^devel-.*/
+  tags:
+    - ci.inria.fr
+    - large
+  image: ubuntu:22.04
+  script:
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y git python3-matplotlib python3-numpy python3-pandas python3-pip # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics
+    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
     - apt update; apt install -y python3-h5py; pip install meshio; pip install --upgrade numpy # MG20220814: meshio needs latest numpy apparently
     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git
