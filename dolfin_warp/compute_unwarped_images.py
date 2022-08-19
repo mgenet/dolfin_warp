@@ -35,16 +35,10 @@ def compute_unwarped_images(
         basename=images_basename,
         ext=images_ext)
     ref_image = images_series.get_image(k_frame=0)
-    image = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
-    image.SetOrigin(ref_image.GetOrigin())
-    image.SetSpacing(ref_image.GetSpacing())
-    image.SetExtent(ref_image.GetExtent())
-    if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-        image.AllocateScalars(vtk.VTK_FLOAT, 1)
-    else:
-        image.SetScalarTypeToFloat()
-        image.SetNumberOfScalarComponents(1)
-        image.AllocateScalars()
+    image = myvtk.createImage(
+        origin=ref_image.GetOrigin(),
+        spacing=ref_image.GetSpacing(),
+        extent=ref_image.GetExtent())
     scalars = image.GetPointData().GetScalars()
 
     working_series = dwarp.MeshesSeries(

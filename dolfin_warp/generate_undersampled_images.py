@@ -103,16 +103,10 @@ def generateUndersampledImages(
         iY = numpy.empty(1)
 
         if (images["n_dim"] == 2):
-            imageXY = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
-            imageXY.SetExtent([0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, 0])
-            imageXY.SetSpacing([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], 1.])
-            imageXY.SetOrigin([images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, 0.])
-            if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-                imageXY.AllocateScalars(vtk.VTK_FLOAT, 1)
-            else:
-                imageXY.SetScalarTypeToFloat()
-                imageXY.SetNumberOfScalarComponents(1)
-                imageXY.AllocateScalars()
+            imageXY = myvtk.createImage(
+                origin=[images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, 0.],
+                spacing=[images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], 1.],
+                extent=[0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, 0])
             scalars = imageXY.GetPointData().GetScalars()
             x = numpy.empty(3)
             for k_point in range(imageXY.GetNumberOfPoints()):
@@ -137,16 +131,10 @@ def generateUndersampledImages(
                 verbose=verbose-1)
             iZ = numpy.empty(1)
 
-            imageXYZ = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
-            imageXYZ.SetExtent([0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, images["n_voxels"][2]-1])
-            imageXYZ.SetSpacing([images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], images["L"][2]/images["n_voxels"][2]])
-            imageXYZ.SetOrigin([images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, images["L"][2]/images["n_voxels"][2]/2])
-            if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-                imageXYZ.AllocateScalars(vtk.VTK_FLOAT, 1)
-            else:
-                imageXYZ.SetScalarTypeToFloat()
-                imageXYZ.SetNumberOfScalarComponents(1)
-                imageXYZ.AllocateScalars()
+            imageXYZ = myvtk.createImage(
+                origin=[images["L"][0]/images["n_voxels"][0]/2, images["L"][1]/images["n_voxels"][1]/2, images["L"][2]/images["n_voxels"][2]/2],
+                spacing=[images["L"][0]/images["n_voxels"][0], images["L"][1]/images["n_voxels"][1], images["L"][2]/images["n_voxels"][2]],
+                extent=[0, images["n_voxels"][0]-1, 0, images["n_voxels"][1]-1, 0, images["n_voxels"][2]-1])
             scalars = imageXYZ.GetPointData().GetScalars()
             x = numpy.empty(3)
             for k_point in range(imageXYZ.GetNumberOfPoints()):

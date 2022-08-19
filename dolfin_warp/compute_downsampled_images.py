@@ -114,8 +114,6 @@ def compute_downsampled_images(
             writer_mul = writer_type()
             writer_mul.SetInputData(mult.GetOutput())
     else:
-        images_downsampled_npoints = numpy.prod(images_downsampled_dimensions)
-        mypy.my_print(verbose, "images_downsampled_npoints = "+str(images_downsampled_npoints))
         downsampling_factors = list(numpy.divide(images_dimensions, images_downsampled_dimensions))
         mypy.my_print(verbose, "downsampling_factors = "+str(downsampling_factors))
         downsampling_factor = numpy.prod(downsampling_factors)
@@ -125,17 +123,13 @@ def compute_downsampled_images(
         images_downsampled_spacing = list(numpy.multiply(images_spacing, downsampling_factors))
         mypy.my_print(verbose, "images_downsampled_spacing = "+str(images_downsampled_spacing))
 
-        image_downsampled = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
-        image_downsampled.SetDimensions(images_downsampled_dimensions)
-        image_downsampled.SetOrigin(images_downsampled_origin)
-        image_downsampled.SetSpacing(images_downsampled_spacing)
-
-        image_downsampled_scalars = myvtk.createDoubleArray(
-            name="ImageScalars",
-            n_components=2,
-            n_tuples=images_downsampled_npoints,
-            verbose=0)
-        image_downsampled.GetPointData().SetScalars(image_downsampled_scalars)
+        image_downsampled = myvtk.createImage(
+            origin=images_downsampled_origin,
+            spacing=images_downsampled_spacing,
+            dimensions=images_downsampled_dimensions,
+            array_name="ImageScalars",
+            array_n_components=2)
+        image_downsampled_scalars = image.GetPointData().GetScalars()
         I = numpy.empty(2)
 
         if (write_temp_images):
