@@ -30,8 +30,9 @@ def compute_warped_images(
         ref_image_folder=None,
         ref_image_basename=None,
         ref_image_ext="vti",
-        ref_image_model=None,
         ref_frame=0,
+        ref_image_model=None,
+        noise_params={},
         suffix="warped",
         print_warped_mesh=0,
         verbose=0):
@@ -51,16 +52,13 @@ def compute_warped_images(
         ref_image_interpolator = myvtk.getImageInterpolator(
             image=ref_image)
 
-    image = vtk.vtkImageData() # MG20220816: Should use myvtk.createImage
-    image.SetOrigin(ref_image.GetOrigin())
-    image.SetSpacing(ref_image.GetSpacing())
-    image.SetExtent(ref_image.GetExtent())
-    if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-        image.AllocateScalars(vtk.VTK_FLOAT, 1)
-    else:
-        image.SetScalarTypeToFloat()
-        image.SetNumberOfScalarComponents(1)
-        image.AllocateScalars()
+    noise = dwarp.Noise(
+        params=noise_params)
+
+    image = myvtk.createImage(
+        origin=ref_image.GetOrigin(),
+        spacing=ref_image.GetSpacing(),
+        extent=ref_image.GetExtent())
     scalars = image.GetPointData().GetScalars()
 
     working_series = dwarp.MeshesSeries(
@@ -132,6 +130,7 @@ def compute_warped_images(
                     ref_image_interpolator.Interpolate(X, I)
                 else:
                     I[0] = ref_image_model(X)
+            noise.add_noise(I)
             scalars.SetTuple(k_point, I)
 
         myvtk.writeImage(

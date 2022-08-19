@@ -48,6 +48,7 @@ from .expressions_static_scaling_cpp import *
 from .generate_images import *
 from .generate_images_Image import *
 from .generate_images_Mapping import *
+from .generate_images_Noise import *
 from .generate_undersampled_images import *
 from .get_centroids import *
 from .mesh2ugrid import *

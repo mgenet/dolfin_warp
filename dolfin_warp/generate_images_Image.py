@@ -114,7 +114,7 @@ class Image():
         else:
             assert (0), "texture type must be \"no\", \"tagging\", \"taggX\", \"taggY\" or \"taggZ\". Aborting."
 
-        # noise
+        # noise (MG20220818: Should use dwarp.Noise)
         if (noise["type"] == "no"):
             self.I0_noise = self.I0_noise_no_wGrad if (generate_image_gradient) else self.I0_noise_no
         elif (noise["type"] == "normal"):
