@@ -8,70 +8,72 @@
 ###                                                                          ###
 ################################################################################
 
+import dolfin
+
 import dolfin_warp as dwarp
 
 ################################################################################
 
 def warp(
-        working_folder,
-        working_basename,
-        images_folder,
-        images_basename,
-        images_grad_basename=None,
-        images_ext="vti", # vti, vtk
-        images_n_frames=None,
-        images_ref_frame=0,
-        images_quadrature=None,
-        images_quadrature_from="points_count", # points_count, integral
-        images_expressions_type="cpp", # cpp
-        images_static_scaling=0,
-        images_dynamic_scaling=0,
-        images_char_func=1,
-        images_is_cone=0,
-        mesh=None,
-        mesh_folder=None,
-        mesh_basename=None,
-        mesh_degree=1,
-        regul_type="continuous-equilibrated", # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
-        regul_types=None,
-        regul_model="ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
-        regul_models=None,
-        regul_quadrature=None,
-        regul_level=0.,
-        regul_levels=None,
-        regul_poisson=0.,
-        tangent_type="Idef", # Idef
-        residual_type="Iref", # Iref
-        relax_type=None, # constant, aitken, backtracking, gss
-        relax_init=1., # 1.
-        relax_backtracking_factor=None,
-        relax_tol=None,
-        relax_n_iter_max=None,
-        relax_must_advance=None,
-        normalize_energies=0,
-        initialize_U_from_file=0,
-        initialize_U_folder=None,
-        initialize_U_basename=None,
-        initialize_U_ext="vtu",
-        initialize_U_array_name="displacement",
-        initialize_DU_with_DUold=0,
-        register_ref_frame=0,
-        iteration_mode="normal", # normal, loop
-        gimic=0,
-        gimic_texture="no",
-        gimic_resample=1,
-        nonlinearsolver="newton", # newton, CMA
-        tol_res=None, # None
-        tol_res_rel=None,
-        tol_dU=None,
-        tol_im=None, # None
-        n_iter_max=100,
-        continue_after_fail=0,
-        write_qois_limited_precision=0,
-        write_VTU_file=1,
-        write_XML_file=0,
-        print_refined_mesh=0, # False
-        print_iterations=0):
+        working_folder : str,
+        working_basename : str,
+        images_folder : str,
+        images_basename : str,
+        images_grad_basename : str = None,
+        images_ext : str = "vti", # vti, vtk
+        images_n_frames : int = None,
+        images_ref_frame : int = 0,
+        images_quadrature : int = None,
+        images_quadrature_from : str = "points_count", # points_count, integral
+        images_expressions_type : str = "cpp", # cpp
+        images_static_scaling : bool = False,
+        images_dynamic_scaling : bool = False,
+        images_char_func : bool = True,
+        images_is_cone : bool = False,
+        mesh : dolfin.Mesh = None,
+        mesh_folder : str = None,
+        mesh_basename : str = None,
+        mesh_degree : int = 1,
+        regul_type : str = "continuous-equilibrated", # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_types : list = None,
+        regul_model : str = "ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_models : list = None,
+        regul_quadrature : int = None,
+        regul_level : float = 0.,
+        regul_levels : list = None,
+        regul_poisson : float = 0.,
+        tangent_type : str = "Idef", # Idef
+        residual_type : str = "Iref", # Iref
+        relax_type : str = None, # constant, aitken, backtracking, gss
+        relax_init : float = 1., # 1.
+        relax_backtracking_factor : float = None,
+        relax_tol : float = None,
+        relax_n_iter_max : int = None,
+        relax_must_advance : bool = None,
+        normalize_energies : bool = False,
+        initialize_U_from_file : bool = False,
+        initialize_U_folder : str = None,
+        initialize_U_basename : str = None,
+        initialize_U_ext : str = "vtu",
+        initialize_U_array_name : str = "displacement",
+        initialize_DU_with_DUold : bool = False,
+        register_ref_frame : bool = False,
+        iteration_mode : str = "normal", # normal, loop
+        gimic : bool = False,
+        gimic_texture : str = "no",
+        gimic_resample : int = 1,
+        nonlinearsolver : str = "newton", # newton, CMA
+        tol_res : float = None, # None
+        tol_res_rel : float = None,
+        tol_dU : float = None,
+        tol_im : float = None, # None
+        n_iter_max : int = 100,
+        continue_after_fail : bool = False,
+        write_qois_limited_precision : bool = False,
+        write_VTU_file : bool = True,
+        write_XML_file : bool = False,
+        print_refined_mesh : bool = False, # False
+        print_iterations : bool = False):
 
     assert (images_expressions_type == "cpp"),\
         "Python image expression are deprecated. Aborting."
@@ -129,6 +131,9 @@ def warp(
             regul_types  = [regul_type ]
             regul_models = [regul_model]
             regul_levels = [regul_level]
+    # print (regul_types)
+    # print (regul_models)
+    # print (regul_levels)
 
     problem = dwarp.WarpingProblem(
         mesh=mesh,
@@ -307,3 +312,50 @@ def warp(
     problem.close()
 
 fedic2 = warp
+
+########################################################################
+
+if (__name__ == "__main__"):
+    import fire
+    fire.Fire(warp)
+
+    # import argparse
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--working_folder", type=str)
+    # parser.add_argument("--working_basename", type=str)
+    # parser.add_argument("--images_folder", type=str)
+    # parser.add_argument("--images_basename", type=str)
+    # parser.add_argument("--images_ext", type=str, choices=["vti", "vtk"])
+    # parser.add_argument("--mesh_folder", type=str)
+    # parser.add_argument("--mesh_basename", type=str)
+    # parser.add_argument("--mesh_degree", type=int)
+    # parser.add_argument("--regul_types", type=str, choices=["continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic", "discrete-linear-equilibrated", "discrete-linear-elastic", "discrete-equilibrated", "discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential"], nargs="?")
+    # parser.add_argument("--regul_model", type=str, choices=["hooke", "kirchhoff", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin"])
+    # parser.add_argument("--regul_levels", type=float, nargs="?")
+    # parser.add_argument("--regul_poisson", type=float)
+    # parser.add_argument("--relax_type", type=str, choices=["constant", "aitken", "backtracking", "gss"])
+    # parser.add_argument("--relax_tol", type=float)
+    # parser.add_argument("--relax_n_iter_max", type=int)
+    # parser.add_argument("--tol_dU", type=float)
+    # parser.add_argument("--n_iter_max", type=int)
+    # args = parser.parse_args()
+    # print(type(args))
+
+    # dwarp.warp(
+    #     working_folder = args.working_folder,
+    #     working_basename = args.working_basename,
+    #     images_folder = args.images_folder,
+    #     images_basename = args.images_basename,
+    #     images_ext = args.images_ext,
+    #     mesh_folder = args.mesh_folder,
+    #     mesh_basename = args.mesh_basename,
+    #     mesh_degree = args.mesh_degree,
+    #     regul_types = args.regul_types,
+    #     regul_model = args.regul_model,
+    #     regul_levels = args.regul_levels,
+    #     regul_poisson = args.regul_poisson,
+    #     relax_type = args.relax_type,
+    #     relax_tol = args.relax_tol,
+    #     relax_n_iter_max = args.relax_n_iter_max,
+    #     tol_dU = args.tol_dU,
+    #     n_iter_max = args.n_iter_max)
