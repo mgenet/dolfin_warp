@@ -22,12 +22,12 @@ class MeshesSeries(FilesSeries):
 
 
     def __init__(self,
-            folder: str,
-            basename: str,
-            n_frames = None,
-            ext: str = "vtu",
-            verbose: bool = True,
-            printer = None):
+            folder  : str         ,
+            basename: str         ,
+            n_frames       = None ,
+            ext     : str  = "vtu",
+            verbose : bool = True ,
+            printer        = None ):
 
         self.folder   = folder
         self.basename = basename

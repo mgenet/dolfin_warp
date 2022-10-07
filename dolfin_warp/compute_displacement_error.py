@@ -9,36 +9,34 @@
 ################################################################################
 
 import numpy
-import vtk
-import vtk.util
-
-import myVTKPythonLibrary as myvtk
 
 import dolfin_warp as dwarp
 
 ################################################################################
 
 def compute_displacement_error(
-        working_folder,
-        working_basename,
-        ref_folder,
-        ref_basename,
-        working_ext="vtu",
-        ref_ext="vtu",
-        working_disp_array_name="displacement",
-        ref_disp_array_name="displacement",
-        sort_mesh=0,
-        verbose=1):
+        working_folder          : str                  ,
+        working_basename        : str                  ,
+        ref_folder              : str                  ,
+        ref_basename            : str                  ,
+        working_ext             : str  = "vtu"         ,
+        ref_ext                 : str  = "vtu"         ,
+        working_disp_array_name : str  = "displacement",
+        ref_disp_array_name     : str  = "displacement",
+        sort_mesh               : bool = False         ,
+        verbose                 : bool = True          ):
 
     working_series = dwarp.MeshesSeries(
-        folder=working_folder,
-        basename=working_basename,
-        ext=working_ext)
+        folder   = working_folder  ,
+        basename = working_basename,
+        ext      = working_ext     ,
+        verbose  = verbose         )
 
     ref_series = dwarp.MeshesSeries(
-        folder=ref_folder,
-        basename=ref_basename,
-        ext=ref_ext)
+        folder   = ref_folder  ,
+        basename = ref_basename,
+        ext      = ref_ext     ,
+        verbose  = verbose     )
 
     assert (ref_series.n_frames == working_series.n_frames)
     if (verbose): print("n_frames = " + str(working_series.n_frames))
@@ -65,9 +63,9 @@ def compute_displacement_error(
 
         if (sort_mesh):
             # FA20200311: sort_ref and sort_working are created because enumeration is not the same in the meshes of ref and sol
-            from vtk.util import numpy_support
-            coords_ref     = numpy_support.vtk_to_numpy(ref.GetPoints().GetData())
-            coords_working = numpy_support.vtk_to_numpy(sol.GetPoints().GetData())
+            import vtk
+            coords_ref     = vtk.util.numpy_support.vtk_to_numpy(ref.GetPoints().GetData())
+            coords_working = vtk.util.numpy_support.vtk_to_numpy(sol.GetPoints().GetData())
 
             sort_ref     = [i_sort[0] for i_sort in sorted(enumerate(coords_ref.tolist()), key=lambda k: [k[1],k[0]])]
             sort_working = [i_sort[0] for i_sort in sorted(enumerate(coords_working.tolist()), key=lambda k: [k[1],k[0]])]
