@@ -38,7 +38,8 @@ def compute_displacement_error(
         ext      = ref_ext     ,
         verbose  = verbose     )
 
-    assert (ref_series.n_frames == working_series.n_frames)
+    if (ref_series.n_frames != working_series.n_frames):
+        print ("Warning, ref_series.n_frames = "+str(ref_series.n_frames)+" != "+str(working_series.n_frames)+" = working_series.n_frames.")
     if (verbose): print("n_frames = " + str(working_series.n_frames))
 
     if (verbose): print("working_zfill = " + str(working_series.zfill))
@@ -58,7 +59,9 @@ def compute_displacement_error(
         assert (sol.GetNumberOfPoints() == n_points)
         assert (sol.GetNumberOfCells() == n_cells)
 
+        assert(ref.GetPointData().HasArray(ref_disp_array_name))
         ref_disp = ref.GetPointData().GetArray(ref_disp_array_name)
+        assert(sol.GetPointData().HasArray(working_disp_array_name))
         working_disp = sol.GetPointData().GetArray(working_disp_array_name)
 
         if (sort_mesh):
@@ -70,12 +73,12 @@ def compute_displacement_error(
             sort_ref     = [i_sort[0] for i_sort in sorted(enumerate(coords_ref.tolist()), key=lambda k: [k[1],k[0]])]
             sort_working = [i_sort[0] for i_sort in sorted(enumerate(coords_working.tolist()), key=lambda k: [k[1],k[0]])]
 
-            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(sort_working[k_point])[k_dim]-ref_disp.GetTuple(sort_ref[k_point])[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
+            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(working_disp.GetTuple(sort_working[k_point])[k_dim]-ref_disp.GetTuple(sort_ref[k_point])[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
         else:
-            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
+            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
 
-        ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([(ref_disp.GetTuple(k_point)[k_dim])**2 for k_dim in range(3)]) for k_point in range(n_points)]))
-        ref_max = max(ref_max, numpy.max([numpy.sum([((ref_disp.GetTuple(k_point)[k_dim])**2)**0.5 for k_dim in range(3)]) for k_point in range(n_points)]))
+        ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(ref_disp.GetTuple(k_point)[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
+        ref_max = max(ref_max, numpy.max([numpy.sum([numpy.sqrt(numpy.square(ref_disp.GetTuple(k_point)[k_dim])) for k_dim in range(3)]) for k_point in range(n_points)]))
 
     error_file.write("\n".join([" ".join([str(val) for val in [k_frame, err_int[k_frame], ref_int[k_frame]]]) for k_frame in range(working_series.n_frames)]))
 
