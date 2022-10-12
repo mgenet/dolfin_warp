@@ -14,7 +14,7 @@ import numpy
 import os
 import time
 
-import myPythonLibrary    as mypy
+import myPythonLibrary as mypy
 
 import dolfin_warp as dwarp
 

@@ -70,8 +70,9 @@ def warp(
         n_iter_max : int = 100,
         continue_after_fail : bool = False,
         write_qois_limited_precision : bool = False,
-        write_VTU_file : bool = True,
-        write_XML_file : bool = False,
+        write_VTU_files : bool = True,
+        write_VTU_files_with_presevred_connectivity : bool = False,
+        write_XML_files : bool = False,
         print_refined_mesh : bool = False, # False
         print_iterations : bool = False):
 
@@ -303,8 +304,9 @@ def warp(
             "initialize_U_array_name":initialize_U_array_name,
             "initialize_DU_with_DUold":initialize_DU_with_DUold,
             "write_qois_limited_precision":write_qois_limited_precision,
-            "write_VTU_file":write_VTU_file,
-            "write_XML_file":write_XML_file,
+            "write_VTU_files":write_VTU_files,
+            "write_VTU_files_with_presevred_connectivity":write_VTU_files_with_presevred_connectivity,
+            "write_XML_files":write_XML_files,
             "iteration_mode":iteration_mode})
 
     image_iterator.iterate()

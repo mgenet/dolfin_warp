@@ -14,7 +14,7 @@ import numpy
 import os
 import vtk
 
-import myPythonLibrary    as mypy
+import myPythonLibrary as mypy
 
 import dolfin_warp as dwarp
 
@@ -33,19 +33,20 @@ class ImageIterator():
         self.printer = self.problem.printer
         self.solver  = solver
 
-        self.working_folder               = parameters.get("working_folder"              , "."           )
-        self.working_basename             = parameters.get("working_basename"            , "sol"         )
-        self.register_ref_frame           = parameters.get("register_ref_frame"          , False         )
-        self.initialize_U_from_file       = parameters.get("initialize_U_from_file"      , False         )
-        self.initialize_U_folder          = parameters.get("initialize_U_folder"         , "."           )
-        self.initialize_U_basename        = parameters.get("initialize_U_basename"       , "init"        )
-        self.initialize_U_ext             = parameters.get("initialize_U_ext"            , "vtu"         )
-        self.initialize_U_array_name      = parameters.get("initialize_U_array_name"     , "displacement")
-        self.initialize_DU_with_DUold     = parameters.get("initialize_DU_with_DUold"    , False         )
-        self.write_qois_limited_precision = parameters.get("write_qois_limited_precision", False         )
-        self.write_VTU_file               = parameters.get("write_VTU_file"              , True          )
-        self.write_XML_file               = parameters.get("write_XML_file"              , False         )
-        self.iteration_mode               = parameters.get("iteration_mode"              , "normal"      ) # MG20200616: This should be a bool
+        self.working_folder                              = parameters.get("working_folder"                             , "."           )
+        self.working_basename                            = parameters.get("working_basename"                           , "sol"         )
+        self.register_ref_frame                          = parameters.get("register_ref_frame"                         , False         )
+        self.initialize_U_from_file                      = parameters.get("initialize_U_from_file"                     , False         )
+        self.initialize_U_folder                         = parameters.get("initialize_U_folder"                        , "."           )
+        self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"        )
+        self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"         )
+        self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
+        self.initialize_DU_with_DUold                    = parameters.get("initialize_DU_with_DUold"                   , False         )
+        self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
+        self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
+        self.write_VTU_files_with_presevred_connectivity = parameters.get("write_VTU_files_with_presevred_connectivity", False         )
+        self.write_XML_files                             = parameters.get("write_XML_files"                            , False         )
+        self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"      ) # MG20200616: This should be a bool
 
 
 
@@ -72,12 +73,13 @@ class ImageIterator():
             self.printer.print_str("Writing initial solution…")
             self.printer.inc()
 
-            if (self.write_VTU_file):
+            if (self.write_VTU_files):
                 dwarp.write_VTU_file(
                     filebasename=vtu_basename,
                     function=self.problem.U,
-                    time=self.problem.images_ref_frame)
-            if (self.write_XML_file):
+                    time=self.problem.images_ref_frame,
+                    preserve_connectivity=self.write_VTU_files_with_presevred_connectivity)
+            if (self.write_XML_files):
                 dolfin.File(vtu_basename+"_"+str(self.problem.images_ref_frame).zfill(3)+".xml") << self.problem.U
 
             # self.I = dolfin.Identity(2)
@@ -196,12 +198,13 @@ class ImageIterator():
                 self.printer.print_str("Writing solution…")
                 self.printer.inc()
 
-                if (self.write_VTU_file):
+                if (self.write_VTU_files):
                     dwarp.write_VTU_file(
                         filebasename=vtu_basename,
                         function=self.problem.U,
-                        time=k_frame)
-                if (self.write_XML_file):
+                        time=k_frame,
+                        preserve_connectivity=self.write_VTU_files_with_presevred_connectivity)
+                if (self.write_XML_files):
                     dolfin.File(vtu_basename+"_"+str(k_frame).zfill(3)+".xml") << self.problem.U
                 # dolfin.project(
                 #     v=self.J,

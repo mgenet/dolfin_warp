@@ -108,6 +108,7 @@ def mesh2ugrid(
 def add_function_to_ugrid(
         function,
         ugrid,
+        force_3d_field=1,
         verbose=0):
 
     if (verbose): print("add_function_to_ugrid")
@@ -125,6 +126,9 @@ def add_function_to_ugrid(
     if (verbose): print("np_array = "+str(np_array))
     np_array = np_array.reshape([n_dofs//n_dim, n_dim])
     if (verbose): print("np_array = "+str(np_array))
+    if (force_3d_field) and (n_dim == 2):
+        np_array = numpy.hstack((np_array, numpy.zeros([n_dofs//n_dim, 1])))
+        if (verbose): print("np_array = "+str(np_array))
     vtk_array = vtk.util.numpy_support.numpy_to_vtk(
         num_array=np_array,
         deep=1)
