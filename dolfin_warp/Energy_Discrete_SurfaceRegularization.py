@@ -31,7 +31,8 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             model: str = "ciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
-            quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            scalar_formulation_in_2D: bool = 1):
 
         self.problem = problem
         self.printer = problem.printer
@@ -61,12 +62,18 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.printer.print_str("Defining regularization energy…")
         self.printer.inc()
 
+        self.dim = self.problem.mesh_dimension
+
         self.quadrature_degree = quadrature_degree
         form_compiler_parameters = {
             # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         self.dS = dolfin.Measure(
             "ds",
+            domain=self.problem.mesh,
+            metadata=form_compiler_parameters)
+        self.dV = dolfin.Measure(
+            "dx",
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
@@ -85,44 +92,53 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.F = dolfin.dot(self.P, self.N)
         self.Fn = dolfin.inner(self.N, self.F)
 
-        if (self.problem.mesh_dimension == 2):
+        if (self.dim == 2):
             ez = dolfin.as_vector([0, 0, 1])
             N3D = dolfin.as_vector([self.N[0], self.N[1], 0])
             T3D = dolfin.cross(ez, N3D)
             self.T = dolfin.as_vector([T3D[0], T3D[1]])
             self.Ft = dolfin.inner(self.T, self.F)
-        elif (self.problem.mesh_dimension == 3):
-            self.T = self.F - self.Fn * self.N
-            self.Ft = dolfin.inner(self.T, self.T)
-            self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0), dolfin.sqrt(self.Ft), 0)
+        elif (self.dim == 3):
+            self.Ft = self.F - self.Fn * self.N
+            self.Ft = dolfin.inner(self.Ft, self.Ft)
+            self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.)
             # self.Ft = dolfin.sqrt(self.Ft)
 
-        if (type == "tractions"):
+        if (self.type == "tractions"):
             self.R_fe = dolfin.TensorElement(
                 family="Lagrange",
                 cell=self.problem.mesh.ufl_cell(),
                 degree=self.problem.U_degree)
-        elif (type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
-            self.R_fe = dolfin.VectorElement(
-                family="Lagrange",
-                cell=self.problem.mesh.ufl_cell(),
-                degree=self.problem.U_degree)
+        elif (self.type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
+            if (self.dim == 2) and (scalar_formulation_in_2D):
+                self.R_fe = dolfin.FiniteElement(
+                    family="Lagrange",
+                    cell=self.problem.mesh.ufl_cell(),
+                    degree=self.problem.U_degree)
+            else:
+                self.R_fe = dolfin.VectorElement(
+                    family="Lagrange",
+                    cell=self.problem.mesh.ufl_cell(),
+                    degree=self.problem.U_degree)
         self.R_fs = dolfin.FunctionSpace(
             self.problem.mesh,
             self.R_fe)
         self.R = dolfin.Function(
             self.R_fs,
             name="traction gradient projection")
+        self.MR = dolfin.Function(
+            self.R_fs,
+            name="traction gradient projection")
         self.R_vec = self.R.vector()
-        self.MR_vec = self.R_vec.copy()
+        self.MR_vec = self.MR.vector()
         self.dR_mat = dolfin.PETScMatrix()
         self.dRMR_vec = self.problem.U.vector().copy()
 
         self.R_tria = dolfin.TrialFunction(self.R_fs)
         self.R_test = dolfin.TestFunction(self.R_fs)
-        self.proj_op = dolfin.Identity(self.problem.mesh_dimension) - dolfin.outer(self.N, self.N)
+        self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.N, self.N)
 
-        if (type == "tractions"):
+        if (self.type == "tractions"):
             # vi = self.R_test[0,:]
             # print(vi)
             # grad_vi = dolfin.grad(vi)
@@ -133,28 +149,32 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             # print(divs_vi)
             divs_R_test = dolfin.as_vector(
                 [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
-                 for i in range(self.problem.mesh_dimension)])
+                 for i in range(self.dim)])
             self.R_form = dolfin.inner(
                 self.F,
                 divs_R_test) * self.dS
-        elif (type == "tractions-normal"):
-            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
-            self.R_form = dolfin.inner(
-                self.Fn,
-                divs_R_test) * self.dS
-        elif (type == "tractions-tangential"):
-            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
-            self.R_form = dolfin.inner(
-                self.Ft,
-                divs_R_test) * self.dS
-        elif (type == "tractions-normal-tangential"):
-            divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
-            self.R_form =  dolfin.inner(
-                self.Fn,
-                divs_R_test) * self.dS
-            self.R_form += dolfin.inner(
-                self.Ft,
-                divs_R_test) * self.dS
+        elif (self.type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
+            if (self.dim == 2) and (scalar_formulation_in_2D):
+                divs_R_test = dolfin.inner(self.T, dolfin.grad(self.R_test))
+            else:
+                divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test), self.proj_op)))
+                # divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.grad(self.R_test)))
+                # divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(dolfin.inner(self.T, self.R_test) * self.T), self.proj_op)))
+                # divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.sym(dolfin.grad(self.R_test)), self.proj_op)))
+                # divs_R_test = dolfin.inner(self.proj_op, dolfin.grad(self.R_test))
+                # divs_R_test = dolfin.inner(dolfin.outer(self.T, self.T), dolfin.grad(self.R_test))
+            self.R_form = dolfin.Constant(0.) * dolfin.inner(self.R, self.R_test) * self.dS
+            if ("-normal" in type):
+                self.R_form += dolfin.inner(
+                    self.Fn,
+                    divs_R_test) * self.dS
+                # self.R_form += dolfin.inner(
+                #     dolfin.dot(self.proj_op, dolfin.grad(self.Fn)),
+                #     self.R_test) * self.dS
+            if ("-tangential" in type):
+                self.R_form += dolfin.inner(
+                    self.Ft,
+                    divs_R_test) * self.dS
         self.dR_form = dolfin.derivative(self.R_form, self.problem.U, self.problem.dU_trial)
 
         # dolfin.assemble(
@@ -167,6 +187,26 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         #     tensor=self.R_vec)
         # print(f"R_vec.get_local() = {self.R_vec.get_local()}")
 
+        # M_form = dolfin.inner(
+        #     self.R_tria,
+        #     self.R_test) * self.dV
+        # E     = 1.0e+6
+        # nu    = 0.3
+        # lmbda = E*nu/(1+nu)/(1-2*nu) # In 2D: plane strain
+        # mu    = E/2/(1+nu)
+        # M_form += dolfin.Constant(lmbda) * dolfin.tr(dolfin.sym(dolfin.grad(self.R_tria))) * dolfin.tr(dolfin.sym(dolfin.grad(self.R_test))) * self.dV
+        # M_form += 2*dolfin.Constant(mu) * dolfin.inner(dolfin.sym(dolfin.grad(self.R_tria)), dolfin.sym(dolfin.grad(self.R_test))) * self.dV
+        # self.M_mat = dolfin.PETScMatrix()
+        # dolfin.assemble(
+        #     form=M_form,
+        #     tensor=self.M_mat)
+        # self.linear_solver = dolfin.LUSolver(
+        #     self.M_mat,
+        #     "mumps")
+        # self.linear_solver.parameters['report']    = bool(0)
+        # self.linear_solver.parameters['symmetric'] = bool(1)
+        # self.linear_solver.parameters['verbose']   = bool(0)
+
         M_lumped_form = dolfin.inner(
             self.R_tria,
             self.R_test) * dolfin.ds(
@@ -175,29 +215,72 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
                 metadata={
                     "degree":1,
                     "representation":"quadrature"})
-        M_lumped_form += dolfin.Constant(0.) * dolfin.inner(self.R_tria, self.R_test) * dolfin.dx(domain=self.problem.mesh, scheme="vertex", metadata={"degree":1, "representation":"quadrature"}) # MG20220114: For some reason this might be needed, cf. https://fenicsproject.discourse.group/t/petsc-error-code-63-argument-out-of-range/1564
+        M_lumped_form += dolfin.Constant(0.) * dolfin.inner(
+            self.R_tria,
+            self.R_test) * dolfin.dx(
+                domain=self.problem.mesh,
+                scheme="vertex",
+                metadata={
+                    "degree":1,
+                    "representation":"quadrature"}) # MG20220114: For some reason this might be needed, cf. https://fenicsproject.discourse.group/t/petsc-error-code-63-argument-out-of-range/1564
         self.M_lumped_mat = dolfin.PETScMatrix()
         dolfin.assemble(
             form=M_lumped_form,
             tensor=self.M_lumped_mat)
         # print(self.M_lumped_mat.array())
         self.M_lumped_vec = self.R_vec.copy()
-        self.M_lumped_mat.get_diagonal(self.M_lumped_vec)
+        self.M_lumped_mat.get_diagonal(
+            self.M_lumped_vec)
         # print(self.M_lumped_vec.get_local())
+        # print(self.M_lumped_vec.norm("l2"))
         self.M_lumped_inv_vec = self.M_lumped_vec.copy()
         self.M_lumped_inv_vec[:] = 1.
         self.M_lumped_inv_vec.vec().pointwiseDivide(
             self.M_lumped_inv_vec.vec(),
-            self.M_lumped_vec.vec())
+            self.M_lumped_vec.vec()) # MG20220817: Note that VecPointwiseDivide returns 0 if it needs to divide by 0…
         # print(self.M_lumped_inv_vec.get_local())
+        # print(self.M_lumped_inv_vec.norm("l2"))
         self.M_lumped_inv_mat = self.M_lumped_mat.copy()
-        self.M_lumped_inv_mat.set_diagonal(self.M_lumped_inv_vec)
+        self.M_lumped_inv_mat.set_diagonal(
+            self.M_lumped_inv_vec)
         # print(self.M_lumped_inv_mat.array())
 
         # self.problem.U.vector()[:] = 0.
         # self.assemble_ener()
         # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
+
+        # self.fe_sca = dolfin.FiniteElement(
+        #     family="CG",
+        #     cell=self.problem.mesh.ufl_cell(),
+        #     degree=1)
+        # self.fs_sca = dolfin.FunctionSpace(
+        #     self.problem.mesh,
+        #     self.fe_sca)
+        # self.f_Fn = dolfin.Function(self.fs_sca)
+        # self.f_Ft = dolfin.Function(self.fs_sca)
+        # self.u_sca = dolfin.TrialFunction(self.fs_sca)
+        # self.v_sca = dolfin.TestFunction(self.fs_sca)
+        # self.a_sca = dolfin.inner(self.u_sca, self.v_sca) * self.problem.dS
+        # self.A_sca = dolfin.assemble(self.a_sca, keep_diagonal=True)
+        # self.A_sca.ident_zeros()
+
+        # self.fe_vec = dolfin.VectorElement(
+        #     family="CG",
+        #     cell=self.problem.mesh.ufl_cell(),
+        #     degree=1)
+        # self.fs_vec = dolfin.FunctionSpace(
+        #     self.problem.mesh,
+        #     self.fe_vec)
+        # self.f_grad_Fn = dolfin.Function(self.fs_vec)
+        # self.f_grads_Fn = dolfin.Function(self.fs_vec)
+        # self.u_vec = dolfin.TrialFunction(self.fs_vec)
+        # self.v_vec = dolfin.TestFunction(self.fs_vec)
+        # self.a_vec = dolfin.inner(self.u_vec, self.v_vec) * self.problem.dS
+        # self.A_vec = dolfin.assemble(self.a_vec, keep_diagonal=True)
+        # self.A_vec.ident_zeros()
+
+        # self.k_frame = 0
 
         self.printer.dec()
 
@@ -206,15 +289,82 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
     def assemble_ener(self,
             w_weight=True):
 
+        # dolfin.plot(self.Fn) # "Don't know how to plot given object"
+
+        # dolfin.project(
+        #     v=self.Fn,
+        #     V=self.fs,
+        #     function=self.f_Fn) # Integral of type cell cannot contain a ReferenceNormal
+        # dmech.write_VTU_file("Fn", self.f_Fn, self.k_frame)
+
+        # l = dolfin.inner(self.Fn, self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
+        # dmech.write_VTU_file("Fn", self.f_Fn, self.k_frame)
+
+        # l = dolfin.inner(self.Ft, self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Ft.vector(), L)
+        # dmech.write_VTU_file("Ft", self.f_Ft, self.k_frame)
+
+        # grad_Fn = dolfin.grad(self.Fn)
+        # l = dolfin.inner(grad_Fn, self.v_vec) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_vec, self.f_grad_Fn.vector(), L)
+        # dmech.write_VTU_file("grad_Fn", self.f_grad_Fn, self.k_frame)
+
+        # grads_Fn = dolfin.dot(self.proj_op, grad_Fn)
+        # l = dolfin.inner(grads_Fn, self.v_vec) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_vec, self.f_grads_Fn.vector(), L)
+        # dmech.write_VTU_file("grads_Fn", self.f_grads_Fn, self.k_frame)
+
+        self.R_vec.zero()
         dolfin.assemble(
             form=self.R_form,
             tensor=self.R_vec)
         # print(self.R_vec.get_local())
+        # print(self.R_vec.norm("l2"))
+        # dmech.write_VTU_file("R", self.R, self.k_frame)
+
+        # l = dolfin.inner(dolfin.inner(self.N, self.R), self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
+        # print(self.f_Fn.vector().norm("l2"))
+        # dmech.write_VTU_file("Rn", self.f_Fn, self.k_frame)
+
+        # l = dolfin.inner(dolfin.inner(self.T, self.R), self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Ft.vector(), L)
+        # print(self.f_Ft.vector().norm("l2"))
+        # dmech.write_VTU_file("Rt", self.f_Ft, self.k_frame)
+
         self.MR_vec.vec().pointwiseDivide(self.R_vec.vec(), self.M_lumped_vec.vec())
+        # self.MR_vec.vec().pointwiseMult(self.R_vec.vec(), self.M_lumped_vec.vec())
+        # self.linear_solver.solve(
+        #     self.MR_vec,
+        #     self.R_vec)
         # print(self.MR_vec.get_local())
+        # print(self.MR_vec.norm("l2"))
+        # dmech.write_VTU_file("MR", self.MR, self.k_frame)
+
+        # l = dolfin.inner(dolfin.inner(self.N, self.MR), self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
+        # print(self.f_Fn.vector().norm("l2"))
+        # dmech.write_VTU_file("MRn", self.f_Fn, self.k_frame)
+
+        # l = dolfin.inner(dolfin.inner(self.T, self.MR), self.v_sca) * self.problem.dS
+        # L = dolfin.assemble(l)
+        # dolfin.solve(self.A_sca, self.f_Ft.vector(), L)
+        # print(self.f_Ft.vector().norm("l2"))
+        # dmech.write_VTU_file("MRt", self.f_Ft, self.k_frame)
+
         ener  = self.R_vec.inner(self.MR_vec)
         ener /= 2
         # print(ener)
+
+        # self.k_frame += 1
 
         try:
             ener /= self.ener0
