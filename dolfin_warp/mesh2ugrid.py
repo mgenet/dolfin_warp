@@ -47,7 +47,8 @@ def mesh2ugrid(
 
     # Store nodes coordinates as numpy array
     n_nodes = fs.dim()
-    assert (n_nodes == n_verts)
+    assert (n_nodes == n_verts),\
+        "n_nodes ("+str(n_nodes)+") ≠ n_verts ("+str(n_verts)+"). Aborting."
     if (verbose): print("n_nodes = "+str(n_nodes))
     global np_coordinates # MG20190621: if it disappears the vtk objects is broken
     np_coordinates = fs.tabulate_dof_coordinates().reshape([n_nodes, n_dim])
