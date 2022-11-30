@@ -24,7 +24,7 @@ def compute_energies_normalization(
         k = [0.1 * math.pi / problem.mesh.hmin()]*dim
 
     if (x0 is None):
-        x0 = [0]*dim
+        x0 = [0.]*dim
 
     if (dim == 2):
         U_expr = dolfin.Expression(
@@ -41,7 +41,7 @@ def compute_energies_normalization(
 
     problem.U.interpolate(U_expr)
     problem.U_norm = problem.U.vector().norm("l2")
-    problem.U.vector()[:] /= problem.U_norm
+    problem.U.vector().get_local()[:] /= problem.U_norm
     problem.U_norm = problem.U.vector().norm("l2")
 
     for energy in problem.energies:

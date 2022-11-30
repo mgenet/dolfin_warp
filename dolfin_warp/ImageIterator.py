@@ -41,10 +41,11 @@ class ImageIterator():
         self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"        )
         self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"         )
         self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
+        self.initialize_U_method                         = parameters.get("initialize_U_method"                        , "dofs_transfer")
         self.initialize_DU_with_DUold                    = parameters.get("initialize_DU_with_DUold"                   , False         )
         self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
         self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
-        self.write_VTU_files_with_presevred_connectivity = parameters.get("write_VTU_files_with_presevred_connectivity", False         )
+        self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
         self.write_XML_files                             = parameters.get("write_XML_files"                            , False         )
         self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"      ) # MG20200616: This should be a bool
 
@@ -57,6 +58,8 @@ class ImageIterator():
         vtu_basename = self.working_folder+"/"+self.working_basename
         for vtu_filename in glob.glob(vtu_basename+"_[0-9]*.vtu"):
             os.remove(vtu_filename)
+
+        dolfin.File(vtu_basename+"-mesh.xml") << self.problem.mesh
 
         self.printer.print_str("Initializing QOI file…")
         self.printer.inc()
@@ -78,7 +81,7 @@ class ImageIterator():
                     filebasename=vtu_basename,
                     function=self.problem.U,
                     time=self.problem.images_ref_frame,
-                    preserve_connectivity=self.write_VTU_files_with_presevred_connectivity)
+                    preserve_connectivity=self.write_VTU_files_with_preserved_connectivity)
             if (self.write_XML_files):
                 dolfin.File(vtu_basename+"_"+str(self.problem.images_ref_frame).zfill(3)+".xml") << self.problem.U
 
@@ -114,13 +117,26 @@ class ImageIterator():
         self.printer.print_str("Looping over frames…")
 
         if (self.initialize_U_from_file):
-            meshes_series = dwarp.MeshesSeries(
+            init_meshes_series = dwarp.MeshesSeries(
                 folder=self.initialize_U_folder,
                 basename=self.initialize_U_basename,
                 ext=self.initialize_U_ext,
                 printer=self.problem.printer)
 
-            dof_to_vertex_map = dolfin.dof_to_vertex_map(self.problem.U_fs)
+            init_mesh_filename  = self.initialize_U_folder
+            init_mesh_filename += "/"+self.initialize_U_basename
+            init_mesh_filename += "-"+"mesh"
+            init_mesh_filename += "."+"xml"
+            init_mesh = dolfin.Mesh(init_mesh_filename)
+            init_fe = dolfin.VectorElement(
+                family="Lagrange",
+                cell=self.problem.mesh.ufl_cell(),
+                degree=1)
+            init_fs = dolfin.FunctionSpace(
+                init_mesh,
+                init_fe)
+            init_U = dolfin.Function(init_fs)
+            init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs)
 
         n_iter_tot = 0
         global_success = True
@@ -142,11 +158,11 @@ class ImageIterator():
                         "iteration_mode ("+str(self.iteration_mode)+") should be \"normal\" or \"loop\". Aborting."
                 k_frames = range(start, end, +1)
             elif (forward_or_backward == "backward"):
-                start = self.problem.images_ref_frame-1
+                start = self.problem.images_ref_frame - 1
                 if   (self.iteration_mode == "normal"):
                     end = -1
                 elif (self.iteration_mode == "loop"):
-                    end = self.problem.images_ref_frame-1
+                    end = self.problem.images_ref_frame - 1
                 else:
                     assert (0), \
                         "iteration_mode ("+str(self.iteration_mode)+") should be \"normal\" or \"loop\". Aborting."
@@ -164,15 +180,22 @@ class ImageIterator():
 
                 if (self.initialize_U_from_file):
                     self.printer.print_str("Initializing displacement…")
-                    mesh = meshes_series.get_mesh(k_frame=k_frame)
-                    array_U = mesh.GetPointData().GetArray(self.initialize_U_array_name)
-                    array_U = vtk.util.numpy_support.vtk_to_numpy(array_U)[:,:self.problem.mesh_dimension]
-                    # print(array_U)
-                    # array_U = array_U.astype(float)
-                    # print(array_U)
-                    array_U = numpy.reshape(array_U, array_U.size)
-                    # print(array_U)
-                    self.problem.U.vector()[:] = array_U[dof_to_vertex_map]
+                    init_mesh = init_meshes_series.get_mesh(k_frame=k_frame)
+                    init_array_U = init_mesh.GetPointData().GetArray(self.initialize_U_array_name)
+                    init_array_U = vtk.util.numpy_support.vtk_to_numpy(init_array_U)
+                    init_array_U = init_array_U[:,:self.problem.mesh_dimension]
+                    init_array_U = numpy.reshape(init_array_U, init_array_U.size)
+                    init_U.vector().get_local()[:] = init_array_U[init_dof_to_vertex_map]
+
+                    if (self.initialize_U_method == "dofs_transfer"):
+                        self.problem.U.vector().get_local()[:] = init_U.vector().get_local()
+                    elif (self.initialize_U_method == "interpolation"):
+                        self.problem.U.interpolate(init_U)
+                    elif (self.initialize_U_method == "projection"):
+                        dolfin.project(
+                            v=init_U,
+                            V=self.problem.U_fs,
+                            function=self.problem.U)
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_DU_with_DUold):
@@ -203,7 +226,7 @@ class ImageIterator():
                         filebasename=vtu_basename,
                         function=self.problem.U,
                         time=k_frame,
-                        preserve_connectivity=self.write_VTU_files_with_presevred_connectivity)
+                        preserve_connectivity=self.write_VTU_files_with_preserved_connectivity)
                 if (self.write_XML_files):
                     dolfin.File(vtu_basename+"_"+str(k_frame).zfill(3)+".xml") << self.problem.U
                 # dolfin.project(

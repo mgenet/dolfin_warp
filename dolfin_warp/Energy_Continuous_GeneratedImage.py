@@ -139,7 +139,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         # U_rbm = dolfin.interpolate(
         #     v=U_rbm_expr,
         #     V=self.problem.U_fs)
-        # self.problem.U.vector()[:] = U_rbm.vector()[:]
+        # self.problem.U.vector().get_local()[:] = U_rbm.vector().get_local()
         # self.Igen.update_disp()
         # self.Igen.generate_image(
         #     n_down=self.n_resampling_Igen)

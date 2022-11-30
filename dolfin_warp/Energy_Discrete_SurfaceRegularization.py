@@ -181,7 +181,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         #     form=self.R_form,
         #     tensor=self.R_vec)
         # print(f"R_vec.get_local() = {self.R_vec.get_local()}")
-        # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
+        # self.problem.U.vector().get_local()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # dolfin.assemble(
         #     form=self.R_form,
         #     tensor=self.R_vec)
@@ -245,9 +245,9 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             self.M_lumped_inv_vec)
         # print(self.M_lumped_inv_mat.array())
 
-        # self.problem.U.vector()[:] = 0.
+        # self.problem.U.vector().get_local()[:] = 0.
         # self.assemble_ener()
-        # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
+        # self.problem.U.vector().get_local()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
 
         # self.fe_sca = dolfin.FiniteElement(

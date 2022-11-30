@@ -56,6 +56,7 @@ def warp(
         initialize_U_basename : str = None,
         initialize_U_ext : str = "vtu",
         initialize_U_array_name : str = "displacement",
+        initialize_U_method : str = "dofs_transfer", # dofs_transfer, interpolation, projection
         initialize_DU_with_DUold : bool = False,
         register_ref_frame : bool = False,
         iteration_mode : str = "normal", # normal, loop
@@ -71,7 +72,7 @@ def warp(
         continue_after_fail : bool = False,
         write_qois_limited_precision : bool = False,
         write_VTU_files : bool = True,
-        write_VTU_files_with_presevred_connectivity : bool = False,
+        write_VTU_files_with_preserved_connectivity : bool = False,
         write_XML_files : bool = False,
         print_refined_mesh : bool = False, # False
         print_iterations : bool = False):
@@ -302,10 +303,11 @@ def warp(
             "initialize_U_basename":initialize_U_basename,
             "initialize_U_ext":initialize_U_ext,
             "initialize_U_array_name":initialize_U_array_name,
+            "initialize_U_method":initialize_U_method,
             "initialize_DU_with_DUold":initialize_DU_with_DUold,
             "write_qois_limited_precision":write_qois_limited_precision,
             "write_VTU_files":write_VTU_files,
-            "write_VTU_files_with_presevred_connectivity":write_VTU_files_with_presevred_connectivity,
+            "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
             "write_XML_files":write_XML_files,
             "iteration_mode":iteration_mode})
 

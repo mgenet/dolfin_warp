@@ -10,7 +10,6 @@
 
 import dolfin
 import math
-import matplotlib
 import matplotlib.pyplot                   as mpl
 import meshio
 import numpy
@@ -134,21 +133,21 @@ def compute_regularization_energy(
         # print (np_disp.shape)
         # print (np_disp.flatten().shape)
 
-        problem.U.vector()[:] = np_disp.flatten(order="F")
+        problem.U.vector().get_local()[:] = np_disp.flatten(order="F")
         if (noise_type is not None):
             if (noise_type == "random"):
-                problem.U.vector()[:] += numpy.random.normal(
+                problem.U.vector().get_local()[:] += numpy.random.normal(
                     loc=0.,
                     scale=noise_level,
                     size=problem.U.vector().get_local().shape)
             elif (noise_type == "random_gaussian_field"):
                 U_tmp = problem.U.copy(deepcopy=True)
-                beta_min  = math.pi/0.3
-                beta_max  = math.pi/0.3
+                beta_min  = 2*math.pi/0.6
+                beta_max  = 2*math.pi/0.6
                 theta_min = 0.
                 theta_max = 2*math.pi
                 gamma_min = 0.
-                gamma_max = 0.
+                gamma_max = 2*math.pi
                 N = 10
                 for _ in range(N):
                     if (dim == 2):
@@ -173,10 +172,13 @@ def compute_regularization_energy(
                     # print (U_tmp.vector().get_local())
                     problem.U.vector().axpy(noise_level/N, U_tmp.vector())
                     # print (problem.U.vector().get_local())
-        # dwarp.write_VTU_file(
-        #     filebasename = working_series.get_mesh_filebasename(k_frame=None),
-        #     function = problem.U,
-        #     time = None)
+            filebasename  = working_series.get_mesh_filebasename(k_frame=None)
+            filebasename += "-noise_type="+noise_type
+            filebasename += "-noise_level="+str(noise_level)
+            dwarp.write_VTU_file(
+                filebasename = filebasename,
+                function = problem.U,
+                time = k_frame)
 
         for k_ener, energy in enumerate(problem.energies):
             regul_ener_lst[k_frame, k_ener] = energy.assemble_ener()

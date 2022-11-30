@@ -124,7 +124,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.bc = dolfin.DirichletBC(self.problem.U_fs, [0]*self.problem.mesh_dimension, sd)
 
         # self.assemble_ener()
-        # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
+        # self.problem.U.vector().get_local()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
 
         self.printer.dec()

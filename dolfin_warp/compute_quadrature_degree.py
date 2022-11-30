@@ -68,13 +68,15 @@ def compute_quadrature_degree_from_points_count(
         #n_quads = []
         for degree in range(deg_min,deg_max+1):
             # if (verbose): print("degree = "+str(degree))
-            n_quad = len(dolfin.FunctionSpace(
+            finite_element = dolfin.FiniteElement(
+                family="Quadrature",
+                cell=mesh.ufl_cell(),
+                degree=degree,
+                quad_scheme="default")
+            function_space = dolfin.FunctionSpace(
                 mesh,
-                dolfin.FiniteElement(
-                    family="Quadrature",
-                    cell=mesh.ufl_cell(),
-                    degree=degree,
-                    quad_scheme="default")).dofmap().dofs()) // len(mesh.cells())
+                finite_element)
+            n_quad = len(function_space.dofmap().dofs()) // len(mesh.cells())
             # if (verbose): print("n_quad = "+str(n_quad))
             # if (n_quad > n_pixels_per_cell_max): break
             if (n_quad > n_pixels_per_cell_avg): break
