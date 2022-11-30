@@ -181,7 +181,7 @@ def compute_regularization_energy(
                 time = k_frame)
 
         for k_ener, energy in enumerate(problem.energies):
-            regul_ener_lst[k_frame, k_ener] = energy.assemble_ener()
+            regul_ener_lst[k_frame, k_ener] = (energy.assemble_ener()/problem.mesh_V0)**(1/2)
             if (verbose): print (energy.name, ":", regul_ener_lst[k_frame, k_ener])
 
         if (write_regularization_energy_file): regul_ener_file.write(" ".join([str(val) for val in [k_frame]+regul_ener_lst[k_frame,:]])+"\n")
