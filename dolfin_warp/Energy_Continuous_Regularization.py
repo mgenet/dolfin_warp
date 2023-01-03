@@ -100,11 +100,11 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
         if (self.model == "hooke"):
             self.Psi   = self.material.psi
             self.Sigma = self.material.sigma
-            self.P     = self.Sigma
+            self.P     = self.material.sigma
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
             self.Psi   = self.material.Psi
             self.Sigma = self.material.Sigma
-            self.P = dolfin.dot(self.problem.F, self.Sigma)
+            self.P     = self.material.P
 
         self.printer.print_str("Defining regularization energy…")
 

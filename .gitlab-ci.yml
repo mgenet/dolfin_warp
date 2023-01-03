@@ -19,7 +19,7 @@ tests-on-ubuntu-20.04:
     - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
     - apt update; apt install -y python3-h5py; pip install meshio; pip install --upgrade numpy # MG20220814: meshio needs latest numpy apparently
-    - pip install numpy==1.23 # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
+    - pip install numpy==1.23.5 # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git
     - pip install git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git
     - pip install git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git
