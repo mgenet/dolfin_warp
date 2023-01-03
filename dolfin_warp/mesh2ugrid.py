@@ -75,7 +75,7 @@ def mesh2ugrid(
     global np_connectivity # MG20190621: if it disappears the vtk objects is broken
     np_connectivity = numpy.empty(
         [n_cells, 1+n_nodes_per_cell],
-        dtype=numpy.int)
+        dtype=int)
     for i in range(n_cells):
         np_connectivity[i, 0] = n_nodes_per_cell
         np_connectivity[i,1:] = fs.dofmap().cell_dofs(i)
