@@ -83,19 +83,27 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.printer.print_str("Defining mechanical model…")
 
+        if (self.model == "hooke"):
+            kinematics = dmech.LinearizedKinematics(
+                u=self.problem.U)
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+            kinematics = dmech.Kinematics(
+                U=self.problem.U)
+
         self.material = dmech.material_factory(
-            kinematics=dmech.Kinematics(
-                U=self.problem.U),
+            kinematics=kinematics,
             model=self.model,
             parameters={
                 "E":self.young,
                 "nu":self.poisson})
-        self.Psi   = self.material.Psi
-        self.Sigma = self.material.Sigma
 
         if (self.model == "hooke"):
-            self.P = self.Sigma
+            self.Psi   = self.material.psi
+            self.Sigma = self.material.sigma
+            self.P     = self.Sigma
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+            self.Psi   = self.material.Psi
+            self.Sigma = self.material.Sigma
             self.P = dolfin.dot(self.problem.F, self.Sigma)
 
         self.printer.print_str("Defining regularization energy…")
