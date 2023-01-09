@@ -101,11 +101,15 @@ public:
     )
     {
         vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+        reader->Print(std::cout);
         reader->SetFileName(filename);
-        reader->Update();'''+('''
+        reader->Print(std::cout);
+        reader->Update();
+        reader->Print(std::cout);'''+('''
 
         static_scaling = getStaticScalingFactor(reader->GetOutput()->GetScalarTypeAsString());''')*(not static_scaling_factor)+('''
         static_scaling = '''+str(static_scaling_factor)+''';''')*(static_scaling_factor)+('''
+        std::cout << static_scaling << std::endl;
 
         vtkSmartPointer<vtkImageGradient> gradient = vtkSmartPointer<vtkImageGradient>::New();
         gradient->SetInputData(reader->GetOutput());
@@ -113,6 +117,7 @@ public:
         gradient->Update();''')*(im_type=="grad")+'''
 
         interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
+        interpolator->Print(std::cout);
         if (strcmp(interpol_mode, "nearest") == 0)
         {
             interpolator->SetInterpolationModeToNearest();
@@ -130,12 +135,17 @@ public:
             std::cout << "Interpolator interpol_mode (" << interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
             std::exit(0);
         }
+        interpolator->Print(std::cout);
         interpolator->SetOutValue(interpol_out_value);
+        interpolator->Print(std::cout);
         interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');'''+(('''
+        interpolator->Print(std::cout);
 
-        x[2] = Z;''')*(im_is_def)+('''
+        x[2] = Z;
+        std::cout << x << std::endl;''')*(im_is_def)+('''
 
-        X3D[2] = Z;''')*(not im_is_def))*(im_dim==2)+'''
+        X3D[2] = Z;
+        std::cout << X3D << std::endl;''')*(not im_is_def))*(im_dim==2)+'''
     }'''+(('''
 
     void init_dynamic_scaling

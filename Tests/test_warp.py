@@ -9,8 +9,6 @@
 ################################################################################
 
 import dolfin
-import math
-import mshr
 import sys
 
 import myPythonLibrary as mypy
@@ -77,6 +75,9 @@ for n_dim in n_dim_lst:
         deformation=deformation,
         evolution=evolution,
         verbose=1)
+    import glob
+    print(glob.glob("*"))
+    print(glob.glob(res_folder+"/*"))
 
     n_cells = 4
     if (n_dim == 2):

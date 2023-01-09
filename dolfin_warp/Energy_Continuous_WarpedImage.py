@@ -102,17 +102,25 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.printer.print_var("ref_frame",self.ref_frame)
 
         # Iref
+        import sys
+        print(dolfin.__version__); sys.stdout.flush()
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.images_series.dimension,
                 im_type="im",
                 im_is_def=0,
-                static_scaling_factor=self.static_scaling)
+                static_scaling_factor=self.static_scaling,
+                verbose=0)
+            print(name); sys.stdout.flush()
+            print(cpp); sys.stdout.flush()
             module = dolfin.compile_cpp_code(cpp)
+            print(module); sys.stdout.flush()
             expr = getattr(module, name)
+            print(expr); sys.stdout.flush()
             self.Iref = dolfin.CompiledExpression(
                 expr(),
                 element=self.fe)
+            print(self.Iref); sys.stdout.flush()
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.images_series.dimension,
@@ -123,7 +131,9 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
                 cppcode=cpp,
                 element=self.fe)
         self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
+        print(self.ref_image_filename); sys.stdout.flush()
         self.Iref.init_image(self.ref_image_filename)
+        print(self.Iref); sys.stdout.flush()
 
         self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Iref_int",self.Iref_int)
