@@ -16,15 +16,18 @@ import dolfin
 def compute_energies_normalization(
         problem,
         k=None,
-        x0=None):
+        x0=None,
+        verbose=False):
 
     dim = problem.mesh_dimension
 
     if (k is None):
         k = [0.1 * math.pi / problem.mesh.hmin()]*dim
+    if (verbose): print("k:", k)
 
     if (x0 is None):
         x0 = [0.]*dim
+    if (verbose): print("x0:", x0)
 
     if (dim == 2):
         U_expr = dolfin.Expression(
@@ -40,14 +43,13 @@ def compute_energies_normalization(
             element=problem.U_fe)
 
     problem.U.interpolate(U_expr)
-    problem.U_norm = problem.U.vector().norm("l2")
-    problem.U.vector().get_local()[:] /= problem.U_norm
+    problem.U.vector()[:] /= problem.U.vector().norm("l2")
     problem.U_norm = problem.U.vector().norm("l2")
 
     for energy in problem.energies:
         energy.ener0 = energy.assemble_ener(w_weight=0)
-        # print(energy.name)
-        # print(energy.ener0)
+        if (verbose): print(energy.name)
+        if (verbose): print(energy.ener0)
 
     problem.U.vector().zero()
     problem.U_norm = 0

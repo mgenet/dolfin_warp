@@ -103,7 +103,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             # relaxation
             self.compute_relax()
             self.reduced_ddisp *= self.relax
-            self.problem.dU.vector().get_local()[:] *= self.relax
+            self.problem.dU.vector()[:] *= self.relax
             self.problem.dU_norm *= abs(self.relax)
 
             # solution update

@@ -185,10 +185,10 @@ class ImageIterator():
                     init_array_U = vtk.util.numpy_support.vtk_to_numpy(init_array_U)
                     init_array_U = init_array_U[:,:self.problem.mesh_dimension]
                     init_array_U = numpy.reshape(init_array_U, init_array_U.size)
-                    init_U.vector().get_local()[:] = init_array_U[init_dof_to_vertex_map]
+                    init_U.vector()[:] = init_array_U[init_dof_to_vertex_map]
 
                     if (self.initialize_U_method == "dofs_transfer"):
-                        self.problem.U.vector().get_local()[:] = init_U.vector().get_local()
+                        self.problem.U.vector()[:] = init_U.vector()
                     elif (self.initialize_U_method == "interpolation"):
                         self.problem.U.interpolate(init_U)
                     elif (self.initialize_U_method == "projection"):

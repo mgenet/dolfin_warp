@@ -133,10 +133,10 @@ def compute_regularization_energy(
         # print (np_disp.shape)
         # print (np_disp.flatten().shape)
 
-        problem.U.vector().get_local()[:] = np_disp.flatten(order="F")
+        problem.U.vector()[:] = np_disp.flatten(order="F")
         if (noise_type is not None):
             if (noise_type == "random"):
-                problem.U.vector().get_local()[:] += numpy.random.normal(
+                problem.U.vector()[:] += numpy.random.normal(
                     loc=0.,
                     scale=noise_level,
                     size=problem.U.vector().get_local().shape)

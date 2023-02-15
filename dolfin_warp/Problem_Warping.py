@@ -259,8 +259,8 @@ class WarpingProblem(Problem):
             *kargs,
             **kwargs):
 
-        self.DUold.vector().get_local()[:] = self.U.vector().get_local() - self.Uold.vector().get_local()
-        self.Uold.vector().get_local()[:] = self.U.vector().get_local()
+        self.DUold.vector()[:] = self.U.vector() - self.Uold.vector()
+        self.Uold.vector()[:] = self.U.vector()
         self.Uold_norm = self.U_norm
 
         for energy in self.energies:

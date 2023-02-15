@@ -122,7 +122,7 @@ def add_function_to_ugrid(
     if (verbose): print("n_dim = "+str(n_dim))
     assert (n_dofs//n_dim == ugrid.GetNumberOfPoints()),\
         "Only CG1 functions can be converted to VTK. Aborting."
-    global np_array # MG20190621: if it disappears the vtk objects is broken
+    global np_array # MG20190621: if it disappears the vtk object is broken
     np_array = function.vector().get_local()
     if (verbose): print("np_array = "+str(np_array))
     np_array = np_array.reshape([n_dofs//n_dim, n_dim])

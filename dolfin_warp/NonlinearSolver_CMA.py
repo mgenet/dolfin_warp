@@ -88,7 +88,6 @@ class CMANonlinearSolver(NonlinearSolver):
             if self.save_modes:
                 ModalAnalysis_mesh.save_modes(self.folder_modes)
 
-
         # initial guess for cma.fmin
         if (self.motion_model == "full") or (self.motion_model == "trans") or (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
             # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame. And by default, the range used is previous_result +- 0.07
@@ -149,7 +148,7 @@ class CMANonlinearSolver(NonlinearSolver):
 
     def solve(self,
             k_frame=None):
-        # print k_frame
+
         self.k_frame = k_frame
 
         if (self.k_frame is not None):
@@ -190,7 +189,7 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # J = dolfin.det(dolfin.Identity(2) + dolfin.grad(self.U_tot))
         J_p = dolfin.project(self.J, self.fs_J) # FA20200218: TODO: use localproject()
-        if min(J_p.vector()[:])<0:
+        if (min(J_p.vector()[:]) < 0):
             return numpy.NaN
 
         # FA20200219: in GeneratedImageEnergy.call_before_assembly():
@@ -223,8 +222,8 @@ class CMANonlinearSolver(NonlinearSolver):
             self.U_tot.vector()[:] = self.dofs
 
         else:
-            disp_x   = self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1])
-            disp_y   = self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1])
+            disp_x = self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1])
+            disp_y = self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1])
 
             if (self.motion_model == "trans"):
                 disp_rot = 0.
@@ -249,6 +248,7 @@ class CMANonlinearSolver(NonlinearSolver):
     def U_rbm(self,
             disp,
             center_rot=[0.5, 0.5]):
+
         disp_x   = disp[0]
         disp_y   = disp[1]
         disp_rot = disp[2]
