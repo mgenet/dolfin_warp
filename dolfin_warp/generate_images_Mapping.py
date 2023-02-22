@@ -44,6 +44,7 @@ class Mapping():
             self.init_t = self.init_t_homogeneous
             self.X = self.X_homogeneous
             self.x = self.x_homogeneous
+            self.X0 = numpy.empty(3)
         elif (self.deformation["type"] == "heart"):
             assert (structure["type"] == "heart"), "structure type must be \"heart\" for \"heart\" type deformation, not \""+str(structure["type"])+"\". Aborting."
             self.init_t = self.init_t_heart
@@ -103,6 +104,9 @@ class Mapping():
         self.Rinv[:,:] = numpy.linalg.inv(self.R)
 
     def init_t_homogeneous(self, t):
+        self.X0[0] = self.deformation["X0"] if ("X0" in self.deformation) else 0.
+        self.X0[1] = self.deformation["Y0"] if ("Y0" in self.deformation) else 0.
+        self.X0[2] = self.deformation["Z0"] if ("Z0" in self.deformation) else 0.
         if (any(E in self.deformation for E in ("Exx", "Eyy", "Ezz"))): # build F from E
             Exx = self.deformation["Exx"] if ("Exx" in self.deformation) else 0.
             Eyy = self.deformation["Eyy"] if ("Eyy" in self.deformation) else 0.
@@ -154,7 +158,7 @@ class Mapping():
         if (Finv is not None): Finv[:,:] = self.Rinv
 
     def X_homogeneous(self, x, X, Finv=None):
-        X[:] = numpy.dot(self.Finv, x)
+        X[:] = numpy.dot(self.Finv, x - self.X0) + self.X0
         if (Finv is not None): Finv[:,:] = self.Finv
 
     def X_heart(self, x, X, Finv=None):
@@ -210,7 +214,7 @@ class Mapping():
         if (F is not None): F[:,:] = self.R
 
     def x_homogeneous(self, X, x, F=None):
-        x[:] = numpy.dot(self.F, X)
+        x[:] = numpy.dot(self.F, X - self.X0) + self.X0
         if (F is not None): F[:,:] = self.F
 
     def x_heart(self, X, x, F=None):

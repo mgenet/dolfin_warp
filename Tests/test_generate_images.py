@@ -120,10 +120,16 @@ for n_dim             in n_dim_lst            :
         elif (deformation_type == "compression"):
             deformation = {
                 "type":"homogeneous",
+                "X0":0.5,
+                "Y0":0.5,
+                "Z0":0.5,
                 "Exx":-0.20}
         elif (deformation_type == "shear"):
             deformation = {
                 "type":"homogeneous",
+                "X0":0.5,
+                "Y0":0.5,
+                "Z0":0.5,
                 "Fxy":+0.20}
         elif (deformation_type == "heart"):
             deformation = {
