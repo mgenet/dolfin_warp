@@ -192,6 +192,7 @@ class ImageIterator():
                     elif (self.initialize_U_method == "interpolation"):
                         self.problem.U.interpolate(init_U)
                     elif (self.initialize_U_method == "projection"):
+                        init_U.set_allow_extrapolation(True)
                         dolfin.project(
                             v=init_U,
                             V=self.problem.U_fs,
