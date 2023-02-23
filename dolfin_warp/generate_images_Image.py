@@ -33,23 +33,21 @@ class Image():
             self.I0_structure = self.I0_structure_box_wGrad if (generate_image_gradient) else self.I0_structure_box
             self.Xmin = structure["Xmin"]+[float("-Inf")]*(3-images["n_dim"])
             self.Xmax = structure["Xmax"]+[float("+Inf")]*(3-images["n_dim"])
-        elif (structure["type"] == "heart"):
+        elif (structure["type"] in ("ring,", "heart")):
+            self.R = float()
+            self.Ri = structure["Ri"]
+            self.Re = structure["Re"]
+            self.X0 = structure["X0"] if ("X0" in structure) else [images["L"][0]/2, images["L"][1]/2]
             if (images["n_dim"] == 2):
                 self.I0_structure = self.I0_structure_heart_2_wGrad if (generate_image_gradient) else self.I0_structure_heart_2
-                self.R = float()
-                self.Ri = structure["Ri"]
-                self.Re = structure["Re"]
             elif (images["n_dim"] == 3):
                 self.I0_structure = self.I0_structure_heart_3_wGrad if (generate_image_gradient) else self.I0_structure_heart_3
-                self.R = float()
-                self.Ri = structure["Ri"]
-                self.Re = structure["Re"]
                 self.Zmin = structure.Zmin if ("Zmin" in structure) else 0.
                 self.Zmax = structure.Zmax if ("Zmax" in structure) else images["L"][2]
             else:
-                assert (0), "n_dim must be \"2\" or \"3 for \"heart\" type structure. Aborting."
+                assert (0), "n_dim must be \"2\" or \"3 for \"ring\"/\"heart\" type structure. Aborting."
         else:
-            assert (0), "structure type must be \"no\", \"box\" or \"heart\". Aborting."
+            assert (0), "structure type must be \"no\", \"box\", \"ring\" or \"heart\". Aborting."
 
         # texture
         if (texture["type"] == "no"):
@@ -156,14 +154,14 @@ class Image():
             G[:] = 0. # MG 20180806: gradient is given by texture; here it is just indicator function
 
     def I0_structure_heart_2(self, X, I):
-        self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
+        self.R = ((X[0]-self.X0[0])**2 + (X[1]-self.X0[1])**2)**(1./2)
         if (self.R >= self.Ri) and (self.R <= self.Re):
             I[0] = 1.
         else:
             I[0] = 0.
 
     def I0_structure_heart_2_wGrad(self, X, I, G):
-        self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
+        self.R = ((X[0]-self.X0[0])**2 + (X[1]-self.X0[1])**2)**(1./2)
         if (self.R >= self.Ri) and (self.R <= self.Re):
             I[0] = 1.
             G[:] = 1. # MG 20180806: gradient is given by texture; here it is just indicator function
@@ -172,14 +170,14 @@ class Image():
             G[:] = 0. # MG 20180806: gradient is given by texture; here it is just indicator function
 
     def I0_structure_heart_3(self, X, I):
-        self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
+        self.R = ((X[0]-self.X0[0])**2 + (X[1]-self.X0[1])**2)**(1./2)
         if (self.R >= self.Ri) and (self.R <= self.Re) and (X[2] >= self.Zmin) and (X[2] <= self.Zmax):
             I[0] = 1.
         else:
             I[0] = 0.
 
     def I0_structure_heart_3_wGrad(self, X, I, G):
-        self.R = ((X[0]-self.L[0]/2)**2 + (X[1]-self.L[1]/2)**2)**(1./2)
+        self.R = ((X[0]-self.X0[0])**2 + (X[1]-self.X0[1])**2)**(1./2)
         if (self.R >= self.Ri) and (self.R <= self.Re) and (X[2] >= self.Zmin) and (X[2] <= self.Zmax):
             I[0] = 1.
             G[:] = 1. # MG 20180806: gradient is given by texture; here it is just indicator function

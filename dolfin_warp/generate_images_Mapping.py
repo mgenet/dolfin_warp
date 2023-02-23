@@ -46,7 +46,7 @@ class Mapping():
             self.x = self.x_homogeneous
             self.X0 = numpy.empty(3)
         elif (self.deformation["type"] == "heart"):
-            assert (structure["type"] == "heart"), "structure type must be \"heart\" for \"heart\" type deformation, not \""+str(structure["type"])+"\". Aborting."
+            assert (structure["type"] in ("ring", "heart")), "structure type must be \"ring\" or \"heart\" for \"heart\" type deformation, not \""+str(structure["type"])+"\". Aborting."
             self.init_t = self.init_t_heart
             self.X = self.X_heart
             self.x = self.x_heart
