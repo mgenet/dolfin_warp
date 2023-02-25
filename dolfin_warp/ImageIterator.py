@@ -122,6 +122,8 @@ class ImageIterator():
                 basename=self.initialize_U_basename,
                 ext=self.initialize_U_ext,
                 printer=self.problem.printer)
+            assert (init_meshes_series.n_frames <= self.problem.images_n_frames),\
+                "init_meshes_series.n_frames ("+str(init_meshes_series.n_frames)+") < self.problem.images_n_frames ("+str(self.problem.images_n_frames)+"). Aborting."
 
             init_mesh_filename  = self.initialize_U_folder
             init_mesh_filename += "/"+self.initialize_U_basename
@@ -136,6 +138,7 @@ class ImageIterator():
                 init_mesh,
                 init_fe)
             init_U = dolfin.Function(init_fs)
+            init_U.set_allow_extrapolation(True)
             init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs)
 
         n_iter_tot = 0
@@ -192,7 +195,6 @@ class ImageIterator():
                     elif (self.initialize_U_method == "interpolation"):
                         self.problem.U.interpolate(init_U)
                     elif (self.initialize_U_method == "projection"):
-                        init_U.set_allow_extrapolation(True)
                         dolfin.project(
                             v=init_U,
                             V=self.problem.U_fs,
