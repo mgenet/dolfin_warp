@@ -48,6 +48,7 @@ class ImageIterator():
         self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
         self.write_XML_files                             = parameters.get("write_XML_files"                            , False         )
         self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"      ) # MG20200616: This should be a bool
+        self.continue_after_fail                         = parameters.get("continue_after_fail"                        , False         )
 
 
 
@@ -142,8 +143,6 @@ class ImageIterator():
             init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs)
 
         n_iter_tot = 0
-        global_success = True
-
         for forward_or_backward in ["forward","backward"]:
             self.printer.print_var("forward_or_backward",forward_or_backward)
 
@@ -213,8 +212,7 @@ class ImageIterator():
                     k_frame=k_frame)
                 n_iter_tot += n_iter
 
-                if not (success):
-                    global_success = False
+                if not (success) and not (self.continue_after_fail):
                     break
 
                 self.problem.call_after_solve(
@@ -252,7 +250,7 @@ class ImageIterator():
 
             self.printer.dec()
 
-            if not (global_success):
+            if not (success):
                 break
 
         self.printer.print_str("Image iterator finished…")
@@ -272,4 +270,4 @@ class ImageIterator():
         commandline += "\""
         os.system(commandline)
 
-        return global_success
+        return success

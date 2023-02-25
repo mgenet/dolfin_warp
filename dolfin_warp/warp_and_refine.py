@@ -38,6 +38,7 @@ def warp_and_refine(
         relax_n_iter_max      : int         = None                       ,
         tol_dU                : float       = None                       ,
         n_iter_max            : int         = 100                        ,
+        continue_after_fail   : bool        = False                      ,
         print_iterations      : bool        = False                      ):
 
     if (meshes is None):
@@ -67,7 +68,7 @@ def warp_and_refine(
             working_basename_for_init  = working_basename
             working_basename_for_init += "-refine="+str(k_mesh-1)
 
-        dwarp.warp(
+        success = dwarp.warp(
             working_folder                              = working_folder,
             working_basename                            = working_basename_for_warp,
             images_folder                               = images_folder,
@@ -87,17 +88,22 @@ def warp_and_refine(
             relax_n_iter_max                            = relax_n_iter_max,
             tol_dU                                      = tol_dU,
             n_iter_max                                  = n_iter_max,
+            continue_after_fail                         = continue_after_fail,
             initialize_U_from_file                      = initialize_U_from_file,
             initialize_U_folder                         = working_folder,
             initialize_U_basename                       = working_basename_for_init,
             initialize_U_ext                            = "vtu",
             initialize_U_array_name                     = "displacement",
-            # initialize_U_method                         = "interpolation",
             initialize_U_method                         = "projection",
             write_VTU_files                             = True,
             write_VTU_files_with_preserved_connectivity = True,
             write_XML_files                             = True,
             print_iterations                            = print_iterations)
+
+        if not (success) and not (continue_after_fail):
+            break
+
+    return success
 
 ########################################################################
 

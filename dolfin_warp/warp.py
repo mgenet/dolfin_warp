@@ -91,8 +91,6 @@ def warp(
         "tol_res is deprecated. Aborting."
     assert (tol_im is None),\
         "tol_im is deprecated. Aborting."
-    assert (continue_after_fail == 0),\
-        "continue_after_fail is deprecated. Aborting."
     assert (print_refined_mesh == 0),\
         "print_refined_mesh is deprecated. Aborting."
 
@@ -309,11 +307,14 @@ def warp(
             "write_VTU_files":write_VTU_files,
             "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
             "write_XML_files":write_XML_files,
-            "iteration_mode":iteration_mode})
+            "iteration_mode":iteration_mode,
+            "continue_after_fail":continue_after_fail})
 
-    image_iterator.iterate()
+    success = image_iterator.iterate()
 
     problem.close()
+
+    return success
 
 fedic2 = warp
 
