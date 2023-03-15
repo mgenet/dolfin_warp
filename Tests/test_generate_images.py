@@ -16,11 +16,11 @@ import dolfin_warp     as dwarp
 
 ################################################################################
 
-images_folder = sys.argv[0][:-3]
-test = mypy.Test(
-    res_folder=images_folder,
-    perform_tests=0,
-    clean_after_tests=1)
+res_folder = sys.argv[0][:-3]
+# test = mypy.Test(
+#     res_folder=res_folder,
+#     perform_tests=0,
+#     clean_after_tests=1)
 
 n_dim_lst  = [ ]
 n_dim_lst += [2]
@@ -64,7 +64,7 @@ for n_dim                            in n_dim_lst                     :
             "T":1.,
             "n_frames":3,
             "data_type":"float",
-            "folder":images_folder}
+            "folder":res_folder}
 
         images_basename = str(n_dim)+"D"
         images_basename += "-"+structure_type
