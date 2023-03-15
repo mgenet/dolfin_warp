@@ -6,7 +6,7 @@ from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
 from .Energy_Discrete import *
-from .Energy_Discrete_LinearRegularization import *
+from .Energy_Discrete_SimpleRegularization import *
 from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete_VolumeRegularization import *
 from .FilesSeries import *

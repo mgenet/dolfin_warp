@@ -42,12 +42,14 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.w = w
 
-        assert (type in ("equilibrated")),\
-            "\"type\" ("+str(type)+") must be \"equilibrated\". Aborting."
+        type_lst = ("equilibrated")
+        assert (type in type_lst),\
+            "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
 
-        assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
-            "\"model\" ("+str(model)+") must be \"hooke\", \"kirchhoff\", \"neohookean\", \"mooneyrivlin\", \"neohookeanmooneyrivlin\", \"ciarletgeymonat\", \"ciarletgeymonatneohookean\" or \"ciarletgeymonatneohookeanmooneyrivlin\". Aborting."
+        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")
+        assert (model in model_lst),\
+            "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
 
         assert (young > 0.),\
@@ -74,14 +76,25 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
+        if (self.model == "hooke"):
+            kinematics = dmech.LinearizedKinematics(
+                u=self.problem.U)
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+            kinematics = dmech.Kinematics(
+                U=self.problem.U)
+
         self.material = dmech.material_factory(
-            kinematics=dmech.Kinematics(
-                U=self.problem.U),
+            kinematics=kinematics,
             model=self.model,
             parameters={
                 "E":self.young,
                 "nu":self.poisson})
-        self.Psi = self.material.Psi
+
+        if (self.model == "hooke"):
+            self.Psi   = self.material.psi
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+            self.Psi   = self.material.Psi
+
         self.Psi = self.Psi * dV
         if (self.b is not None):
             self.Psi += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * dV

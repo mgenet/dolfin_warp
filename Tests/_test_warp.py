@@ -9,8 +9,6 @@
 ################################################################################
 
 import dolfin
-import math
-import mshr
 import sys
 
 import myPythonLibrary as mypy
@@ -28,7 +26,7 @@ test = mypy.Test(
 
 n_dim_lst  = [ ]
 n_dim_lst += [2]
-n_dim_lst += [3]
+# n_dim_lst += [3]
 
 for n_dim in n_dim_lst:
 
@@ -91,38 +89,58 @@ for n_dim in n_dim_lst:
             dolfin.Point(structure_Xmax),
             n_cells, n_cells, n_cells)
 
-    regul_type_lst = []
-    regul_type_lst += ["continuous-equilibrated"]
-    regul_type_lst += ["continuous-elastic"]
-    regul_type_lst += ["discrete-linear-equilibrated"]
-    regul_type_lst += ["discrete-linear-elastic"]
-    regul_type_lst += ["discrete-equilibrated"]
-    regul_type_lst += ["discrete-equilibrated-tractions"]
-    regul_type_lst += ["discrete-equilibrated-tractions-normal"]
-    regul_type_lst += ["discrete-equilibrated-tractions-tangential"]
-    regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential"]
+    regul_type_lst  = []
+    regul_type_lst += ["continuous-linear-elastic"                               ]
+    regul_type_lst += ["continuous-linear-equilibrated"                          ]
+    regul_type_lst += ["continuous-elastic"                                      ]
+    regul_type_lst += ["continuous-equilibrated"                                 ]
+    regul_type_lst += ["discrete-simple-elastic"                                 ]
+    regul_type_lst += ["discrete-simple-equilibrated"                            ]
+    regul_type_lst += ["discrete-linear-equilibrated"                            ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions"                  ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions-normal"           ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions-tangential"       ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions-normal-tangential"]
+    regul_type_lst += ["discrete-equilibrated"                                   ]
+    regul_type_lst += ["discrete-equilibrated-tractions"                         ]
+    regul_type_lst += ["discrete-equilibrated-tractions-normal"                  ]
+    regul_type_lst += ["discrete-equilibrated-tractions-tangential"              ]
+    regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential"       ]
 
     for regul_type in regul_type_lst:
 
         res_basename = images_basename
         res_basename += "-"+regul_type
 
-        if (regul_type.startswith("discrete-equilibrated-")):
+        if (regul_type.startswith("discrete-linear-equilibrated-")):
+            regul_types = ["discrete-linear-equilibrated"]
+            if (regul_type == "discrete-linear-equilibrated-tractions"):
+                regul_types += ["discrete-linear-tractions"]
+            elif (regul_type == "discrete-linear-equilibrated-tractions-normal"):
+                regul_types += ["discrete-linear-tractions-normal"]
+            elif (regul_type == "discrete-linear-equilibrated-tractions-tangential"):
+                regul_types += ["discrete-linear-tractions-tangential"]
+            elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential"):
+                regul_types += ["discrete-linear-tractions-normal-tangential"]
+        elif (regul_type.startswith("discrete-equilibrated-")):
+            regul_types = ["discrete-equilibrated"]
             if (regul_type == "discrete-equilibrated-tractions"):
-                regul_types = ["discrete-equilibrated", "discrete-tractions"]
+                regul_types += ["discrete-tractions"]
             elif (regul_type == "discrete-equilibrated-tractions-normal"):
-                regul_types = ["discrete-equilibrated", "discrete-tractions-normal"]
+                regul_types += ["discrete-tractions-normal"]
             elif (regul_type == "discrete-equilibrated-tractions-tangential"):
-                regul_types = ["discrete-equilibrated", "discrete-tractions-tangential"]
+                regul_types += ["discrete-tractions-tangential"]
             elif (regul_type == "discrete-equilibrated-tractions-normal-tangential"):
-                regul_types = ["discrete-equilibrated", "discrete-tractions-normal-tangential"]
-            regul_type = None
-            regul_level = None
-            regul_levels = [0.1,0.1]
+                regul_types += ["discrete-tractions-normal-tangential"]
         else:
-            regul_types = None
-            regul_level = 0.1
-            regul_levels = None
+            regul_types = [regul_type]
+
+        if any([_ in regul_type for _ in ["linear", "simple"]]):
+            regul_model = "hooke"
+        else:
+            regul_model = "ciarletgeymonatneohookean"
+
+        regul_level = 0.1
 
         if (1): dwarp.warp(
             working_folder=res_folder,
@@ -130,11 +148,9 @@ for n_dim in n_dim_lst:
             images_folder=res_folder,
             images_basename=images_basename,
             mesh=mesh,
-            regul_type=regul_type,
             regul_types=regul_types,
-            regul_model="ciarletgeymonatneohookean",
+            regul_model=regul_model,
             regul_level=regul_level,
-            regul_levels=regul_levels,
             relax_type="gss",
             relax_tol=1e-3,
             relax_n_iter_max=100,

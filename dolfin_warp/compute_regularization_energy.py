@@ -31,7 +31,8 @@ def compute_regularization_energy(
         noise_type                      : typing.Optional[str]         = None                       , # MG20220815: This can be written "str | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
         noise_level                     : float                        = 0.                         , 
         regul_types                     : list                         = []                         ,
-        regul_model                     : str                          = "ciarletgeymonatneohookean",
+        regul_model_for_lin             : str                          = "hooke"                    ,
+        regul_model_for_nl              : str                          = "ciarletgeymonatneohookean",
         regul_poisson                   : float                        = 0.                         ,
         regul_quadrature                : typing.Optional[int]         = None                       , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
         write_regularization_energy_file: bool                         = True                       ,
@@ -63,42 +64,40 @@ def compute_regularization_energy(
     # print (len(problem.U.vector()))
 
     for regul_type in regul_types:
-        if (regul_type in ("continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic")):
-            regularization_energy = dwarp.RegularizationContinuousEnergy(
-                name=regul_type,
-                problem=problem,
-                w=1.,
-                type=regul_type.split("-")[1],
-                model=regul_model,
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
-        elif (regul_type in ("discrete-linear-equilibrated", "discrete-linear-elastic")):
-            regularization_energy = dwarp.LinearRegularizationDiscreteEnergy(
-                name=regul_type,
-                problem=problem,
-                w=1.,
-                type=regul_type.split("-")[2],
-                model="hooke",
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
-        elif (regul_type in ("discrete-equilibrated")):
-            regularization_energy = dwarp.VolumeRegularizationDiscreteEnergy(
-                name=regul_type,
-                problem=problem,
-                w=1.,
-                type=regul_type.split("-")[1],
-                model=regul_model,
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
-        elif (regul_type in ("discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential")):
-            regularization_energy = dwarp.SurfaceRegularizationDiscreteEnergy(
-                name=regul_type,
-                problem=problem,
-                w=1.,
-                type=regul_type.split("-",1)[1],
-                model=regul_model,
-                poisson=regul_poisson,
-                quadrature_degree=regul_quadrature)
+        regul_name = regul_type
+        if regul_type.startswith("continuous"):
+            regularization_energy_type = dwarp.RegularizationContinuousEnergy
+            if regul_type.startswith("continuous-linear"):
+                regul_type_ = regul_type.split("-",2)[2]
+                regul_model = regul_model_for_lin
+            else:
+                regul_type_ = regul_type.split("-",1)[1]
+                regul_model = regul_model_for_nl
+        elif regul_type.startswith("discrete-simple"):
+            regularization_energy_type = dwarp.SimpleRegularizationDiscreteEnergy
+            regul_type_ = regul_type.split("-",2)[2]
+            regul_model = regul_model_for_lin
+        elif regul_type.startswith("discrete"):
+            if ("equilibrated" in regul_type):
+                regularization_energy_type = dwarp.VolumeRegularizationDiscreteEnergy
+            elif ("tractions" in regul_type):
+                regularization_energy_type = dwarp.SurfaceRegularizationDiscreteEnergy
+            else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
+            if regul_type.startswith("discrete-linear"):
+                regul_type_ = regul_type.split("-",2)[2]
+                regul_model = regul_model_for_lin
+            else:
+                regul_type_ = regul_type.split("-",1)[1]
+                regul_model = regul_model_for_nl
+        else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
+        regularization_energy = regularization_energy_type(
+            name=regul_name,
+            problem=problem,
+            w=1.,
+            type=regul_type_,
+            model=regul_model,
+            poisson=regul_poisson,
+            quadrature_degree=regul_quadrature)
         problem.add_regul_energy(
             energy=regularization_energy,
             order_by_type=False)
@@ -114,7 +113,7 @@ def compute_regularization_energy(
         regul_ener_file = open(regul_ener_filebasename+".dat", "w")
         regul_ener_file.write("#k_frame "+" ".join(regul_types)+"\n")
 
-    regul_ener_lst = numpy.empty((working_series.n_frames, len(regul_types)))
+    regul_ener_lst = numpy.zeros((working_series.n_frames, len(regul_types)))
 
     for k_frame in range(working_series.n_frames):
         if (verbose): print ("k_frame = "+str(k_frame))
@@ -184,7 +183,7 @@ def compute_regularization_energy(
             regul_ener_lst[k_frame, k_ener] = (energy.assemble_ener()/problem.mesh_V0)**(1/2)
             if (verbose): print (energy.name, ":", regul_ener_lst[k_frame, k_ener])
 
-        if (write_regularization_energy_file): regul_ener_file.write(" ".join([str(val) for val in [k_frame]+regul_ener_lst[k_frame,:]])+"\n")
+        if (write_regularization_energy_file): regul_ener_file.write(" ".join([str(val) for val in [k_frame]+list(regul_ener_lst[k_frame,:])])+"\n")
 
     if (write_regularization_energy_file): regul_ener_file.close()
 

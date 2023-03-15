@@ -40,12 +40,14 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
 
         self.w = w
 
-        assert (type in ("equilibrated", "elastic", "hyperelastic")),\
-            "\"type\" ("+str(type)+") must be \"equilibrated\", \"elastic\" or \"hyperelastic\". Aborting."
+        type_lst = ("equilibrated", "elastic", "hyperelastic")
+        assert (type in type_lst),\
+            "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
 
-        assert (model in ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")),\
-            "\"model\" ("+str(model)+") must be \"hooke\", \"kirchhoff\", \"neohookean\", \"mooneyrivlin\", \"neohookeanmooneyrivlin\", \"ciarletgeymonat\", \"ciarletgeymonatneohookean\" or \"ciarletgeymonatneohookeanmooneyrivlin\". Aborting."
+        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")
+        assert (model in model_lst),\
+            "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
 
         assert (young > 0.),\

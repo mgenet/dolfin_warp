@@ -17,7 +17,7 @@ from .Problem         import Problem
 
 ################################################################################
 
-class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
+class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
@@ -38,12 +38,14 @@ class LinearRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.w = w
 
-        assert (type in ("equilibrated", "elastic")),\
-            "\"type\" ("+str(type)+") must be \"equilibrated\" or \"elastic\". Aborting."
+        type_lst = ("equilibrated", "elastic")
+        assert (type in type_lst),\
+            "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
 
-        assert (model in ("hooke")),\
-            "\"model\" ("+str(model)+") must be \"hooke\". Aborting."
+        model_lst = ("hooke")
+        assert (model in model_lst),\
+            "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
 
         assert (young > 0.),\
