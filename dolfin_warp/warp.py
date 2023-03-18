@@ -118,15 +118,31 @@ def warp(
         else:
             regul_levels = [regul_level]*len(regul_types)
     else:
-        if (regul_models is not None) and (regul_levels is not None):
-            assert (len(regul_models) == len(regul_levels))
-            regul_types = [regul_type]*len(regul_models)
-        elif (regul_models is not None):
-            regul_types  = [regul_type ]*len(regul_models)
-            regul_levels = [regul_level]*len(regul_models)
-        elif (regul_levels is not None):
-            regul_types  = [regul_type ]*len(regul_levels)
-            regul_models = [regul_model]*len(regul_levels)
+        assert (regul_type is not None)
+        if ("tractions" in regul_type):
+            if (regul_type.startswith("discrete-linear-equilibrated-")):
+                regul_types = ["discrete-linear-equilibrated"]
+                if (regul_type == "discrete-linear-equilibrated-tractions"):
+                    regul_types += ["discrete-linear-tractions"]
+                elif (regul_type == "discrete-linear-equilibrated-tractions-normal"):
+                    regul_types += ["discrete-linear-tractions-normal"]
+                elif (regul_type == "discrete-linear-equilibrated-tractions-tangential"):
+                    regul_types += ["discrete-linear-tractions-tangential"]
+                elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential"):
+                    regul_types += ["discrete-linear-tractions-normal-tangential"]
+            elif (regul_type.startswith("discrete-equilibrated-")):
+                regul_types = ["discrete-equilibrated"]
+                if (regul_type == "discrete-equilibrated-tractions"):
+                    regul_types += ["discrete-tractions"]
+                elif (regul_type == "discrete-equilibrated-tractions-normal"):
+                    regul_types += ["discrete-tractions-normal"]
+                elif (regul_type == "discrete-equilibrated-tractions-tangential"):
+                    regul_types += ["discrete-tractions-tangential"]
+                elif (regul_type == "discrete-equilibrated-tractions-normal-tangential"):
+                    regul_types += ["discrete-tractions-normal-tangential"]
+            else: assert (0), "Unknown regul_type ("+str(regul_type)+"). Aborting."
+            regul_models = [regul_model  ]*2
+            regul_levels = [regul_level/2]*2
         else:
             regul_types  = [regul_type ]
             regul_models = [regul_model]

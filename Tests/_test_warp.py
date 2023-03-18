@@ -112,29 +112,6 @@ for n_dim in n_dim_lst:
         res_basename = images_basename
         res_basename += "-"+regul_type
 
-        if (regul_type.startswith("discrete-linear-equilibrated-")):
-            regul_types = ["discrete-linear-equilibrated"]
-            if (regul_type == "discrete-linear-equilibrated-tractions"):
-                regul_types += ["discrete-linear-tractions"]
-            elif (regul_type == "discrete-linear-equilibrated-tractions-normal"):
-                regul_types += ["discrete-linear-tractions-normal"]
-            elif (regul_type == "discrete-linear-equilibrated-tractions-tangential"):
-                regul_types += ["discrete-linear-tractions-tangential"]
-            elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential"):
-                regul_types += ["discrete-linear-tractions-normal-tangential"]
-        elif (regul_type.startswith("discrete-equilibrated-")):
-            regul_types = ["discrete-equilibrated"]
-            if (regul_type == "discrete-equilibrated-tractions"):
-                regul_types += ["discrete-tractions"]
-            elif (regul_type == "discrete-equilibrated-tractions-normal"):
-                regul_types += ["discrete-tractions-normal"]
-            elif (regul_type == "discrete-equilibrated-tractions-tangential"):
-                regul_types += ["discrete-tractions-tangential"]
-            elif (regul_type == "discrete-equilibrated-tractions-normal-tangential"):
-                regul_types += ["discrete-tractions-normal-tangential"]
-        else:
-            regul_types = [regul_type]
-
         if any([_ in regul_type for _ in ["linear", "simple"]]):
             regul_model = "hooke"
         else:
@@ -148,7 +125,7 @@ for n_dim in n_dim_lst:
             images_folder=res_folder,
             images_basename=images_basename,
             mesh=mesh,
-            regul_types=regul_types,
+            regul_type=regul_type,
             regul_model=regul_model,
             regul_level=regul_level,
             relax_type="gss",
