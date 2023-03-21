@@ -80,18 +80,19 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             metadata=form_compiler_parameters)
 
         if (self.model == "hooke"):
-            kinematics = dmech.LinearizedKinematics(
+            self.kinematics = dmech.LinearizedKinematics(
                 u=self.problem.U)
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            kinematics = dmech.Kinematics(
+            self.kinematics = dmech.Kinematics(
                 U=self.problem.U)
 
         self.material = dmech.material_factory(
-            kinematics=kinematics,
+            kinematics=self.kinematics,
             model=self.model,
             parameters={
                 "E":self.young,
-                "nu":self.poisson})
+                "nu":self.poisson,
+                "checkJ":1})
 
         if (self.model == "hooke"):
             self.Psi   = self.material.psi
@@ -115,7 +116,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         elif (self.dim == 3):
             self.Ft = self.F - self.Fn * self.N
             self.Ft = dolfin.inner(self.Ft, self.Ft)
-            self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.)
+            self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.) # MG20221013: To bypass the derivative singularity at 0
             # self.Ft = dolfin.sqrt(self.Ft)
 
         if (self.type == "tractions"):

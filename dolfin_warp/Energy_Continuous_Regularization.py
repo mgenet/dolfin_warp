@@ -97,7 +97,8 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
             model=self.model,
             parameters={
                 "E":self.young,
-                "nu":self.poisson})
+                "nu":self.poisson,
+                "checkJ":1})
 
         if (self.model == "hooke"):
             self.Psi   = self.material.psi

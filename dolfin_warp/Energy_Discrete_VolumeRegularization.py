@@ -71,36 +71,50 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         form_compiler_parameters = {
             # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
-        dV = dolfin.Measure(
+        self.dV = dolfin.Measure(
             "dx",
             domain=self.problem.mesh,
             metadata=form_compiler_parameters)
 
         if (self.model == "hooke"):
-            kinematics = dmech.LinearizedKinematics(
+            self.kinematics = dmech.LinearizedKinematics(
                 u=self.problem.U)
+            self.dE_test = dolfin.derivative(
+                self.kinematics.epsilon, self.problem.U, self.problem.dU_test)
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            kinematics = dmech.Kinematics(
+            self.kinematics = dmech.Kinematics(
                 U=self.problem.U)
+            self.dE_test = dolfin.derivative(
+                self.kinematics.E, self.problem.U, self.problem.dU_test)
 
         self.material = dmech.material_factory(
-            kinematics=kinematics,
+            kinematics=self.kinematics,
             model=self.model,
             parameters={
                 "E":self.young,
-                "nu":self.poisson})
+                "nu":self.poisson,
+                "checkJ":1})
 
         if (self.model == "hooke"):
             self.Psi   = self.material.psi
+            self.Sigma = self.material.sigma
+            self.P     = self.material.sigma
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
             self.Psi   = self.material.Psi
+            self.Sigma = self.material.Sigma
+            self.P     = self.material.P
 
-        self.Psi = self.Psi * dV
+        # self.Psi_form = self.Psi * self.dV
+        # if (self.b is not None):
+            # self.Psi_form += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * self.dV
+        # self.Wint_form  = dolfin.derivative(self.Psi_form , self.problem.U, self.problem.dU_test ) # MG20230320: Problem is, this is well defined for J < 0 !
+
+        self.Wint_form = dolfin.inner(self.material.Sigma, self.dE_test) * self.dV
         if (self.b is not None):
-            self.Psi += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * dV
-        self.Wint  = dolfin.derivative(self.Psi , self.problem.U, self.problem.dU_test )
-        self.dWint = dolfin.derivative(self.Wint, self.problem.U, self.problem.dU_trial)
+            self.Wint_form += dolfin.inner(dolfin.Constant(self.b), self.problem.dU_test) * self.dV
 
+        self.dWint_form = dolfin.derivative(self.Wint_form, self.problem.U, self.problem.dU_trial)
+            
         M_lumped_form = dolfin.inner(
             self.problem.dU_trial,
             self.problem.dU_test) * dolfin.dx(
@@ -147,8 +161,10 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
     def assemble_ener(self,
             w_weight=True):
 
+        # print (dolfin.assemble(Psi))
+
         dolfin.assemble(
-            form=self.Wint,
+            form=self.Wint_form,
             tensor=self.R_vec)
         # print(self.R_vec.get_local())
         self.bc.apply(self.R_vec)
@@ -179,7 +195,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         assert (add_values == True)
 
         dolfin.assemble(
-            form=self.Wint,
+            form=self.Wint_form,
             tensor=self.R_vec)
         # print(self.R_vec.get_local())
         self.bc.apply(self.R_vec)
@@ -189,7 +205,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         # print(self.MR_vec.get_local())
 
         dolfin.assemble(
-            form=self.dWint,
+            form=self.dWint_form,
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
         self.bc.zero(self.dR_mat)
@@ -218,7 +234,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         assert (add_values == True)
 
         dolfin.assemble(
-            form=self.dWint,
+            form=self.dWint_form,
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
         self.bc.zero(self.dR_mat)
