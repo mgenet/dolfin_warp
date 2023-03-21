@@ -10,6 +10,8 @@
 
 import dolfin
 
+import dolfin_warp as dwarp
+
 from .Energy import Energy
 
 ################################################################################
@@ -21,15 +23,15 @@ class ContinuousEnergy(Energy):
     def assemble_ener(self,
             w_weight=True):
 
-        ener = dolfin.assemble(self.ener_form)
-
-        try:
-            ener /= self.ener0
-        except AttributeError:
-            pass
- 
         if (w_weight):
-            ener *= self.w
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
+        else:
+            w = 1.
+
+        ener = dolfin.assemble(dolfin.Constant(w) * self.ener_form)
+
         return ener
 
 
@@ -40,19 +42,18 @@ class ContinuousEnergy(Energy):
             finalize_tensor=True,
             w_weight=True):
 
+        if (w_weight):
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
+        else:
+            w = 1.
+
         dolfin.assemble(
-            form=self.res_form,
+            form=dolfin.Constant(w) * self.res_form,
             tensor=res_vec,
             add_values=add_values,
             finalize_tensor=finalize_tensor)
-
-        try:
-            res_vec /= self.ener0
-        except AttributeError:
-            pass
-
-        if (w_weight):
-            res_vec *= self.w
 
 
 
@@ -62,19 +63,37 @@ class ContinuousEnergy(Energy):
             finalize_tensor=True,
             w_weight=True):
 
-        dolfin.assemble(
-            form=self.jac_form,
-            tensor=jac_mat,
-            add_values=add_values,
-            finalize_tensor=finalize_tensor)
-
-        try:
-            jac_mat /= self.ener0
-        except AttributeError:
-            pass
-          
         if (w_weight):
-            jac_mat *= self.w
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
+        else:
+            w = 1.
+
+        if ((type(self) == dwarp.RegularizationContinuousEnergy)\
+        and (self.type == "equilibrated")\
+        and (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin"))):
+            # dolfin.assemble(
+            #     form=dolfin.Constant(w) * self.DDPsi_m_V * self.dV, # MG20230320: This part fails somehow, cf. https://fenicsproject.discourse.group/t/possible-bug-on-ufl-conditional/6537, but it is zero anyway for P1 elements…
+            #     tensor=jac_mat,
+            #     add_values=add_values,
+            #     finalize_tensor=finalize_tensor)
+            dolfin.assemble(
+                form=dolfin.Constant(w) * self.DDPsi_m_F * self.dF,
+                tensor=jac_mat,
+                add_values=add_values,
+                finalize_tensor=finalize_tensor)
+            dolfin.assemble(
+                form=dolfin.Constant(w) * self.DDPsi_m_S * self.dS,
+                tensor=jac_mat,
+                add_values=add_values,
+                finalize_tensor=finalize_tensor)
+        else:
+            dolfin.assemble(
+                form=dolfin.Constant(w) * self.jac_form,
+                tensor=jac_mat,
+                add_values=add_values,
+                finalize_tensor=finalize_tensor)
 
 
 

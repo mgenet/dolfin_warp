@@ -110,14 +110,14 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
         ener  = self.U_vec.inner(self.KU_vec)
         ener /= 2
 
-        try:
-            ener /= self.ener0
-        except AttributeError:
-            pass
-
         if (w_weight):
-            ener *= self.w
-        return ener
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
+        else:
+            w = 1.
+
+        return w*ener
 
 
 
@@ -131,16 +131,14 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.K_mat.mult(self.U_vec, self.KU_vec)
 
-        try:
-            res_vec /= self.ener0
-        except AttributeError:
-            pass
-
         if (w_weight):
-            res_vec.axpy(self.w, self.KU_vec)
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
         else:
-            res_vec.axpy(     1, self.KU_vec)
+            w = 1.
 
+        res_vec.axpy(w, self.KU_vec)
 
 
     def assemble_jac(self,
@@ -151,15 +149,14 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
 
         assert (add_values == True)
 
-        try:
-            jac_mat /= self.ener0
-        except AttributeError:
-            pass
-
         if (w_weight):
-            jac_mat.axpy(self.w, self.K_mat, False)
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
         else:
-            jac_mat.axpy(     1, self.K_mat, False)
+            w = 1.
+
+        jac_mat.axpy(w, self.K_mat, False)
 
 
 
