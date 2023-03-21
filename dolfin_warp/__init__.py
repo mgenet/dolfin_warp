@@ -33,7 +33,7 @@ from .compute_equalized_images import *
 from .compute_normalized_images import *
 from .compute_projected_image import *
 from .compute_quadrature_degree import *
-from .compute_regularization_energy import *
+from .compute_regularization_energies import *
 from .compute_selective_image_gradient import *
 from .compute_strain_error import *
 from .compute_strains import *

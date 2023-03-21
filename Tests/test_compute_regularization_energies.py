@@ -35,6 +35,7 @@ X0 = [0.5,0.5]
 R = 0.35
 structure = {"type":"disc", "X0":X0, "R":R}
 
+# deformation = {"type":"homogeneous", "X0":X0[0], "Y0":X0[1], "Fxx":-0.9}
 deformation = {"type":"homogeneous", "X0":X0[0], "Y0":X0[1], "Exx":+0.1, "Eyy":+0.1}
 
 evolution = {"type":"linear"}
@@ -70,7 +71,7 @@ regul_type_lst += ["discrete-tractions"                  ]
 regul_type_lst += ["discrete-tractions-normal"           ]
 regul_type_lst += ["discrete-tractions-tangential"       ]
 
-dwarp.compute_regularization_energy(
+dwarp.compute_regularization_energies(
     dim = 2,
     working_folder = res_folder,
     working_basename = mesh_basename,
@@ -82,6 +83,7 @@ dwarp.compute_regularization_energy(
     regul_model_for_lin = "hooke",
     regul_model_for_nl = "ciarletgeymonatneohookean",
     regul_poisson = 0.,
+    normalize_energies = True,
     write_regularization_energy_file = True,
     plot_regularization_energy = False,
     verbose = 1)

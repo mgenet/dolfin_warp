@@ -48,8 +48,7 @@ def compute_energies_normalization(
 
     for energy in problem.energies:
         energy.ener0 = energy.assemble_ener(w_weight=0)
-        if (verbose): print(energy.name)
-        if (verbose): print(energy.ener0)
+        if (verbose): print(energy.name, ":", energy.ener0)
 
     problem.U.vector().zero()
     problem.U_norm = 0

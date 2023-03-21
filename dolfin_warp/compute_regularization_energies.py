@@ -22,7 +22,7 @@ import dolfin_warp as dwarp
 
 ################################################################################
 
-def compute_regularization_energy(
+def compute_regularization_energies(
         dim                             : str,
         working_folder                  : str,
         working_basename                : str,
@@ -35,6 +35,7 @@ def compute_regularization_energy(
         regul_model_for_nl              : str                          = "ciarletgeymonatneohookean",
         regul_poisson                   : float                        = 0.                         ,
         regul_quadrature                : typing.Optional[int]         = None                       , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+        normalize_energies              : bool                         = True                       ,
         write_regularization_energy_file: bool                         = True                       ,
         plot_regularization_energy      : bool                         = True                       ,
         verbose                         : bool                         = True                       ):
@@ -105,6 +106,11 @@ def compute_regularization_energy(
     # print (regul_types)
     # print ([energy.name for energy in problem.energies])
     # print ([energy.type for energy in problem.energies])
+
+    if (normalize_energies):
+        dwarp.compute_energies_normalization(
+            problem=problem,
+            verbose=verbose)
 
     if (write_regularization_energy_file):
         regul_ener_filebasename = working_folder+"/"+working_basename+"-regul_ener"
