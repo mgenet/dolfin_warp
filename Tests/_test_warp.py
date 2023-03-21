@@ -119,6 +119,9 @@ for n_dim in n_dim_lst:
 
         regul_level = 0.1
 
+        print (n_dim)
+        print (regul_type)
+
         if (1): dwarp.warp(
             working_folder=res_folder,
             working_basename=res_basename,
@@ -128,6 +131,7 @@ for n_dim in n_dim_lst:
             regul_type=regul_type,
             regul_model=regul_model,
             regul_level=regul_level,
+            normalize_energies=1,
             relax_type="gss",
             relax_tol=1e-3,
             relax_n_iter_max=100,

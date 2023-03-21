@@ -15,31 +15,33 @@ import dolfin_warp as dwarp
 ################################################################################
 
 def warp_and_refine(
-        working_folder        : str,
-        working_basename      : str,
-        images_folder         : str,
-        images_basename       : str,
-        images_quadrature     : int         = None                       ,
-        images_quadrature_from: str         = "points_count"             , # points_count, integral
-        mesh                  : dolfin.Mesh = None                       ,
-        refinement_levels     : list        = [0]                        ,
-        meshes                : list        = None                       ,
-        mesh_folder           : str         = None                       ,
-        mesh_basenames        : list        = None                       ,
-        regul_type            : str         = "continuous-equilibrated"  , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
-        regul_types           : list        = None                       ,
-        regul_model           : str         = "ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
-        regul_models          : list        = None                       ,
-        regul_level           : float       = 0.                         ,
-        regul_levels          : list        = None                       ,
-        regul_poisson         : float       = 0.                         ,
-        relax_type            : str         = None                       , # constant, aitken, backtracking, gss
-        relax_tol             : float       = None                       ,
-        relax_n_iter_max      : int         = None                       ,
-        tol_dU                : float       = None                       ,
-        n_iter_max            : int         = 100                        ,
-        continue_after_fail   : bool        = False                      ,
-        print_iterations      : bool        = False                      ):
+        working_folder               : str,
+        working_basename             : str,
+        images_folder                : str,
+        images_basename              : str,
+        images_quadrature            : int         = None                       ,
+        images_quadrature_from       : str         = "points_count"             , # points_count, integral
+        mesh                         : dolfin.Mesh = None                       ,
+        refinement_levels            : list        = [0]                        ,
+        meshes                       : list        = None                       ,
+        mesh_folder                  : str         = None                       ,
+        mesh_basenames               : list        = None                       ,
+        regul_type                   : str         = "continuous-equilibrated"  , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tan       gential, discrete-tractions-normal-tangential
+        regul_types                  : list        = None                       ,
+        regul_model                  : str         = "ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_models                 : list        = None                       ,
+        regul_level                  : float       = 0.                         ,
+        regul_levels                 : list        = None                       ,
+        regul_poisson                : float       = 0.                         ,
+        relax_type                   : str         = None                       , # constant, aitken, backtracking, gss
+        relax_tol                    : float       = None                       ,
+        relax_n_iter_max             : int         = None                       ,
+        normalize_energies           : bool        = False                      ,
+        tol_dU                       : float       = None                       ,
+        n_iter_max                   : int         = 100                        ,
+        continue_after_fail          : bool        = False                      ,
+        write_qois_limited_precision : bool        = False                      ,
+        print_iterations             : bool        = False                      ):
 
     if (meshes is None):
         meshes = []
@@ -86,6 +88,7 @@ def warp_and_refine(
             relax_type                                  = relax_type,
             relax_tol                                   = relax_tol,
             relax_n_iter_max                            = relax_n_iter_max,
+            normalize_energies                          = normalize_energies,
             tol_dU                                      = tol_dU,
             n_iter_max                                  = n_iter_max,
             continue_after_fail                         = continue_after_fail,
@@ -94,7 +97,8 @@ def warp_and_refine(
             initialize_U_basename                       = working_basename_for_init,
             initialize_U_ext                            = "vtu",
             initialize_U_array_name                     = "displacement",
-            initialize_U_method                         = "projection",
+            initialize_U_method                         = "projection", # dofs_transfer, interpolation, projection
+            write_qois_limited_precision                = write_qois_limited_precision,
             write_VTU_files                             = True,
             write_VTU_files_with_preserved_connectivity = True,
             write_XML_files                             = True,

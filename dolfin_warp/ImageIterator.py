@@ -60,7 +60,7 @@ class ImageIterator():
         for vtu_filename in glob.glob(vtu_basename+"_[0-9]*.vtu"):
             os.remove(vtu_filename)
 
-        dolfin.File(vtu_basename+"-mesh.xml") << self.problem.mesh
+        dolfin.File(vtu_basename+"-mesh.xml") << self.problem.mesh # MG20230321: For warp_and_refine, need to save current mesh for next refine level
 
         self.printer.print_str("Initializing QOI file…")
         self.printer.inc()
@@ -140,7 +140,7 @@ class ImageIterator():
                 init_fe)
             init_U = dolfin.Function(init_fs)
             init_U.set_allow_extrapolation(True)
-            init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs)
+            # init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs) # MG20230321: Somehow this is problematic when VTUs are saved with preserved connectivity…
 
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
@@ -187,7 +187,8 @@ class ImageIterator():
                     init_array_U = vtk.util.numpy_support.vtk_to_numpy(init_array_U)
                     init_array_U = init_array_U[:,:self.problem.mesh_dimension]
                     init_array_U = numpy.reshape(init_array_U, init_array_U.size)
-                    init_U.vector()[:] = init_array_U[init_dof_to_vertex_map]
+                    init_U.vector()[:] = init_array_U
+                    # init_U.vector()[:] = init_array_U[init_dof_to_vertex_map] # MG20230321: Somehow this is problematic when VTUs are saved with preserved connectivity…
 
                     if (self.initialize_U_method == "dofs_transfer"):
                         self.problem.U.vector()[:] = init_U.vector()
