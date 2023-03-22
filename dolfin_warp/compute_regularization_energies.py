@@ -18,6 +18,7 @@ import random
 import typing
 import vtk.numpy_interface.dataset_adapter as dsa
 
+import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 ################################################################################
@@ -180,7 +181,7 @@ def compute_regularization_energies(
             filebasename  = working_series.get_mesh_filebasename(k_frame=None)
             filebasename += "-noise_type="+noise_type
             filebasename += "-noise_level="+str(noise_level)
-            dwarp.write_VTU_file(
+            dmech.write_VTU_file(
                 filebasename = filebasename,
                 function = problem.U,
                 time = k_frame)

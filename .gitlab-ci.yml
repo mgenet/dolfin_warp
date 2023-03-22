@@ -14,7 +14,7 @@ tests-on-ubuntu-20.04:
   script:
     - apt update; apt upgrade -y
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
 #     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20221201: This seems to fail in ubuntu 20.04
     - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
@@ -38,7 +38,7 @@ tests-on-ubuntu-22.04:
   script:
     - apt update; apt upgrade -y
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh

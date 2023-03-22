@@ -13,6 +13,7 @@ import numpy
 
 import myVTKPythonLibrary as myvtk
 
+import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 ################################################################################
@@ -33,7 +34,7 @@ def compute_quadrature_degree_from_points_count(
         image=image,
         verbose=verbose-1)
 
-    ugrid = dwarp.mesh2ugrid(mesh)
+    ugrid = dmech.mesh2ugrid(mesh)
     n_cells = ugrid.GetNumberOfCells()
     # if (verbose): print("n_cells = "+str(n_cells))
 

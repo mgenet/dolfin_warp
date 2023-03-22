@@ -16,6 +16,7 @@ import vtk
 
 import myPythonLibrary as mypy
 
+import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 ################################################################################
@@ -78,7 +79,7 @@ class ImageIterator():
             self.printer.inc()
 
             if (self.write_VTU_files):
-                dwarp.write_VTU_file(
+                dmech.write_VTU_file(
                     filebasename=vtu_basename,
                     function=self.problem.U,
                     time=self.problem.images_ref_frame,
@@ -101,7 +102,7 @@ class ImageIterator():
             #     v=self.J,
             #     V=self.J_fs,
             #     function=self.J_func)
-            # dwarp.write_VTU_file(
+            # dmech.write_VTU_file(
             #     filebasename=vtu_basename+"-J",
             #     function=self.J_func,
             #     time=self.problem.images_ref_frame)
@@ -224,7 +225,7 @@ class ImageIterator():
                 self.printer.inc()
 
                 if (self.write_VTU_files):
-                    dwarp.write_VTU_file(
+                    dmech.write_VTU_file(
                         filebasename=vtu_basename,
                         function=self.problem.U,
                         time=k_frame,
@@ -235,7 +236,7 @@ class ImageIterator():
                 #     v=self.J,
                 #     V=self.J_fs,
                 #     function=self.J_func)
-                # dwarp.write_VTU_file(
+                # dmech.write_VTU_file(
                 #     filebasename=vtu_basename+"-J",
                 #     function=self.J_func,
                 #     time=k_frame)

@@ -17,6 +17,7 @@ import os
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
+import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 from .generate_images import *
@@ -50,7 +51,7 @@ def compute_warped_mesh(
         assert (os.path.exists(mesh_filename)),\
         "No mesh in "+mesh_filename+". Aborting."
         if (mesh_ext == "xml"):
-            mesh = dwarp.mesh2ugrid(
+            mesh = dmech.mesh2ugrid(
                 dolfin.Mesh(
                     mesh_filename))
         elif (mesh_ext in ("vtk", "vtu")):
@@ -58,7 +59,7 @@ def compute_warped_mesh(
                 filename=mesh_filename,
                 verbose=verbose-1)
     else:
-        mesh = dwarp.mesh2ugrid(mesh)
+        mesh = dmech.mesh2ugrid(mesh)
     n_points = mesh.GetNumberOfPoints()
     n_cells = mesh.GetNumberOfCells()
 

@@ -16,6 +16,7 @@ import time
 
 import myPythonLibrary as mypy
 
+import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 from .NonlinearSolver import NonlinearSolver
@@ -79,7 +80,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
                 names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
                 filename=self.frame_filebasename+".dat")
 
-            dwarp.write_VTU_file(
+            dmech.write_VTU_file(
                 filebasename=self.frame_filebasename,
                 function=self.problem.U,
                 time=0)
@@ -114,7 +115,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
             if (self.write_iterations):
-                dwarp.write_VTU_file(
+                dmech.write_VTU_file(
                     filebasename=self.frame_filebasename,
                     function=self.problem.U,
                     time=self.k_iter)
