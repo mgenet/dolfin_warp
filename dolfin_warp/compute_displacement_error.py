@@ -14,7 +14,82 @@ import dolfin_warp as dwarp
 
 ################################################################################
 
-def compute_displacement_error(
+def compute_displacement_error_with_numpy(
+        working_folder          : str                       ,
+        working_basename        : str                       ,
+        ref_folder              : str                       ,
+        ref_basename            : str                       ,
+        working_ext             : str  = "vtu"              ,
+        ref_ext                 : str  = "vtu"              ,
+        working_disp_array_name : str  = "displacement"     ,
+        ref_disp_array_name     : str  = "displacement"     ,
+        suffix                  : str = "displacement_error",
+        sort_mesh               : bool = False              ,
+        verbose                 : bool = True               ):
+
+    assert (sort_mesh == False), "Not implemented in compute_displacement_error_with_numpy, Use compute_displacement_error_with_vtk instead. Aborting."
+
+    working_series = dwarp.MeshesSeries(
+        folder   = working_folder  ,
+        basename = working_basename,
+        ext      = working_ext     ,
+        verbose  = verbose         )
+
+    ref_series = dwarp.MeshesSeries(
+        folder   = ref_folder  ,
+        basename = ref_basename,
+        ext      = ref_ext     ,
+        verbose  = verbose     )
+
+    if (ref_series.n_frames != working_series.n_frames):
+        print ("Warning, ref_series.n_frames = "+str(ref_series.n_frames)+" != "+str(working_series.n_frames)+" = working_series.n_frames.")
+    if (verbose): print("n_frames = " + str(working_series.n_frames))
+
+    if (verbose): print("working_zfill = " + str(working_series.zfill))
+    if (verbose): print("ref_zfill = " + str(ref_series.zfill))
+
+    error_file = open(working_folder+"/"+working_basename+"-"+suffix+".dat", "w")
+    error_file.write("#k_frame err_int ref_int sol_int\n")
+
+    err_int = numpy.empty(working_series.n_frames)
+    ref_int = numpy.empty(working_series.n_frames)
+    sol_int = numpy.empty(working_series.n_frames)
+    ref_max = float("-Inf")
+    for k_frame in range(working_series.n_frames):
+        ref = ref_series.get_np_mesh(k_frame)
+        sol = working_series.get_np_mesh(k_frame)
+        assert (sol.Points.shape == ref.Points.shape)
+        assert (sol.Cells.shape  == ref.Cells.shape )
+
+        ref_disp = ref.PointData[ref_disp_array_name    ]
+        sol_disp = sol.PointData[working_disp_array_name]
+
+        ref_int[k_frame] = numpy.sqrt(numpy.mean(numpy.sum(numpy.square(ref_disp), axis=1), axis=0))
+        sol_int[k_frame] = numpy.sqrt(numpy.mean(numpy.sum(numpy.square(sol_disp), axis=1), axis=0))
+
+        err_int[k_frame] = numpy.sqrt(numpy.mean(numpy.sum(numpy.square(numpy.subtract(sol_disp,ref_disp)), axis=1), axis=0))
+
+        ref_max = max(ref_max, numpy.max(numpy.sqrt(numpy.sum(numpy.square(ref_disp), axis=1))))
+
+    error_file.write("\n".join([" ".join([str(val) for val in [k_frame, err_int[k_frame], ref_int[k_frame], sol_int[k_frame]]]) for k_frame in range(working_series.n_frames)]))
+
+    err_int_int = numpy.sqrt(numpy.mean(numpy.square(err_int)))
+    ref_int_int = numpy.sqrt(numpy.mean(numpy.square(ref_int)))
+    # print(err_int_int)
+    # print(ref_int_int)
+
+    # error_file.write("\n\n")
+    # error_file.write(" ".join([str(val) for val in [err_int_int, ref_int_int]]))
+
+    error_file.close()
+
+    err = err_int_int/ref_int_int
+    if (verbose): print(err)
+    return err
+
+
+
+def compute_displacement_error_with_vtk(
         working_folder          : str                  ,
         working_basename        : str                  ,
         ref_folder              : str                  ,
@@ -95,3 +170,8 @@ def compute_displacement_error(
     err = err_int_int/ref_int_int
     if (verbose): print(err)
     return err
+
+
+
+# compute_displacement_error = compute_displacement_error_with_vtk
+compute_displacement_error = compute_displacement_error_with_numpy

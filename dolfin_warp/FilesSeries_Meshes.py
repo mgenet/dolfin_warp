@@ -9,6 +9,7 @@
 ################################################################################
 
 import glob
+import vtk; from vtk.numpy_interface import dataset_adapter as dsa
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
@@ -87,3 +88,13 @@ class MeshesSeries(FilesSeries):
         return myvtk.readDataSet(
             filename=self.get_mesh_filename(
                 k_frame=k_frame))
+
+
+
+    def get_np_mesh(self,
+            k_frame):
+
+        return dsa.WrapDataObject(
+            myvtk.readDataSet(
+                filename=self.get_mesh_filename(
+                    k_frame=k_frame)))
