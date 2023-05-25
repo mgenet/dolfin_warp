@@ -63,20 +63,18 @@ class RelaxationNonlinearSolver(NonlinearSolver):
 
     def compute_relax_backtracking(self):
 
-        relax = 0.
+        relax = 0.; relax_cur = relax
         ener0 = self.problem.assemble_ener()
         self.printer.print_sci("ener0",ener0)
-        relax_cur = 0.
         self.printer.inc()
         k_relax = 1
         while (True):
             self.printer.print_var("k_relax",k_relax,-1)
             relax = 1./self.relax_backtracking_factor**(k_relax-1)
             self.printer.print_sci("relax",relax)
-            self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
+            self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
             ener = self.problem.assemble_ener()
             self.printer.print_sci("ener",ener)
-            relax_cur = relax
             if (ener < ener0):
                 self.relax = relax
                 break
@@ -87,7 +85,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             k_relax += 1
         self.printer.dec()
         relax = 0.
-        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
+        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
 
 
 
