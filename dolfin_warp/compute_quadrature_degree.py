@@ -90,7 +90,7 @@ def compute_quadrature_degree_from_points_count(
             n_quads = [1, 4, 5, 14, 15, 24, 64, 125, 125, 216, 216, 343, 343, 512, 512, 729, 729]
         # degree = int(numpy.searchsorted(n_quads, n_pixels_per_cell_max)+1)
         degree = int(numpy.searchsorted(n_quads, n_pixels_per_cell_avg)+1)
-        degree = max(2, degree) #MG20200206: First order quadrature elements seem to fail with FEniCS2019?
+        degree = max(2, degree) # MG20200206: First order quadrature elements seem to fail with FEniCS2019?
 
     return degree
 
