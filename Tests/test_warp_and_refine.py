@@ -18,12 +18,12 @@ import dolfin_warp     as dwarp
 
 res_folder = sys.argv[0][:-3]
 
-# test = mypy.Test(
-#     res_folder=res_folder,
-#     perform_tests=1,
-#     stop_at_failure=1,
-#     clean_after_tests=1,
-#     qois_suffix="-strains")
+test = mypy.Test(
+    res_folder=res_folder,
+    perform_tests=1,
+    stop_at_failure=1,
+    clean_after_tests=1,
+    qois_suffix="-strains")
 
 n_dim_lst  = [ ]
 n_dim_lst += [2]
@@ -32,7 +32,7 @@ n_dim_lst += [2]
 for n_dim in n_dim_lst:
 
     deformation_type_lst = []
-    # deformation_type_lst += ["translation"]
+    deformation_type_lst += ["translation"]
     deformation_type_lst += ["rotation"   ]
 
     for deformation_type in deformation_type_lst:
@@ -88,6 +88,9 @@ for n_dim in n_dim_lst:
             evolution=evolution,
             verbose=1)
 
+        working_basename  = images_basename
+        working_basename += "-levels"
+
         n_cells = 4
         if (n_dim == 2):
             mesh = dolfin.RectangleMesh(
@@ -107,24 +110,33 @@ for n_dim in n_dim_lst:
         regul_poisson = 0.
 
         if (1): dwarp.warp_and_refine(
-                working_folder=res_folder,
-                working_basename=images_basename,
-                images_folder=res_folder,
-                images_basename=images_basename,
-                mesh=mesh,
-                refinement_levels=[0,1],
-                regul_type=regul_type,
-                regul_model=regul_model,
-                regul_level=regul_level,
-                regul_poisson=regul_poisson,
-                normalize_energies=1,
-                relax_type="gss",
-                relax_tol=1e-3,
-                relax_n_iter_max=100,
-                tol_dU=1e-2,
-                continue_after_fail=1,
-                print_iterations=1,
-                write_qois_limited_precision=1)
+            working_folder=res_folder,
+            working_basename=working_basename,
+            images_folder=res_folder,
+            images_basename=images_basename,
+            mesh=mesh,
+            refinement_levels=[0,1],
+            regul_type=regul_type,
+            regul_model=regul_model,
+            regul_level=regul_level,
+            regul_poisson=regul_poisson,
+            normalize_energies=1,
+            relax_type="backtracking",
+            tol_dU=1e-2,
+            continue_after_fail=1,
+            write_qois_limited_precision=1)
+
+        working_basename += "-refine=1"
+                
+        if (1): dwarp.compute_strains(
+            working_folder=res_folder,
+            working_basename=working_basename,
+            verbose=1)
+
+        test.test(working_basename)
+
+        working_basename  = images_basename
+        working_basename += "-meshes"
 
         n_cells_lst  = []
         n_cells_lst += [4]
@@ -153,23 +165,27 @@ for n_dim in n_dim_lst:
             mesh_basenames += [mesh_basename]
 
         if (1): dwarp.warp_and_refine(
-                working_folder=res_folder,
-                working_basename=images_basename,
-                images_folder=res_folder,
-                images_basename=images_basename,
-                mesh_folder=res_folder,
-                mesh_basenames=mesh_basenames,
-                regul_type=regul_type,
-                regul_model=regul_model,
-                regul_level=regul_level,
-                regul_poisson=regul_poisson,
-                normalize_energies=1,
-                relax_type="gss",
-                relax_tol=1e-3,
-                relax_n_iter_max=100,
-                tol_dU=1e-2,
-                continue_after_fail=1,
-                print_iterations=1,
-                write_qois_limited_precision=1)
+            working_folder=res_folder,
+            working_basename=working_basename,
+            images_folder=res_folder,
+            images_basename=images_basename,
+            mesh_folder=res_folder,
+            mesh_basenames=mesh_basenames,
+            regul_type=regul_type,
+            regul_model=regul_model,
+            regul_level=regul_level,
+            regul_poisson=regul_poisson,
+            normalize_energies=1,
+            relax_type="backtracking",
+            tol_dU=1e-2,
+            continue_after_fail=1,
+            write_qois_limited_precision=1)
                 
-        # test.test(images_basename)
+        working_basename += "-refine=1"
+
+        if (1): dwarp.compute_strains(
+            working_folder=res_folder,
+            working_basename=working_basename,
+            verbose=1)
+
+        test.test(working_basename)

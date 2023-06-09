@@ -9,6 +9,7 @@
 ################################################################################
 
 import os
+import shutil
 import sys
 
 import myPythonLibrary as mypy
@@ -89,3 +90,5 @@ dwarp.compute_regularization_energies(
     verbose = 1)
 
 # test.test(mesh_basename+"-regul_ener")
+
+shutil.rmtree(res_folder, ignore_errors=1)

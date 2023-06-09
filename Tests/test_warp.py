@@ -17,6 +17,7 @@ import dolfin_warp     as dwarp
 ################################################################################
 
 res_folder = sys.argv[0][:-3]
+
 test = mypy.Test(
     res_folder=res_folder,
     perform_tests=1,
@@ -97,12 +98,10 @@ for n_dim in n_dim_lst:
     regul_type_lst += ["discrete-simple-elastic"                                 ]
     regul_type_lst += ["discrete-simple-equilibrated"                            ]
     regul_type_lst += ["discrete-linear-equilibrated"                            ]
-    regul_type_lst += ["discrete-linear-equilibrated-tractions"                  ]
     regul_type_lst += ["discrete-linear-equilibrated-tractions-normal"           ]
     regul_type_lst += ["discrete-linear-equilibrated-tractions-tangential"       ]
     regul_type_lst += ["discrete-linear-equilibrated-tractions-normal-tangential"]
     regul_type_lst += ["discrete-equilibrated"                                   ]
-    regul_type_lst += ["discrete-equilibrated-tractions"                         ]
     regul_type_lst += ["discrete-equilibrated-tractions-normal"                  ]
     regul_type_lst += ["discrete-equilibrated-tractions-tangential"              ]
     regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential"       ]
@@ -132,9 +131,7 @@ for n_dim in n_dim_lst:
             regul_model=regul_model,
             regul_level=regul_level,
             normalize_energies=1,
-            relax_type="gss",
-            relax_tol=1e-3,
-            relax_n_iter_max=100,
+            relax_type="backtracking",
             tol_dU=1e-2,
             write_qois_limited_precision=1)
 

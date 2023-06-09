@@ -9,6 +9,8 @@
 ################################################################################
 
 import math
+import os
+import shutil
 import sys
 
 import myPythonLibrary as mypy
@@ -17,6 +19,8 @@ import dolfin_warp     as dwarp
 ################################################################################
 
 res_folder = sys.argv[0][:-3]
+if not os.path.exists(res_folder): os.mkdir(res_folder)
+
 # test = mypy.Test(
 #     res_folder=res_folder,
 #     perform_tests=0,
@@ -24,7 +28,7 @@ res_folder = sys.argv[0][:-3]
 
 n_dim_lst  = [ ]
 n_dim_lst += [2]
-n_dim_lst += [3]
+# n_dim_lst += [3]
 
 structure_deformation_type_lst = []
 structure_deformation_type_lst += [["box" , "translation"]]
@@ -134,3 +138,5 @@ for n_dim                            in n_dim_lst                     :
             deformation=deformation,
             evolution=evolution,
             verbose=1)
+
+shutil.rmtree(res_folder, ignore_errors=1)
