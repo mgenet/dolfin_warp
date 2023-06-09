@@ -81,7 +81,7 @@ dwarp.compute_regularization_energies(
     noise_level = 0.,
     regul_types = regul_type_lst,
     regul_model_for_lin = "hooke",
-    regul_model_for_nl = "ciarletgeymonatneohookean",
+    regul_model_for_nl = "ogdenciarletgeymonatneohookean",
     regul_poisson = 0.,
     normalize_energies = True,
     write_regularization_energy_file = True,

@@ -115,7 +115,7 @@ for n_dim in n_dim_lst:
         if any([_ in regul_type for _ in ["linear", "simple"]]):
             regul_model = "hooke"
         else:
-            regul_model = "ciarletgeymonatneohookean"
+            regul_model = "ogdenciarletgeymonatneohookean"
 
         regul_level = 0.1
 

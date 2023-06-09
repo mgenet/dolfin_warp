@@ -102,7 +102,7 @@ for n_dim in n_dim_lst:
                 n_cells, n_cells, n_cells)
 
         regul_type    = "discrete-equilibrated-tractions-normal-tangential"
-        regul_model   = "ciarletgeymonatneohookean"
+        regul_model   = "ogdenciarletgeymonatneohookean"
         regul_level   = 0.1
         regul_poisson = 0.
 

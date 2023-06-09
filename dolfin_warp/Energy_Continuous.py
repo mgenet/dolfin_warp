@@ -72,7 +72,7 @@ class ContinuousEnergy(Energy):
 
         if ((type(self) == dwarp.RegularizationContinuousEnergy)\
         and (self.type == "equilibrated")\
-        and (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin"))):
+        and (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin"))):
             # dolfin.assemble(
             #     form=dolfin.Constant(w) * self.DDPsi_m_V * self.dV, # MG20230320: This part fails somehow, cf. https://fenicsproject.discourse.group/t/possible-bug-on-ufl-conditional/6537, but it is zero anyway for P1 elements…
             #     tensor=jac_mat,

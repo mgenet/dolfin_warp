@@ -29,7 +29,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             name: str = "reg",
             w: float = 1.,
             type: str = "equilibrated",
-            model: str = "ciarletgeymonatneohookean",
+            model: str = "ogdenciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
             b: typing.Optional["list[float]"] = None,
@@ -47,7 +47,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
 
-        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")
+        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")
         assert (model in model_lst),\
             "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
@@ -81,7 +81,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
                 u=self.problem.U)
             self.dE_test = dolfin.derivative(
                 self.kinematics.epsilon, self.problem.U, self.problem.dU_test)
-        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")):
             self.kinematics = dmech.Kinematics(
                 U=self.problem.U)
             self.dE_test = dolfin.derivative(
@@ -99,7 +99,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             self.Psi   = self.material.psi
             self.Sigma = self.material.sigma
             self.P     = self.material.sigma
-        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")):
             self.Psi   = self.material.Psi
             self.Sigma = self.material.Sigma
             self.P     = self.material.P

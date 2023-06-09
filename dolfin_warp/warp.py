@@ -36,7 +36,7 @@ def warp(
         mesh_degree : int = 1,
         regul_type : str = "continuous-equilibrated", # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
         regul_types : list = None,
-        regul_model : str = "ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_model : str = "ogdenciarletgeymonatneohookean", # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
         regul_models : list = None,
         regul_quadrature : int = None,
         regul_level : float = 0.,
@@ -338,7 +338,7 @@ if (__name__ == "__main__"):
     # parser.add_argument("--mesh_basename", type=str)
     # parser.add_argument("--mesh_degree", type=int)
     # parser.add_argument("--regul_types", type=str, choices=["continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic", "discrete-linear-equilibrated", "discrete-linear-elastic", "discrete-equilibrated", "discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential"], nargs="?")
-    # parser.add_argument("--regul_model", type=str, choices=["hooke", "kirchhoff", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin"])
+    # parser.add_argument("--regul_model", type=str, choices=["hooke", "kirchhoff", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin"])
     # parser.add_argument("--regul_levels", type=float, nargs="?")
     # parser.add_argument("--regul_poisson", type=float)
     # parser.add_argument("--relax_type", type=str, choices=["constant", "aitken", "backtracking", "gss"])

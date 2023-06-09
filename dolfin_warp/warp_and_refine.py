@@ -28,7 +28,7 @@ def warp_and_refine(
         mesh_basenames               : list        = None                       ,
         regul_type                   : str         = "continuous-equilibrated"  , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tan       gential, discrete-tractions-normal-tangential
         regul_types                  : list        = None                       ,
-        regul_model                  : str         = "ciarletgeymonatneohookean", # hooke, kirchhoff, ciarletgeymonatneohookean, ciarletgeymonatneohookeanmooneyrivlin
+        regul_model                  : str         = "ogdenciarletgeymonatneohookean", # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
         regul_models                 : list        = None                       ,
         regul_level                  : float       = 0.                         ,
         regul_levels                 : list        = None                       ,

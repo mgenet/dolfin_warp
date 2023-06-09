@@ -28,7 +28,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             name: str = "reg",
             w: float = 1.,
             type: str = "tractions",
-            model: str = "ciarletgeymonatneohookean",
+            model: str = "ogdenciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
             quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
@@ -46,7 +46,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
 
-        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")
+        model_lst = ("hooke", "kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")
         assert (model in model_lst),\
             "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
@@ -82,7 +82,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         if (self.model == "hooke"):
             self.kinematics = dmech.LinearizedKinematics(
                 u=self.problem.U)
-        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")):
             self.kinematics = dmech.Kinematics(
                 U=self.problem.U)
 
@@ -98,7 +98,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             self.Psi   = self.material.psi
             self.Sigma = self.material.sigma
             self.P     = self.material.sigma
-        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
+        elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")):
             self.Psi   = self.material.Psi
             self.Sigma = self.material.Sigma
             self.P     = self.material.P

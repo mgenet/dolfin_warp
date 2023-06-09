@@ -27,19 +27,19 @@ def compute_regularization_energies(
         dim                             : str,
         working_folder                  : str,
         working_basename                : str,
-        working_ext                     : str                          = "vtu"                      ,
-        working_displacement_array_name : str                          = "displacement"             ,
-        noise_type                      : typing.Optional[str]         = None                       , # MG20220815: This can be written "str | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
-        noise_level                     : float                        = 0.                         , 
-        regul_types                     : list                         = []                         ,
-        regul_model_for_lin             : str                          = "hooke"                    ,
-        regul_model_for_nl              : str                          = "ciarletgeymonatneohookean",
-        regul_poisson                   : float                        = 0.                         ,
-        regul_quadrature                : typing.Optional[int]         = None                       , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
-        normalize_energies              : bool                         = True                       ,
-        write_regularization_energy_file: bool                         = True                       ,
-        plot_regularization_energy      : bool                         = True                       ,
-        verbose                         : bool                         = True                       ):
+        working_ext                     : str                          = "vtu"                           ,
+        working_displacement_array_name : str                          = "displacement"                  ,
+        noise_type                      : typing.Optional[str]         = None                            , # MG20220815: This can be written "str | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+        noise_level                     : float                        = 0.                              , 
+        regul_types                     : list                         = []                              ,
+        regul_model_for_lin             : str                          = "hooke"                         ,
+        regul_model_for_nl              : str                          = "ogdenciarletgeymonatneohookean",
+        regul_poisson                   : float                        = 0.                              ,
+        regul_quadrature                : typing.Optional[int]         = None                            , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+        normalize_energies              : bool                         = True                            ,
+        write_regularization_energy_file: bool                         = True                            ,
+        plot_regularization_energy      : bool                         = True                            ,
+        verbose                         : bool                         = True                            ):
 
     working_series = dwarp.MeshesSeries(
         folder=working_folder,
