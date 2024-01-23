@@ -43,7 +43,7 @@ evolution = {"type":"linear"}
 
 N = 10
 mesh_basename = "mesh"
-mesh, _, _, _, _, _, _, _ = dmech.Disc_Mesh(params={"X0":X0[0], "Y0":X0[1], "R":R, "l":R/N, "mesh_filebasename":res_folder+"/"+mesh_basename})
+mesh, _, _, _, _, _, _, _ = dmech.run_Disc_Mesh(params={"X0":X0[0], "Y0":X0[1], "R":R, "l":R/N, "mesh_filebasename":res_folder+"/"+mesh_basename})
 
 dwarp.compute_warped_mesh(
     working_folder=res_folder,

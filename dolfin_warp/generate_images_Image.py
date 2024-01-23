@@ -33,7 +33,7 @@ class Image():
             self.I0_structure = self.I0_structure_box_wGrad if (generate_image_gradient) else self.I0_structure_box
             self.Xmin = structure["Xmin"]+[float("-Inf")]*(3-images["n_dim"])
             self.Xmax = structure["Xmax"]+[float("+Inf")]*(3-images["n_dim"])
-        elif (structure["type"] in ("ring,", "heart")):
+        elif (structure["type"] in ("ring", "heart")):
             self.R = float()
             self.Ri = structure["Ri"]
             self.Re = structure["Re"]

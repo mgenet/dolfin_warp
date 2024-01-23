@@ -30,7 +30,7 @@ if not os.path.exists(res_folder): os.mkdir(res_folder)
 
 working_basename  = "heart"
 
-dmech.HeartSlice_Hyperelasticity(
+dmech.run_HeartSlice_Hyperelasticity(
     incomp                                 = 0,
     mesh_params                            = {"X0":0.5, "Y0":0.5, "Ri":0.2, "Re":0.4, "l":0.1, "mesh_filebasename":res_folder+"/"+working_basename+"-mesh"},
     mat_params                             = {"model":"CGNH", "parameters":{"E":1., "nu":0.3}},

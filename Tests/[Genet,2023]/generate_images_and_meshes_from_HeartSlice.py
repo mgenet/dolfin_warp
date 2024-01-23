@@ -53,7 +53,7 @@ def generate_images_and_meshes_from_HeartSlice(
 
     # print (run_model)
     if (run_model):
-        dmech.HeartSlice_Hyperelasticity(
+        dmech.run_HeartSlice_Hyperelasticity(
             incomp                                 = 0,
             mesh_params                            = mesh_params,
             mat_params                             = {"model":"CGNH", "parameters":{"E":1., "nu":0.3}},

@@ -123,13 +123,13 @@ def generate_images_and_meshes_from_Struct(
             # import mshr
             # geometry = mshr.Circle(dolfin.Point(X0[0], X0[1]), R)
             # mesh = mshr.generate_mesh(geometry, r/mesh_size)
-            mesh, _, _, _, _, _, _, _ = dmech.Disc_Mesh(params={"X0":X0[0], "Y0":X0[1], "R":R, "l":mesh_size})
+            mesh, _, _, _, _, _, _, _ = dmech.run_Disc_Mesh(params={"X0":X0[0], "Y0":X0[1], "R":R, "l":mesh_size})
         elif (structure_type == "ring"):
             # import mshr
             # geometry = mshr.Circle(dolfin.Point(X0[0], X0[1]), Re)\
             #          - mshr.Circle(dolfin.Point(X0[0], X0[1]), Ri)
             # mesh = mshr.generate_mesh(geometry, (Re-Ri)/mesh_size)
-            mesh, _, _, _, _, _, _, _, _ = dmech.HeartSlice_Mesh(params={"X0":X0[0], "Y0":X0[1], "Ri":Ri, "Re":Re, "l":mesh_size})
+            mesh, _, _, _, _, _, _, _, _ = dmech.run_HeartSlice_Mesh(params={"X0":X0[0], "Y0":X0[1], "Ri":Ri, "Re":Re, "l":mesh_size})
 
         working_folder = images["folder"]
         
