@@ -28,9 +28,11 @@ class WarpingProblem(Problem):
             mesh_folder=None,
             mesh_basename=None,
             U_family="Lagrange",
-            U_degree=1):
+            U_degree=1,
+            silent=False):
 
-        self.printer = mypy.Printer()
+        self.printer = mypy.Printer(
+            silent=silent)
 
         self.set_mesh(
             mesh=mesh,

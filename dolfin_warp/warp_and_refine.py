@@ -19,29 +19,30 @@ def warp_and_refine(
         working_basename             : str,
         images_folder                : str,
         images_basename              : str,
-        images_quadrature            : int         = None                       ,
-        images_quadrature_from       : str         = "points_count"             , # points_count, integral
-        mesh                         : dolfin.Mesh = None                       ,
-        refinement_levels            : list        = [0]                        ,
-        meshes                       : list        = None                       ,
-        mesh_folder                  : str         = None                       ,
-        mesh_basenames               : list        = None                       ,
-        regul_type                   : str         = "continuous-equilibrated"  , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tan       gential, discrete-tractions-normal-tangential
-        regul_types                  : list        = None                       ,
+        images_quadrature            : int         = None                            ,
+        images_quadrature_from       : str         = "points_count"                  , # points_count, integral
+        mesh                         : dolfin.Mesh = None                            ,
+        refinement_levels            : list        = [0]                             ,
+        meshes                       : list        = None                            ,
+        mesh_folder                  : str         = None                            ,
+        mesh_basenames               : list        = None                            ,
+        regul_type                   : str         = "continuous-equilibrated"       , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_types                  : list        = None                            ,
         regul_model                  : str         = "ogdenciarletgeymonatneohookean", # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
-        regul_models                 : list        = None                       ,
-        regul_level                  : float       = 0.                         ,
-        regul_levels                 : list        = None                       ,
-        regul_poisson                : float       = 0.                         ,
-        relax_type                   : str         = None                       , # constant, aitken, backtracking, gss
-        relax_tol                    : float       = None                       ,
-        relax_n_iter_max             : int         = None                       ,
-        normalize_energies           : bool        = False                      ,
-        tol_dU                       : float       = None                       ,
-        n_iter_max                   : int         = 100                        ,
-        continue_after_fail          : bool        = False                      ,
-        write_qois_limited_precision : bool        = False                      ,
-        print_iterations             : bool        = False                      ):
+        regul_models                 : list        = None                            ,
+        regul_level                  : float       = 0.                              ,
+        regul_levels                 : list        = None                            ,
+        regul_poisson                : float       = 0.                              ,
+        relax_type                   : str         = None                            , # constant, aitken, backtracking, gss
+        relax_tol                    : float       = None                            ,
+        relax_n_iter_max             : int         = None                            ,
+        normalize_energies           : bool        = False                           ,
+        tol_dU                       : float       = None                            ,
+        n_iter_max                   : int         = 100                             ,
+        continue_after_fail          : bool        = False                           ,
+        write_qois_limited_precision : bool        = False                           ,
+        print_iterations             : bool        = False                           ,
+        silent                       : bool        = False                           ):
 
     if (meshes is None):
         meshes = []
@@ -102,7 +103,8 @@ def warp_and_refine(
             write_VTU_files                             = True,
             write_VTU_files_with_preserved_connectivity = True,
             write_XML_files                             = True,
-            print_iterations                            = print_iterations)
+            print_iterations                            = print_iterations,
+            silent                                      = silent)
 
         if not (success) and not (continue_after_fail):
             break
