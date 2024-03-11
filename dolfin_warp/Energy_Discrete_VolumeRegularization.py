@@ -12,12 +12,13 @@ import dolfin
 import petsc4py
 import typing
 
+import dolfin
 import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 from .Energy_Discrete import DiscreteEnergy
 from .Problem         import Problem
-
+from .Kinematics      import Kinematics
 ################################################################################
 
 class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
@@ -26,18 +27,19 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
     def __init__(self,
             problem: Problem,
+            kinematics: Kinematics,
             name: str = "reg",
             w: float = 1.,
             type: str = "equilibrated",
             model: str = "ciarletgeymonatneohookean",
             young: float = 1.,
-            poisson: float = 0.,
+            poisson: float = 0.3,
             b: typing.Optional["list[float]"] = None,
             quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
-
         self.problem = problem
-        self.printer = problem.printer
-
+        self.kinematics = kinematics
+        # self.printer = problem.printer
+        b=[[0.3,0]]
         self.name = name
 
         self.w = w
@@ -52,20 +54,20 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             "\"model\" ("+str(model)+") must be in "+str(model_lst)+". Aborting."
         self.model = model
 
-        assert (young > 0.),\
-            "\"young\" ("+str(young)+") must be > 0. Aborting."
+        # assert (young > 0.),\
+        #     "\"young\" ("+str(young)+") must be > 0. Aborting."
         self.young = young
 
-        assert (poisson > -1.),\
-            "\"poisson\" ("+str(poisson)+") must be > -1. Aborting."
-        assert (poisson < 0.5),\
-            "\"poisson\" ("+str(poisson)+") must be < 0.5. Aborting."
+        # assert (poisson > -1.),\
+        #     "\"poisson\" ("+str(poisson)+") must be > -1. Aborting."
+        # assert (poisson < 0.5),\
+        #     "\"poisson\" ("+str(poisson)+") must be < 0.5. Aborting."
         self.poisson = poisson
 
         self.b = b
 
-        self.printer.print_str("Defining regularization energy…")
-        self.printer.inc()
+        # self.printer.print_str("Defining regularization energy…")
+        # self.printer.inc()
 
         self.quadrature_degree = quadrature_degree
         form_compiler_parameters = {
@@ -78,14 +80,14 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         if (self.model == "hooke"):
             self.kinematics = dmech.LinearizedKinematics(
-                u=self.problem.U)
+                u=self.kinematics.U)
             self.dE_test = dolfin.derivative(
-                self.kinematics.epsilon, self.problem.U, self.problem.dU_test)
+                self.kinematics.epsilon, self.kinematics.U, self.problem.get_displacement_subsol().dsubtest)
         elif (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin")):
-            self.kinematics = dmech.Kinematics(
-                U=self.problem.U)
+            # self.kinematics = dmech.Kinematics(
+            #     U=self.kinematics.U)
             self.dE_test = dolfin.derivative(
-                self.kinematics.E, self.problem.U, self.problem.dU_test)
+                self.kinematics.E, self.kinematics.U, self.problem.get_displacement_subsol().dsubtest)
 
         self.material = dmech.material_factory(
             kinematics=self.kinematics,
@@ -106,18 +108,17 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         # self.Psi_form = self.Psi * self.dV
         # if (self.b is not None):
-            # self.Psi_form += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * self.dV
-        # self.Wint_form  = dolfin.derivative(self.Psi_form , self.problem.U, self.problem.dU_test ) # MG20230320: Problem is, this is well defined for J < 0 !
-
+            # self.Psi_form += dolfin.inner(dolfin.Constant(self.b), self.kinematics.U) * self.dV
+        # self.Wint_form  = dolfin.derivative(self.Psi_form , self.kinematics.U, self.problem.get_displacement_subsol().dsubtest ) # MG20230320: Problem is, this is well defined for J < 0 !
         self.Wint_form = dolfin.inner(self.material.Sigma, self.dE_test) * self.dV
         if (self.b is not None):
-            self.Wint_form += dolfin.inner(dolfin.Constant(self.b), self.problem.dU_test) * self.dV
+            self.Wint_form -= dolfin.inner(dolfin.Constant(self.b), self.problem.get_displacement_subsol().dsubtest) * self.kinematics.J * self.dV
 
-        self.dWint_form = dolfin.derivative(self.Wint_form, self.problem.U, self.problem.dU_trial)
+        self.dWint_form = dolfin.derivative(self.Wint_form, self.kinematics.U, self.problem.get_displacement_subsol().dsubtria)
             
         M_lumped_form = dolfin.inner(
-            self.problem.dU_trial,
-            self.problem.dU_test) * dolfin.dx(
+            self.problem.get_displacement_subsol().dsubtria,
+            self.problem.get_displacement_subsol().dsubtest) * dolfin.dx(
                 domain=self.problem.mesh,
                 scheme="vertex",
                 metadata={
@@ -128,7 +129,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             form=M_lumped_form,
             tensor=self.M_lumped_mat)
         # print(self.M_lumped_mat.array())
-        self.M_lumped_vec = self.problem.U.vector().copy()
+        self.M_lumped_vec = self.kinematics.U.vector().copy()
         self.M_lumped_mat.get_diagonal(self.M_lumped_vec)
         # print(self.M_lumped_vec.get_local())
         self.M_lumped_inv_vec = self.M_lumped_vec.copy()
@@ -141,28 +142,27 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.M_lumped_inv_mat.set_diagonal(self.M_lumped_inv_vec)
         # print(self.M_lumped_inv_mat.array())
 
-        self.R_vec = self.problem.U.vector().copy()
-        self.MR_vec = self.problem.U.vector().copy()
-        self.dRMR_vec = self.problem.U.vector().copy()
+        self.R_vec = self.kinematics.U.vector().copy()
+        self.MR_vec = self.kinematics.U.vector().copy()
+        self.dRMR_vec = self.kinematics.U.vector().copy()
 
         self.dR_mat = dolfin.PETScMatrix()
 
         sd = dolfin.CompiledSubDomain("on_boundary")
-        self.bc = dolfin.DirichletBC(self.problem.U_fs, [0]*self.problem.mesh_dimension, sd)
+        self.bc = dolfin.DirichletBC(self.problem.get_displacement_function_space(), [0]*self.problem.dim, sd)
 
         # self.assemble_ener()
-        # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
+        # self.kinematics.U.vector()[:] = (numpy.random.rand(*self.kinematics.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
 
-        self.printer.dec()
+        # self.printer.dec()
 
 
 
     def assemble_ener(self,
             w_weight=True):
-
+        
         # print (dolfin.assemble(Psi))
-
         dolfin.assemble(
             form=self.Wint_form,
             tensor=self.R_vec)
@@ -173,7 +173,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         # print(self.MR_vec.get_local())
         ener = self.R_vec.inner(self.MR_vec)
         ener /= 2
-        # print(ener)
+        # print("ener", ener)
 
         if (w_weight):
             w = self.w
@@ -267,6 +267,6 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         assert (self.ener >= 0.),\
             "ener (="+str(self.ener)+") should be non negative. Aborting."
         self.ener  = self.ener**(1./2)
-        self.printer.print_sci(self.name+"_ener",self.ener)
+        # self.printer.print_sci(self.name+"_ener",self.ener)
 
         return [self.ener]

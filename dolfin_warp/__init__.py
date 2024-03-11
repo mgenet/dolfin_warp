@@ -13,6 +13,7 @@ from .FilesSeries import *
 from .FilesSeries_Images import *
 from .FilesSeries_Meshes import *
 from .ImageIterator import *
+from .Kinematics import *
 from .ModalAnalysis import *
 from .MotionModel import *
 from .NonlinearSolver import *
