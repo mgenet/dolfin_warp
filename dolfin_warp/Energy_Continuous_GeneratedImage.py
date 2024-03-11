@@ -23,20 +23,20 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
 
     def __init__(self,
-            problem: Problem,
-            images_series: ImagesSeries,
-            quadrature_degree: int,
-            texture: str,
-            name: str = "gen_im",
-            w: float = 1.,
-            ref_frame: int = 0,
-            resample: bool = True,
-            compute_DIgen: bool = True,
-            n_resampling_Igen: int = 1):
+            problem          : Problem                ,
+            images_series    : ImagesSeries           ,
+            quadrature_degree: int                    ,
+            texture          : str                    ,
+            name             : str          = "gen_im",
+            w                : float        = 1.      ,
+            ref_frame        : int          = 0       ,
+            resample         : bool         = True    ,
+            compute_DIgen    : bool         = True    ,
+            n_resampling_Igen: int          = 1       ):
 
         self.problem           = problem
         self.printer           = self.problem.printer
-        self.images_series      = images_series
+        self.images_series     = images_series
         self.quadrature_degree = quadrature_degree
         self.texture           = texture
         self.name              = name
@@ -129,28 +129,6 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Igen_int0",self.Igen_int0)
-
-        ###
-        # U_rbm_expr = dolfin.Expression(
-        #     ("UX", "UY"),
-        #     UX=0.1,
-        #     UY=0.1,
-        #     element=self.problem.U_fe)
-        # U_rbm = dolfin.interpolate(
-        #     v=U_rbm_expr,
-        #     V=self.problem.U_fs)
-        # self.problem.U.vector()[:] = U_rbm.vector()
-        # self.Igen.update_disp()
-        # self.Igen.generate_image(
-        #     n_down=self.n_resampling_Igen)
-        # self.Igen.write_image(
-        #     filename="run_gimic2.vti")
-        # self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
-        # self.printer.print_sci("Igen_int0_b",self.Igen_int0)
-        # ###
-        #
-        # self.Igen_norm0 = (dolfin.assemble(self.Igen**2 * self.dV)/self.problem.mesh_V0)**(1./2)
-        # self.printer.print_sci("Igen_norm0",self.Igen_norm0)
 
         if (self.resample):
             if (self.compute_DIgen):

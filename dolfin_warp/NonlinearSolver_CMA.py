@@ -157,18 +157,23 @@ class CMANonlinearSolver(NonlinearSolver):
         # solve with cma.fmin
         # FA20200218: If objective_function has extra args, in cma.fmin() add them as a tuple: args=(extra_arg1, extra_arg2, ...)
         objective_function = self.compute_corr_energy
-        res = cma.fmin(objective_function, self.x_0, self.sigma0, options={'bounds': self.bounds, 'ftarget': self.ftarget, 'tolfun':self.tolfun, 'verb_filenameprefix': self.working_folder + "/outcmaes/"})
-
+        res = cma.fmin(
+            objective_function,
+            self.x_0,
+            self.sigma0,
+            options={
+                "bounds":self.bounds,
+                "ftarget":self.ftarget,
+                "tolfun":self.tolfun,
+                "verb_filenameprefix":self.working_folder+"/outcmaes/"})
         coeffs = res[0]
         self.print_state("CMA obtained values:",coeffs)
 
         if (self.motion_model == "full") and (self.restrict_x0_range):
             for dof in range(self.n_dofs):
                 self.x_real[dof] = self.norm2real(coeffs[dof], self.range_disp[dof][0], self.range_disp[dof][1])
-
-            for dof in range(int(self.n_dofs)):
+            for dof in range(self.n_dofs):
                 self.range_disp[dof] = [self.x_real[dof]-self.restrict_x0_range_bound, self.x_real[dof]+self.restrict_x0_range_bound]
-
         else:
             self.x_0 = coeffs
 
@@ -189,7 +194,7 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # J = dolfin.det(dolfin.Identity(2) + dolfin.grad(self.U_tot))
         J_p = dolfin.project(self.J, self.fs_J) # FA20200218: TODO: use localproject()
-        if (min(J_p.vector()[:]) < 0):
+        if (min(J_p.vector()[:]) < 0.):
             return numpy.NaN
 
         # FA20200219: in GeneratedImageEnergy.call_before_assembly():
@@ -220,14 +225,12 @@ class CMANonlinearSolver(NonlinearSolver):
                     self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[0], self.range_disp[1])
 
             self.U_tot.vector()[:] = self.dofs
-
         else:
             disp_x = self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1])
             disp_y = self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1])
 
             if (self.motion_model == "trans"):
                 disp_rot = 0.
-
             elif (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
                 disp_rot = self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1])
 
@@ -254,7 +257,8 @@ class CMANonlinearSolver(NonlinearSolver):
         disp_rot = disp[2]
 
         U_rbm_expr = dolfin.Expression(
-            ("UX + (x[0]-Cx_THETA)*(cos(THETA)-1) - (x[1]-Cy_THETA)*sin(THETA)", "UY + (x[0]-Cx_THETA)*sin(THETA) + (x[1]-Cy_THETA)*(cos(THETA)-1)"),
+            ("UX + (x[0]-Cx_THETA)*(cos(THETA)-1) - (x[1]-Cy_THETA)* sin(THETA)   ",
+                "UY + (x[0]-Cx_THETA)* sin(THETA)    + (x[1]-Cy_THETA)*(cos(THETA)-1)"),
             UX=disp_x,
             UY=disp_y,
             THETA=disp_rot*numpy.pi/180,

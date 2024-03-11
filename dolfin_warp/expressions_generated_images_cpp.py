@@ -11,11 +11,11 @@
 ################################################################################
 
 def get_ExprGenIm_cpp_pybind(
-        im_dim, # 2, 3
-        im_type="im", # im, grad
-        im_is_def=1,
-        im_texture="no", # no, tagging
-        verbose=0):
+        im_dim     : int        , # 2, 3
+        im_type    : str  = "im", # im, grad
+        im_is_def  : bool = 1   ,
+        im_texture : str  = "no", # no, tagging
+        verbose    : bool = 0   ):
 
     assert (im_dim in (2,3))
     assert (im_type in ("im", "grad"))
@@ -577,7 +577,6 @@ public:
         // writer_name[writer_name_str.size()] = '\0';
         // writer->SetFileName(writer_name);
         // writer->Write();
-
     }
 
     void generate_image
