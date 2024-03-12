@@ -39,7 +39,6 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.problem = problem
         self.kinematics = kinematics
         # self.printer = problem.printer
-        b=[[0.3,0]]
         self.name = name
 
         self.w = w
