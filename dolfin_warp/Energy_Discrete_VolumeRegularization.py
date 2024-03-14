@@ -129,6 +129,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             tensor=self.M_lumped_mat)
         # print(self.M_lumped_mat.array())
         self.M_lumped_vec = self.kinematics.U.vector().copy()
+        # self.M_lumped_vec = self.problem.U.vector().copy()
         self.M_lumped_mat.get_diagonal(self.M_lumped_vec)
         # print(self.M_lumped_vec.get_local())
         self.M_lumped_inv_vec = self.M_lumped_vec.copy()
