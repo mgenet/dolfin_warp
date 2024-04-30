@@ -31,6 +31,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             model: str = "ogdenciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
+            b_fin: typing.Optional["list[float]"] = None,
             quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
             scalar_formulation_in_2D: bool = 1):
 

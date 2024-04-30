@@ -42,6 +42,7 @@ def warp(
         regul_level                                 : float       = 0.                              ,
         regul_levels                                : list        = None                            ,
         regul_poisson                               : float       = 0.                              ,
+        regul_b                                     : float       = None                            ,
         tangent_type                                : str         = "Idef"                          , # Idef
         residual_type                               : str         = "Iref"                          , # Iref
         relax_type                                  : str         = None                            , # constant, aitken, backtracking, gss
@@ -218,6 +219,7 @@ def warp(
             name_suffix += ("_"+    regul_type  )*(len(regul_types )>1)
             name_suffix += ("_"+    regul_model )*(len(regul_models)>1)
             name_suffix += ("_"+str(regul_level))*(len(regul_levels)>1)
+            regul_b_ = None
             if regul_type.startswith("continuous"):
                 regularization_energy_type = dwarp.RegularizationContinuousEnergy
                 if regul_type.startswith("continuous-linear"):
@@ -230,6 +232,7 @@ def warp(
             elif regul_type.startswith("discrete"):
                 if ("equilibrated" in regul_type):
                     regularization_energy_type = dwarp.VolumeRegularizationDiscreteEnergy
+                    regul_b_ = regul_b
                 elif ("tractions" in regul_type):
                     regularization_energy_type = dwarp.SurfaceRegularizationDiscreteEnergy
                 else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
@@ -245,6 +248,7 @@ def warp(
                 type=regul_type_,
                 model=regul_model,
                 poisson=regul_poisson,
+                b_fin=regul_b_,
                 quadrature_degree=regul_quadrature)
             problem.add_regul_energy(regularization_energy)
 

@@ -37,7 +37,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
         self.problem           = problem
         self.printer           = self.problem.printer
-        self.images_series      = images_series
+        self.images_series     = images_series
         self.quadrature_degree = quadrature_degree
         self.name              = name
         self.w                 = w

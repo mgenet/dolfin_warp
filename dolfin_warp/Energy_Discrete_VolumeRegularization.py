@@ -9,6 +9,7 @@
 ################################################################################
 
 import dolfin
+import numpy
 import petsc4py
 import typing
 
@@ -32,7 +33,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             model: str = "ogdenciarletgeymonatneohookean",
             young: float = 1.,
             poisson: float = 0.,
-            b: typing.Optional["list[float]"] = None,
+            b_fin: typing.Optional["list[float]"] = None,
             quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
 
         self.problem = problem
@@ -62,7 +63,11 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             "\"poisson\" ("+str(poisson)+") must be < 0.5. Aborting."
         self.poisson = poisson
 
-        self.b = b
+        self.b_fin = b_fin
+        if (self.b_fin is not None):
+            print(self.b_fin)
+            self.b = dolfin.Constant(self.b_fin)
+            print(self.b.str(1))
 
         self.printer.print_str("Defining regularization energy…")
         self.printer.inc()
@@ -106,15 +111,15 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         # self.Psi_form = self.Psi * self.dV
         # if (self.b is not None):
-            # self.Psi_form += dolfin.inner(dolfin.Constant(self.b), self.problem.U) * self.dV
+            # self.Psi_form -= dolfin.inner(self.b, self.problem.U) * self.dV
         # self.Wint_form  = dolfin.derivative(self.Psi_form , self.problem.U, self.problem.dU_test ) # MG20230320: Problem is, this is well defined for J < 0 !
 
         self.Wint_form = dolfin.inner(self.material.Sigma, self.dE_test) * self.dV
-        if (self.b is not None):
-            self.Wint_form += dolfin.inner(dolfin.Constant(self.b), self.problem.dU_test) * self.dV
+        if (self.b_fin is not None):
+            self.Wint_form -= dolfin.inner(self.b, self.problem.dU_test) * self.dV
 
         self.dWint_form = dolfin.derivative(self.Wint_form, self.problem.U, self.problem.dU_trial)
-            
+
         M_lumped_form = dolfin.inner(
             self.problem.dU_trial,
             self.problem.dU_test) * dolfin.dx(
@@ -155,6 +160,20 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         # self.assemble_ener()
 
         self.printer.dec()
+
+
+
+    def call_before_solve(self,
+            k_frame,
+            n_frames,
+            **kwargs):
+
+        self.printer.print_str("Updating body force…")
+
+        if (self.b_fin is not None):
+            print(self.b.str(1))
+            self.b.assign(dolfin.Constant(numpy.asarray(self.b_fin)*k_frame/(n_frames-1)))
+            print(self.b.str(1))
 
 
 

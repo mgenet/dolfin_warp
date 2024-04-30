@@ -206,7 +206,8 @@ class ImageIterator():
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
 
                 self.problem.call_before_solve(
-                    k_frame=k_frame)
+                    k_frame=k_frame,
+                    n_frames=self.problem.images_n_frames)
 
                 self.printer.print_str("Running registration…")
 
