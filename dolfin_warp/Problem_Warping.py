@@ -59,6 +59,7 @@ class WarpingProblem(Problem):
         self.printer.print_str("Loading mesh…")
         self.printer.inc()
 
+        print("mesh", mesh, mesh_basename, mesh_folder)
         assert ((mesh is not None) or ((mesh_folder is not None) and (mesh_basename is not None))),\
             "Must provide a mesh (mesh = "+str(mesh)+") or a mesh file (mesh_folder = "+str(mesh_folder)+", mesh_basename = "+str(mesh_basename)+"). Aborting."
 
