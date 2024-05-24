@@ -32,6 +32,10 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             young: float = 1.,
             poisson: float = 0.,
             b_fin: typing.Optional["list[float]"] = None,
+            volume_subdomain_data = None,
+            volume_subdomain_id = None,
+            surface_subdomain_data = None,
+            surface_subdomain_id = None,
             quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
             scalar_formulation_in_2D: bool = 1):
 
@@ -74,11 +78,15 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.dS = dolfin.Measure(
             "ds",
             domain=self.problem.mesh,
+            subdomain_data=surface_subdomain_data,
+            subdomain_id=surface_subdomain_id if volume_subdomain_id is not None else "everywhere",
             metadata=form_compiler_parameters)
-        self.dV = dolfin.Measure(
-            "dx",
-            domain=self.problem.mesh,
-            metadata=form_compiler_parameters)
+        # self.dV = dolfin.Measure(
+        #     "dx",
+        #     domain=self.problem.mesh,
+        #     subdomain_data=volume_subdomain_data,
+        #     subdomain_id=volume_subdomain_id if volume_subdomain_id is not None else "everywhere",
+        #     metadata=form_compiler_parameters)
 
         if (self.model == "hooke"):
             self.kinematics = dmech.LinearizedKinematics(

@@ -43,6 +43,10 @@ def warp(
         regul_levels                                : list        = None                            ,
         regul_poisson                               : float       = 0.                              ,
         regul_b                                     : float       = None                            ,
+        regul_volume_subdomain_data                               = None                            ,
+        regul_volume_subdomain_id                                 = None                            ,
+        regul_surface_subdomain_data                              = None                            ,
+        regul_surface_subdomain_id                                = None                            ,
         tangent_type                                : str         = "Idef"                          , # Idef
         residual_type                               : str         = "Iref"                          , # Iref
         relax_type                                  : str         = None                            , # constant, aitken, backtracking, gss
@@ -249,6 +253,10 @@ def warp(
                 model=regul_model,
                 poisson=regul_poisson,
                 b_fin=regul_b_,
+                volume_subdomain_data=regul_volume_subdomain_data,
+                volume_subdomain_id=regul_volume_subdomain_id,
+                surface_subdomain_data=regul_surface_subdomain_data,
+                surface_subdomain_id=regul_surface_subdomain_id,
                 quadrature_degree=regul_quadrature)
             problem.add_regul_energy(regularization_energy)
 
