@@ -25,7 +25,7 @@ class MotionModel():
         self.problem = problem
 
         self.modes = []
-        if (type == "translation" or type == "translation_and_scaling"):
+        if ((type == "translation") or (type == "translation_and_scaling")):
             if   (self.problem.mesh_dimension == 2):
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
@@ -53,7 +53,7 @@ class MotionModel():
                         ("0.", "0.", "1."),
                         element=self.problem.U_fe),
                     V=self.problem.U_fs))
-        if (type == "scaling" or type == "translation_and_scaling"):
+        if ((type == "scaling") or (type == "translation_and_scaling")):
             if   (self.problem.mesh_dimension == 2):
                 self.modes.append(dolfin.interpolate(
                     v=dolfin.Expression(
