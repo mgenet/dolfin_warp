@@ -152,3 +152,31 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
         self.jac_form  = self.DDPsi_m_V * self.dV + self.DDPsi_m_F * self.dF + self.DDPsi_m_S * self.dS
 
         self.printer.dec()
+
+
+
+    def assemble_jac_w_weight(self,
+            w,
+            jac_mat,
+            add_values=True,
+            finalize_tensor=True):
+
+        if  (self.type == "equilibrated")\
+        and (self.model in ("kirchhoff", "neohookean", "mooneyrivlin", "neohookeanmooneyrivlin", "ciarletgeymonat", "ciarletgeymonatneohookean", "ciarletgeymonatneohookeanmooneyrivlin", "ogdenciarletgeymonat", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin")):
+            # dolfin.assemble(
+            #     form=dolfin.Constant(w) * self.DDPsi_m_V * self.dV, # MG20230320: This part fails somehow, cf. https://fenicsproject.discourse.group/t/possible-bug-on-ufl-conditional/6537, but it is zero anyway for P1 elements…
+            #     tensor=jac_mat,
+            #     add_values=add_values,
+            #     finalize_tensor=finalize_tensor)
+            dolfin.assemble(
+                form=dolfin.Constant(w) * self.DDPsi_m_F * self.dF,
+                tensor=jac_mat,
+                add_values=add_values,
+                finalize_tensor=False)
+            dolfin.assemble(
+                form=dolfin.Constant(w) * self.DDPsi_m_S * self.dS,
+                tensor=jac_mat,
+                add_values=add_values,
+                finalize_tensor=finalize_tensor)
+        else:
+            ContinuousEnergy.assemble_jac_w_weight(self, w, jac_mat, add_values, finalize_tensor)

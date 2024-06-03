@@ -38,6 +38,66 @@ class Energy():
 
 
 
+    def compute_weigth(self,
+            w_weight=True):
+
+        if (w_weight):
+            w = self.w
+            if hasattr(self, "ener0"):
+                w /= self.ener0
+        else:
+            w = 1.
+
+        return w
+
+
+    def assemble_ener(self,
+            w_weight=True):
+
+        w = self.compute_weigth(
+            w_weight=w_weight)
+
+        ener = self.assemble_ener_w_weight(
+            w=w)
+
+        return ener
+
+
+
+    def assemble_res(self,
+            res_vec,
+            add_values=True,
+            finalize_tensor=True,
+            w_weight=True):
+
+        w = self.compute_weigth(
+            w_weight=w_weight)
+
+        self.assemble_res_w_weight(
+            w=w,
+            res_vec=res_vec,
+            add_values=add_values,
+            finalize_tensor=finalize_tensor)
+
+
+
+    def assemble_jac(self,
+            jac_mat,
+            add_values=True,
+            finalize_tensor=True,
+            w_weight=True):
+
+        w = self.compute_weigth(
+            w_weight=w_weight)
+
+        self.assemble_jac_w_weight(
+            w=w,
+            jac_mat=jac_mat,
+            add_values=add_values,
+            finalize_tensor=finalize_tensor)
+
+
+
     def call_after_solve(self,
             *kargs,
             **kwargs):

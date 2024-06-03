@@ -110,57 +110,36 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
+    def assemble_ener_w_weight(self,
+            w):
 
         self.K_mat.mult(self.U_vec, self.KU_vec)
         ener  = self.U_vec.inner(self.KU_vec)
         ener /= 2
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
         return w*ener
 
 
 
-    def assemble_res(self,
+    def assemble_res_w_weight(self,
+            w,
             res_vec,
             add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
+            finalize_tensor=True):
 
         assert (add_values == True)
 
         self.K_mat.mult(self.U_vec, self.KU_vec)
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
         res_vec.axpy(w, self.KU_vec)
 
 
-    def assemble_jac(self,
+    def assemble_jac_w_weight(self,
+            w,
             jac_mat,
             add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
+            finalize_tensor=True):
 
         assert (add_values == True)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
 
         jac_mat.axpy(w, self.K_mat, False)

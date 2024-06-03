@@ -310,8 +310,8 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
+    def assemble_ener_w_weight(self,
+            w):
 
         # dolfin.plot(self.Fn) # "Don't know how to plot given object"
 
@@ -390,22 +390,15 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         # self.k_frame += 1
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
         return w*ener
 
 
 
-    def assemble_res(self,
+    def assemble_res_w_weight(self,
+            w,
             res_vec,
             add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
+            finalize_tensor=True):
 
         assert (add_values == True)
 
@@ -427,23 +420,16 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
         # print(self.dRMR_vec.get_local())
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
         res_vec.axpy(w, self.dRMR_vec)
         # print(res_vec.get_local())
 
 
 
-    def assemble_jac(self,
+    def assemble_jac_w_weight(self,
+            w,
             jac_mat,
             add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
+            finalize_tensor=True):
 
         assert (add_values == True)
 
@@ -454,12 +440,5 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
         self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
 
         jac_mat.axpy(w, self.K_mat, False) # MG20220107: cannot provide same_nonzero_pattern as kwarg
