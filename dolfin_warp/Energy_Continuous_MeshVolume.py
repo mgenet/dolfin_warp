@@ -27,7 +27,16 @@ class MeshVolumeContinuousEnergy(ContinuousEnergy):
             problem: Problem,
             quadrature_degree: typing.Optional[int] = None,
             name: str = "vol",
+            type: str = "mesh-discrete",
+            model: str = "ogdenciarletgeymonatneohookean",
+            b_fin: typing.Optional["list[float]"] = None,
+            poisson: float = 0.,
+            volume_subdomain_data = None,
+            volume_subdomain_id = None,
+            surface_subdomain_data = None,
+            surface_subdomain_id = None,
             w: float = 1.):
+    
 
         self.problem           = problem
         self.printer           = self.problem.printer
@@ -53,7 +62,8 @@ class MeshVolumeContinuousEnergy(ContinuousEnergy):
 
         # forms
         self.mesh_V0 = dolfin.assemble(dolfin.Constant(1.) * self.dV)
-        self.Psi = -self.J/self.V0
+        self.Psi = -self.J/self.mesh_V0
+        # self.Psi = 1/self.J/self.mesh_V0/self.mesh_V0
         self.ener_form = self.Psi * self.dV
 
         self.DPsi = dolfin.derivative(self.Psi, self.problem.U, self.problem.dU_test)

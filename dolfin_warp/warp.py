@@ -69,6 +69,7 @@ def warp(
         gimic_texture                               : str         = "no"                            ,
         gimic_resample                              : int         = 1                               ,
         nonlinearsolver                             : str         = "newton"                        , # newton, CMA
+        nonlineartransformation                     : str         = "translation_and_scaling"       ,
         tol_res                                     : float       = None                            , # None
         tol_res_rel                                 : float       = None                            ,
         tol_dU                                      : float       = None                            ,
@@ -239,6 +240,8 @@ def warp(
                     regul_b_ = regul_b
                 elif ("tractions" in regul_type):
                     regularization_energy_type = dwarp.SurfaceRegularizationDiscreteEnergy
+                elif ("mesh" in regul_type):
+                    regularization_energy_type = dwarp.MeshVolumeContinuousEnergy
                 else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
                 if regul_type.startswith("discrete-linear"):
                     regul_type_ = regul_type.split("-",2)[2]
@@ -282,7 +285,7 @@ def warp(
     elif (nonlinearsolver == "reduced_kinematic_newton"):
         motion = dwarp.MotionModel(
             problem=problem,
-            type="translation_and_scaling")
+            type=nonlineartransformation) #translation_and_scaling
         solver = dwarp.ReducedKinematicsNewtonNonlinearSolver(
             problem=problem,
             motion_model=motion,
