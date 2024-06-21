@@ -33,6 +33,7 @@ def warp_and_refine(
         regul_level                  : float       = 0.                              ,
         regul_levels                 : list        = None                            ,
         regul_poisson                : float       = 0.                              ,
+        regul_b                      : float       = None                            ,
         relax_type                   : str         = None                            , # constant, aitken, backtracking, gss
         relax_tol                    : float       = None                            ,
         relax_n_iter_max             : int         = None                            ,
@@ -86,6 +87,7 @@ def warp_and_refine(
             regul_level                                 = regul_level,
             regul_levels                                = regul_levels,
             regul_poisson                               = regul_poisson,
+            regul_b=regul_b,
             relax_type                                  = relax_type,
             relax_tol                                   = relax_tol,
             relax_n_iter_max                            = relax_n_iter_max,
