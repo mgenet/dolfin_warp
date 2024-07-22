@@ -69,9 +69,9 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.b_fin = b_fin
         if (self.b_fin is not None):
-            print(self.b_fin)
+            # print(self.b_fin)
             self.b = dolfin.Constant(self.b_fin)
-            print(self.b.str(1))
+            # print(self.b.str(1))
 
         self.printer.print_str("Defining regularization energy…")
         self.printer.inc()
@@ -177,9 +177,9 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.printer.print_str("Updating body force…")
 
         if (self.b_fin is not None):
-            print(self.b.str(1))
+            # print(self.b.str(1))
             self.b.assign(dolfin.Constant(numpy.asarray(self.b_fin)*k_frame/(n_frames-1)))
-            print(self.b.str(1))
+            # print(self.b.str(1))
 
 
 

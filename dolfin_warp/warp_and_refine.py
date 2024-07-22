@@ -34,6 +34,7 @@ def warp_and_refine(
         regul_levels                 : list        = None                            ,
         regul_poisson                : float       = 0.                              ,
         regul_b                      : float       = None                            ,
+        get_surface_subdomain_data                 = None                            ,
         relax_type                   : str         = None                            , # constant, aitken, backtracking, gss
         relax_tol                    : float       = None                            ,
         relax_n_iter_max             : int         = None                            ,
@@ -62,6 +63,16 @@ def warp_and_refine(
         working_basename_for_warp  = working_basename
         working_basename_for_warp += "-refine="+str(k_mesh)
 
+        if get_surface_subdomain_data:
+            regul_surface_subdomain_data=dolfin.MeshFunction("size_t", mesh_for_warp, mesh_for_warp.topology().dim()-1)
+            regul_surface_subdomain_data.set_all(1)
+            xmin_sd = dolfin.CompiledSubDomain("near(x[0], x0) && on_boundary", x0=0.2)
+            xmin_sd.mark(regul_surface_subdomain_data, 0)
+            regul_surface_subdomain_id=1
+        else:
+            regul_surface_subdomain_data=None
+            regul_surface_subdomain_id=None
+
         if (k_mesh == 0):
             initialize_U_from_file = False
 
@@ -87,7 +98,9 @@ def warp_and_refine(
             regul_level                                 = regul_level,
             regul_levels                                = regul_levels,
             regul_poisson                               = regul_poisson,
-            regul_b=regul_b,
+            regul_b                                     = regul_b,
+            regul_surface_subdomain_data                = regul_surface_subdomain_data,
+            regul_surface_subdomain_id                  = regul_surface_subdomain_id,
             relax_type                                  = relax_type,
             relax_tol                                   = relax_tol,
             relax_n_iter_max                            = relax_n_iter_max,
