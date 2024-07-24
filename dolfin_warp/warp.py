@@ -195,7 +195,7 @@ def warp(
         "1.-sum(regul_levels) must be positive. Aborting."
 
     if (gimic):
-        generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
+        generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
             problem=problem,
             images_series=images_series,
             quadrature_degree=images_quadrature,

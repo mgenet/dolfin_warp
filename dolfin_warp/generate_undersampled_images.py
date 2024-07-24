@@ -19,7 +19,7 @@ import dolfin_warp as dwarp
 
 ################################################################################
 
-def generateUndersampledImages(
+def generate_undersampled_images(
         images,
         structure,
         texture,
@@ -30,7 +30,7 @@ def generateUndersampledImages(
         keep_temporary_images=0,
         verbose=0):
 
-    mypy.my_print(verbose, "*** generateUndersampledImages ***")
+    mypy.my_print(verbose, "*** generate_undersampled_images ***")
 
     images_basename = images["basename"]
     images_n_voxels = images["n_voxels"][:]

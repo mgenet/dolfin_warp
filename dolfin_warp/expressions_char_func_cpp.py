@@ -32,7 +32,7 @@ def get_ExprCharFuncIm_cpp_pybind(
     if   (im_is_def == 0):
         X_or_x = "X"
     elif (im_is_def == 1):
-        X_or_x = "x"
+        X_or_x = "x_3D"
 
     cpp = '''\
 #include <math.h>
@@ -52,32 +52,52 @@ class '''+name+''' : public dolfin::Expression
 {
 public:
 
+    static constexpr unsigned int n_dim = '''+str(im_dim)+''';
+
+    vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+    vtkSmartPointer<vtkImageData>          image = nullptr;
+
     double xmin, xmax, ymin, ymax, zmin, zmax;'''+('''
 
-    mutable Eigen::Vector'''+str(im_dim)+'''d UX, x;
+    mutable Eigen::Vector'''+str(im_dim)+'''d UX, x_3D;
     std::shared_ptr<dolfin::Function> U;''')*(im_is_def)+('''
 
     Eigen::Vector3d O, n1, n2, n3, n4;
     mutable double d1, d2, d3, d4;''')*(im_is_cone)+'''
 
-    '''+name+'''() : dolfin::Expression() {}
+    '''+name+'''() : dolfin::Expression()
+    {'''+('''
+        std::cout << "constructor" << std::endl;''')*(verbose)+'''
 
-    void init_image(
-        const char* filename) {
+        reader->UpdateDataObject();
+        image = reader->GetOutput();
+    }
 
-        vtkSmartPointer<vtkXMLImageDataReader> reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+    void init_image
+    (
+        const char* filename
+    )
+    {'''+('''
+        std::cout << "init_image" << std::endl;''')*(verbose)+'''
+
         reader->SetFileName(filename);
         reader->Update();
 
-        vtkSmartPointer<vtkImageData> image = reader->GetOutput();
-        double* bounds = image->GetBounds();
+        double* bounds = image->GetBounds();'''+('''
+        std::cout << "bounds = "
+                  << bounds[0] << " "
+                  << bounds[1] << " "
+                  << bounds[2] << " "
+                  << bounds[3] << " "
+                  << bounds[4] << " "
+                  << bounds[5] << std::endl;''')*(verbose)+'''
+
         xmin = bounds[0];
         xmax = bounds[1];
         ymin = bounds[2];
         ymax = bounds[3];
         zmin = bounds[4];
         zmax = bounds[5];'''+('''
-        std::cout << "bounds = " << bounds[0] << " " << bounds[1] << " " << bounds[2] << " " << bounds[3] << " " << bounds[4] << " " << bounds[5] << std::endl;
         std::cout << "xmin = " << xmin << std::endl;
         std::cout << "xmax = " << xmax << std::endl;
         std::cout << "ymin = " << ymin << std::endl;
@@ -103,28 +123,44 @@ public:
 
         n4[0] = 0.;
         n4[1] = -cos(40. * M_PI/180.);
-        n4[2] = -sin(40. * M_PI/180.);''')*(im_is_cone)+'''}'''+('''
+        n4[2] = -sin(40. * M_PI/180.);''')*(im_is_cone)+'''
+    }
 
-    void init_disp(
-        std::shared_ptr<dolfin::Function> U_) {
+    void update_image
+    (
+        const char* filename
+    )
+    {'''+('''
+        std::cout << "update_image" << std::endl;''')*(verbose)+'''
 
-        U = U_;}''')*(im_is_def)+'''
+        reader->SetFileName(filename);
+        reader->Update();
+    }'''+('''
 
-    void eval(
+    void init_disp
+    (
+        std::shared_ptr<dolfin::Function> U_
+    )
+    {'''+('''
+        std::cout << "init_disp" << std::endl;''')*(verbose)+'''
+
+        U = U_;
+    }''')*(im_is_def)+'''
+
+    void eval
+    (
         Eigen::Ref<      Eigen::VectorXd> expr,
-        Eigen::Ref<const Eigen::VectorXd> X   ) const {'''+('''
-
-        std::cout << "X = " << X << std::endl;''')*(verbose)+('''
+        Eigen::Ref<const Eigen::VectorXd> X
+    ) const
+    {'''+('''
+        // std::cout << "X = " << X << std::endl;''')*(verbose)+('''
 
         U->eval(UX, X);'''+('''
-        std::cout << "UX = " << UX << std::endl;''')*(verbose)+('''
+        // std::cout << "UX = " << UX << std::endl;''')*(verbose)+('''
 
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];''')*(im_dim==2)+('''
-        x[0] = X[0] + UX[0];
-        x[1] = X[1] + UX[1];
-        x[2] = X[2] + UX[2];''')*(im_dim==3)+('''
-        std::cout << "x = " << x << std::endl;''')*(verbose))*(im_is_def)+('''
+        x_3D.head<n_dim>() = X + UX;''')*(im_dim==2)+('''
+        x_3D               = X + UX;''')*(im_dim==3)+('''
+        // std::cout << "x_3D = " << x_3D << std::endl;''')*(verbose))*(im_is_def)+('''
 
         d1 = ('''+X_or_x+'''[0]-O[0])*n1[0]
            + ('''+X_or_x+'''[1]-O[1])*n1[1]
@@ -156,7 +192,8 @@ public:
             expr[0] = 1.;}
         else {
             expr[0] = 0.;}'''+('''
-        std::cout << "expr = " << expr << std::endl;''')*(verbose)+'''}
+        // std::cout << "expr = " << expr << std::endl;''')*(verbose)+'''
+    }
 };
 
 PYBIND11_MODULE(SIGNATURE, m)
@@ -164,7 +201,8 @@ PYBIND11_MODULE(SIGNATURE, m)
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>
     (m, "'''+name+'''")
     .def(pybind11::init<>())
-    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"))'''+('''
+    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"))
+    .def("update_image", &'''+name+'''::init_image, pybind11::arg("filename"))'''+('''
     .def("init_disp", &'''+name+'''::init_disp, pybind11::arg("U_"))''')*(im_is_def)+''';
 }
 '''

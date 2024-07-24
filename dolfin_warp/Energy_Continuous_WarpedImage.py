@@ -325,14 +325,14 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
 
         # Idef
         self.def_image_filename = self.images_series.get_image_filename(k_frame=k_frame)
-        self.Idef.init_image(self.def_image_filename)
+        self.Idef.update_image(self.def_image_filename)
 
         if (self.w_char_func):
-            self.Phi_def.init_image(self.def_image_filename)
+            self.Phi_def.update_image(self.def_image_filename)
 
         # DIdef
         self.def_grad_image_filename = self.images_series.get_image_grad_filename(k_frame=k_frame)
-        self.DIdef.init_image(self.def_grad_image_filename)
+        self.DIdef.update_image(self.def_grad_image_filename)
 
 
 

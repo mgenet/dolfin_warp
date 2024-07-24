@@ -90,8 +90,6 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.k_iter = 0
         self.success = False
         self.printer.inc()
-        # Test with some initial values
-        # self.reduced_disp[-1] += 0.6
         while (True):
             self.k_iter += 1
             self.printer.print_var("k_iter",self.k_iter,-1)
@@ -108,7 +106,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.problem.dU_norm *= abs(self.relax)
 
             # solution update
-            self.reduced_disp += 1. * self.reduced_ddisp
+            self.reduced_disp += self.reduced_ddisp
 
             self.problem.U.vector().axpy(1., self.problem.dU.vector())
             self.problem.U_norm = self.problem.U.vector().norm("l2")

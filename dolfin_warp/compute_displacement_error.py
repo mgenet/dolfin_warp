@@ -184,6 +184,8 @@ def compute_displacement_error_with_numpy(
     sol_int = numpy.empty(working_series.n_frames)
     ref_max = float("-Inf")
     for k_frame in range(working_series.n_frames):
+        if (verbose): print(f"k_frame = {k_frame}")
+
         ref = ref_series.get_np_mesh(k_frame)
         sol = working_series.get_np_mesh(k_frame)
         assert (sol.Points.shape == ref.Points.shape)
@@ -191,6 +193,8 @@ def compute_displacement_error_with_numpy(
 
         ref_disp = ref.PointData[ref_disp_array_name    ]
         sol_disp = sol.PointData[working_disp_array_name]
+        if (verbose): print(f"ref_disp = {ref_disp}")
+        if (verbose): print(f"sol_disp = {sol_disp}")
 
         ref_int[k_frame] = numpy.sqrt(numpy.mean(numpy.sum(numpy.square(ref_disp), axis=1), axis=0))
         sol_int[k_frame] = numpy.sqrt(numpy.mean(numpy.sum(numpy.square(sol_disp), axis=1), axis=0))

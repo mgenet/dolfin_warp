@@ -259,12 +259,12 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         # Idef
         self.def_image_filename = self.images_series.get_image_filename(k_frame=k_frame)
 
-        self.Idef.init_image(
+        self.Idef.update_image(
             filename=self.def_image_filename)
 
         # DIdef
         self.def_grad_image_filename = self.images_series.get_image_grad_filename(k_frame=k_frame)
-        self.DIdef.init_image(
+        self.DIdef.update_image(
             filename=self.def_grad_image_filename)
 
 

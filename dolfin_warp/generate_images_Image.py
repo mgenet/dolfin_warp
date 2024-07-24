@@ -91,6 +91,10 @@ class Image():
             else:
                 assert (0), "n_dim must be \"1\", \"2\" or \"3\". Aborting."
             self.s = texture["s"]
+            self.X0 = numpy.empty(3)
+            self.X0[0] = texture["X0"] if ("X0" in texture) else 0.
+            if (images["n_dim"] >= 2): self.X0[1] = texture["Y0"] if ("Y0" in texture) else 0.
+            if (images["n_dim"] >= 3): self.X0[2] = texture["Z0"] if ("Z0" in texture) else 0.
         elif (texture["type"].startswith("taggX")):
             if ("-signed" in texture["type"]):
                 self.I0_texture = self.I0_texture_tagging_signed_X_wGrad if (generate_image_gradient) else self.I0_texture_tagging_signed_X
@@ -193,184 +197,184 @@ class Image():
         G[:] *= 0.
 
     def I0_texture_tagging_X(self, X, I):
-        I[0] *= abs(math.sin(math.pi*X[0]/self.s))
+        I[0] *= abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
 
     def I0_texture_tagging_X_wGrad(self, X, I, G):
         self.I0_texture_tagging_X(X, I)
-        G[0] *= math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s)
+        G[0] *= math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s)
         G[1] *= 0.
         G[2] *= 0.
 
     def I0_texture_tagging_Y(self, X, I):
-        I[0] *= abs(math.sin(math.pi*X[1]/self.s))
+        I[0] *= abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s))
 
     def I0_texture_tagging_Y_wGrad(self, X, I, G):
         self.I0_texture_tagging_Y(X, I)
         G[0] *= 0.
-        G[1] *= math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s)
+        G[1] *= math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s)
         G[2] *= 0.
 
     def I0_texture_tagging_Z(self, X, I):
-        I[0] *= abs(math.sin(math.pi*X[2]/self.s))
+        I[0] *= abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s))
 
     def I0_texture_tagging_Z_wGrad(self, X, I, G):
         self.I0_texture_tagging_Z(X, I)
         G[0] *= 0.
         G[1] *= 0.
-        G[2] *= math.copysign(1, math.sin(math.pi*X[2]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[2]/self.s)
+        G[2] *= math.copysign(1, math.sin(math.pi*(X[2]-self.X0[2])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s)
 
     def I0_texture_tagging_XY_wAdditiveCombination(self, X, I):
-        I[0] *= (abs(math.sin(math.pi*X[0]/self.s))
-               + abs(math.sin(math.pi*X[1]/self.s)))/2
+        I[0] *= (abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+               + abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)))/2
 
     def I0_texture_tagging_XY_wAdditiveCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XY_wAdditiveCombination(X, I)
-        G[0] *= math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) / 2
-        G[1] *= math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) / 2
+        G[0] *= math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) / 2
+        G[1] *= math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) / 2
         G[2] *= 0.
 
     def I0_texture_tagging_XY_wMultiplicativeCombination(self, X, I):
-        I[0] *= (abs(math.sin(math.pi*X[0]/self.s))
-             *   abs(math.sin(math.pi*X[1]/self.s)))**(1./2)
+        I[0] *= (abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+             *   abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)))**(1./2)
 
     def I0_texture_tagging_XY_wMultiplicativeCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XY_wMultiplicativeCombination(X, I)
-        G[0] *= math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) * abs(math.sin(math.pi*X[1]/self.s)) / 2 / I[0]
-        G[1] *= math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) / 2 / I[0]
+        G[0] *= math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) / 2 / I[0]
+        G[1] *= math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) / 2 / I[0]
         G[2] *= 0.
 
     def I0_texture_tagging_XY_wDifferentiableCombination(self, X, I):
-        I[0] *= (1 + 3 * abs(math.sin(math.pi*X[0]/self.s))
-                       * abs(math.sin(math.pi*X[1]/self.s)))**(1./2) - 1
+        I[0] *= (1 + 3 * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+                       * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)))**(1./2) - 1
 
     def I0_texture_tagging_XY_wDifferentiableCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XY_wDifferentiableCombination(X, I)
-        G[0] *= 3 * math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) * abs(math.sin(math.pi*X[1]/self.s)) / 2 / (I[0] + 1)
-        G[1] *= 3 * math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) / 2 / (I[0] + 1)
+        G[0] *= 3 * math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) / 2 / (I[0] + 1)
+        G[1] *= 3 * math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) / 2 / (I[0] + 1)
         G[2] *= 0.
 
     def I0_texture_tagging_XYZ_wAdditiveCombination(self, X, I):
-        I[0] *= (abs(math.sin(math.pi*X[0]/self.s))
-               + abs(math.sin(math.pi*X[1]/self.s))
-               + abs(math.sin(math.pi*X[2]/self.s)))/3
+        I[0] *= (abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+               + abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s))
+               + abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)))/3
 
     def I0_texture_tagging_XYZ_wAdditiveCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XYZ_wAdditiveCombination(X, I)
-        G[0] *= math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) / 3
-        G[1] *= math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) / 3
-        G[2] *= math.copysign(1, math.sin(math.pi*X[2]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[2]/self.s) / 3
+        G[0] *= math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) / 3
+        G[1] *= math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) / 3
+        G[2] *= math.copysign(1, math.sin(math.pi*(X[2]-self.X0[2])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s) / 3
 
     def I0_texture_tagging_XYZ_wMultiplicativeCombination(self, X, I):
-        I[0] *= (abs(math.sin(math.pi*X[0]/self.s))
-             *   abs(math.sin(math.pi*X[1]/self.s))
-             *   abs(math.sin(math.pi*X[2]/self.s)))**(1./3)
+        I[0] *= (abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+             *   abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s))
+             *   abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)))**(1./3)
 
     def I0_texture_tagging_XYZ_wMultiplicativeCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XYZ_wMultiplicativeCombination(X, I)
-        G[0] *= math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) * abs(math.sin(math.pi*X[1]/self.s)) * abs(math.sin(math.pi*X[2]/self.s)) / 3 / I[0]**2
-        G[1] *= math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) * abs(math.sin(math.pi*X[2]/self.s)) / 3 / I[0]**2
-        G[2] *= math.copysign(1, math.sin(math.pi*X[2]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[2]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) * abs(math.sin(math.pi*X[1]/self.s)) / 3 / I[0]**2
+        G[0] *= math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)) / 3 / I[0]**2
+        G[1] *= math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)) / 3 / I[0]**2
+        G[2] *= math.copysign(1, math.sin(math.pi*(X[2]-self.X0[2])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) / 3 / I[0]**2
 
     def I0_texture_tagging_XYZ_wDifferentiableCombination(self, X, I):
-        I[0] *= (1 + 7 * abs(math.sin(math.pi*X[0]/self.s))
-                       * abs(math.sin(math.pi*X[1]/self.s))
-                       * abs(math.sin(math.pi*X[2]/self.s)))**(1./3) - 1
+        I[0] *= (1 + 7 * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s))
+                       * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s))
+                       * abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)))**(1./3) - 1
 
     def I0_texture_tagging_XYZ_wDifferentiableCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XYZ_wDifferentiableCombination(X, I)
-        G[0] *= 7 * math.copysign(1, math.sin(math.pi*X[0]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s) * abs(math.sin(math.pi*X[1]/self.s)) * abs(math.sin(math.pi*X[2]/self.s)) / 3 / (I[0] + 1)
-        G[1] *= 7 * math.copysign(1, math.sin(math.pi*X[1]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) * abs(math.sin(math.pi*X[2]/self.s)) / 3 / (I[0] + 1)
-        G[2] *= 7 * math.copysign(1, math.sin(math.pi*X[2]/self.s)) * (math.pi/self.s) * math.cos(math.pi*X[2]/self.s) * abs(math.sin(math.pi*X[0]/self.s)) * abs(math.sin(math.pi*X[1]/self.s)) / 3 / (I[0] + 1)
+        G[0] *= 7 * math.copysign(1, math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)) / 3 / (I[0] + 1)
+        G[1] *= 7 * math.copysign(1, math.sin(math.pi*(X[1]-self.X0[1])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * abs(math.sin(math.pi*(X[2]-self.X0[2])/self.s)) / 3 / (I[0] + 1)
+        G[2] *= 7 * math.copysign(1, math.sin(math.pi*(X[2]-self.X0[2])/self.s)) * (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s) * abs(math.sin(math.pi*(X[0]-self.X0[0])/self.s)) * abs(math.sin(math.pi*(X[1]-self.X0[1])/self.s)) / 3 / (I[0] + 1)
 
     def I0_texture_tagging_signed_X(self, X, I):
-        I[0] *= (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
+        I[0] *= (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
 
     def I0_texture_tagging_signed_X_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_X(X, I)
-        G[0] *= (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2) / 2
+        G[0] *= (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2) / 2
         G[1] *= 0.
         G[2] *= 0.
 
     def I0_texture_tagging_signed_Y(self, X, I):
-        I[0] *= (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
+        I[0] *= (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2
 
     def I0_texture_tagging_signed_Y_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_Y(X, I)
         G[0] *= 0.
-        G[1] *= (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2) / 2
+        G[1] *= (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2) / 2
         G[2] *= 0.
 
     def I0_texture_tagging_signed_Z(self, X, I):
-        I[0] *= (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
+        I[0] *= (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2
 
     def I0_texture_tagging_signed_Z_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_Z(X, I)
         G[0] *= 0.
         G[1] *= 0.
-        G[2] *= (math.pi/self.s) * math.cos(math.pi*X[2]/self.s-math.pi/2) / 2
+        G[2] *= (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2) / 2
 
     def I0_texture_tagging_signed_XY_wAdditiveCombination(self, X, I):
-        I[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-              +  (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2) / 2
+        I[0] *= ((1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+              +  (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2) / 2
 
     def I0_texture_tagging_signed_XY_wAdditiveCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_XY_wAdditiveCombination(X, I)
-        G[0] *= (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 2
-        G[1] *= (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 2
+        G[0] *= (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 / 2
+        G[1] *= (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 / 2
         G[2] *= 0.
 
     def I0_texture_tagging_signed_XY_wMultiplicativeCombination(self, X, I):
-        I[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-             *   (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2)**(1./2)
+        I[0] *= ((1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+             *   (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2)**(1./2)
 
     def I0_texture_tagging_signed_XY_wMultiplicativeCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XY_wMultiplicativeCombination(X, I)
-        G[0] *= (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 2 / I[0]
-        G[1] *= (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 2 / I[0]
+        G[0] *= (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 / 2 / I[0]
+        G[1] *= (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 / 2 / I[0]
         G[2] *= 0.
 
     def I0_texture_tagging_signed_XY_wDifferentiableCombination(self, X, I):
-        I[0] *= (1 + 3 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-                       * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2)**(1./2) - 1
+        I[0] *= (1 + 3 * (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2)**(1./2) - 1
 
     def I0_texture_tagging_signed_XY_wDifferentiableCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_XY_wDifferentiableCombination(X, I)
-        G[0] *= 3 * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 / 2 / (I[0] + 1)
-        G[1] *= 3 * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 / 2 / (I[0] + 1)
+        G[0] *= 3 * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 * (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2 / 2 / (I[0] + 1)
+        G[1] *= 3 * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 * (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2 / 2 / (I[0] + 1)
         G[2] *= 0.
 
     def I0_texture_tagging_signed_XYZ_wAdditiveCombination(self, X, I):
-        I[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-              +  (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
-              +  (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2) / 3
+        I[0] *= ((1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+              +  (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2
+              +  (1+math.sin(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2))/2) / 3
 
     def I0_texture_tagging_signed_XYZ_wAdditiveCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_XYZ_wAdditiveCombination(X, I)
-        G[0] *= (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 3
-        G[1] *= (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 3
-        G[2] *= (math.pi/self.s) * math.cos(math.pi*X[2]/self.s-math.pi/2)/2 / 3
+        G[0] *= (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 / 3
+        G[1] *= (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 / 3
+        G[2] *= (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2)/2 / 3
 
     def I0_texture_tagging_signed_XYZ_wMultiplicativeCombination(self, X, I):
-        I[0] *= ((1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-             *   (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
-             *   (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2)**(1./3)
+        I[0] *= ((1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+             *   (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2
+             *   (1+math.sin(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2))/2)**(1./3)
 
     def I0_texture_tagging_signed_XYZ_wMultiplicativeCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_XYZ_wMultiplicativeCombination(X, I)
-        G[0] *= (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 / 3 / I[0]
-        G[1] *= (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 / 3 / I[0]
-        G[2] *= (math.pi/self.s) * math.cos(math.pi*X[2]/self.s-math.pi/2)/2 / 3 / I[0]
+        G[0] *= (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 / 3 / I[0]
+        G[1] *= (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 / 3 / I[0]
+        G[2] *= (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2)/2 / 3 / I[0]
 
     def I0_texture_tagging_signed_XYZ_wDifferentiableCombination(self, X, I):
-        I[0] *= (1 + 7 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2
-                       * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2
-                       * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2)**(1./3) - 1
+        I[0] *= (1 + 7 * (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2
+                       * (1+math.sin(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2))/2)**(1./3) - 1
 
     def I0_texture_tagging_signed_XYZ_wDifferentiableCombination_wGrad(self, X, I, G):
         self.I0_texture_tagging_signed_XYZ_wDifferentiableCombination(X, I)
-        G[0] *= 7 * (math.pi/self.s) * math.cos(math.pi*X[0]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
-        G[1] *= 7 * (math.pi/self.s) * math.cos(math.pi*X[1]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 * (1+math.sin(math.pi*X[2]/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
-        G[2] *= 7 * (math.pi/self.s) * math.cos(math.pi*X[2]/self.s-math.pi/2)/2 * (1+math.sin(math.pi*X[0]/self.s-math.pi/2))/2 * (1+math.sin(math.pi*X[1]/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
+        G[0] *= 7 * (math.pi/self.s) * math.cos(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2)/2 * (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2 * (1+math.sin(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
+        G[1] *= 7 * (math.pi/self.s) * math.cos(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2)/2 * (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2 * (1+math.sin(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
+        G[2] *= 7 * (math.pi/self.s) * math.cos(math.pi*(X[2]-self.X0[2])/self.s-math.pi/2)/2 * (1+math.sin(math.pi*(X[0]-self.X0[0])/self.s-math.pi/2))/2 * (1+math.sin(math.pi*(X[1]-self.X0[1])/self.s-math.pi/2))/2 / 3 / (I[0] + 1)
 
     def I0_noise_no(self, I):
         pass
