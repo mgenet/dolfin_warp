@@ -9,12 +9,10 @@ from .Energy_Discrete import *
 from .Energy_Discrete_SimpleRegularization import *
 from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete_VolumeRegularization import *
-from .Energy_Discrete_VolumeRegularizationKinematics import *
 from .FilesSeries import *
 from .FilesSeries_Images import *
 from .FilesSeries_Meshes import *
 from .ImageIterator import *
-from .Kinematics import *
 from .ModalAnalysis import *
 from .MotionModel import *
 from .NonlinearSolver import *

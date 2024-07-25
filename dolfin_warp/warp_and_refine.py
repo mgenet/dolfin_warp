@@ -34,7 +34,10 @@ def warp_and_refine(
         regul_levels                 : list        = None                            ,
         regul_poisson                : float       = 0.                              ,
         regul_b                      : float       = None                            ,
-        get_surface_subdomain_data                 = None                            ,
+        regul_volume_subdomain_data                = None                            ,
+        regul_volume_subdomain_id                  = None                            ,
+        regul_surface_subdomain_data               = None                            ,
+        regul_surface_subdomain_id                 = None                            ,
         relax_type                   : str         = None                            , # constant, aitken, backtracking, gss
         relax_tol                    : float       = None                            ,
         relax_n_iter_max             : int         = None                            ,
@@ -58,30 +61,34 @@ def warp_and_refine(
             for mesh_basename in mesh_basenames:
                 mesh_filename = mesh_folder+"/"+mesh_basename+".xml"
                 meshes += [dolfin.Mesh(mesh_filename)]
-
+    
+    regul_volume_subdomain_data_lst = regul_volume_subdomain_data
+    regul_volume_subdomain_id_lst = regul_volume_subdomain_id
+    regul_surface_subdomain_data_lst = regul_surface_subdomain_data
+    regul_surface_subdomain_id_lst = regul_surface_subdomain_id
+    
     for k_mesh, mesh_for_warp in enumerate(meshes):
         working_basename_for_warp  = working_basename
         working_basename_for_warp += "-refine="+str(k_mesh)
-
-        if get_surface_subdomain_data:
-            regul_surface_subdomain_data=dolfin.MeshFunction("size_t", mesh_for_warp, mesh_for_warp.topology().dim()-1)
-            regul_surface_subdomain_data.set_all(1)
-            xmin_sd = dolfin.CompiledSubDomain("near(x[0], x0) && on_boundary", x0=0.2)
-            xmin_sd.mark(regul_surface_subdomain_data, 0)
-            regul_surface_subdomain_id=1
-        else:
-            regul_surface_subdomain_data=None
-            regul_surface_subdomain_id=None
 
         if (k_mesh == 0):
             initialize_U_from_file = False
 
             working_basename_for_init = None
+ 
         else:
             initialize_U_from_file = True
 
             working_basename_for_init  = working_basename
             working_basename_for_init += "-refine="+str(k_mesh-1)
+
+
+        if regul_volume_subdomain_data:
+            regul_volume_subdomain_data = regul_volume_subdomain_data_lst[k_mesh]   
+            regul_volume_subdomain_id = regul_volume_subdomain_id_lst[k_mesh] 
+        if regul_surface_subdomain_data:
+            regul_surface_subdomain_data = regul_surface_subdomain_data_lst[k_mesh]   
+            regul_surface_subdomain_id = regul_surface_subdomain_id_lst[k_mesh]         
 
         success = dwarp.warp(
             working_folder                              = working_folder,
@@ -99,6 +106,8 @@ def warp_and_refine(
             regul_levels                                = regul_levels,
             regul_poisson                               = regul_poisson,
             regul_b                                     = regul_b,
+            regul_volume_subdomain_data                 = regul_volume_subdomain_data,
+            regul_volume_subdomain_id                   = regul_volume_subdomain_id,
             regul_surface_subdomain_data                = regul_surface_subdomain_data,
             regul_surface_subdomain_id                  = regul_surface_subdomain_id,
             relax_type                                  = relax_type,
