@@ -57,6 +57,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
 
         # iterations control
         self.tol_dU      = parameters.get("tol_dU"     , None)
+        self.tol_dU_rel  = parameters.get("tol_dU_rel" , None)
         self.tol_res_rel = parameters.get("tol_res_rel", None)
         self.n_iter_max  = parameters.get("n_iter_max" , 32  )
 
@@ -92,6 +93,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.frame_filebasename = None
 
         self.k_iter = 0
+        self.problem.DU.vector().zero()
         self.success = False
         self.printer.inc()
         while (True):
@@ -111,6 +113,10 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.problem.U_norm = self.problem.U.vector().norm("l2")
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
+            self.problem.DU.vector().axpy(self.relax, self.problem.dU.vector())
+            self.problem.DU_norm = self.problem.DU.vector().norm("l2")
+            self.printer.print_sci("DU_norm",self.problem.DU_norm)
+
             if (self.write_iterations):
                 dmech.write_VTU_file(
                     filebasename=self.frame_filebasename,
@@ -119,32 +125,32 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
 
             # displacement error
             self.problem.dU_norm *= abs(self.relax)
-            # self.printer.print_sci("dU_norm",self.problem.dU_norm)
-            if (self.problem.Uold_norm == 0.):
-                if (self.problem.U_norm == 0.):
+            self.printer.print_sci("dU_norm",self.problem.dU_norm)
+            if (self.problem.U_norm == 0.):
+                if (self.problem.Uold_norm == 0.):
                     self.problem.dU_err = 0.
                 else:
-                    self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
+                    self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
             else:
-                self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
+                self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
-            # self.problem.DUold.vector()[:] = self.problem.U.vector()
-            # self.problem.DUold.vector().axpy(-1., self.problem.Uold.vector())
-            # self.problem.DUold_norm = self.problem.DUold.vector().norm("l2")
-            # if (self.problem.DUold_norm == 0.):
-            #     self.problem.dU_err = 0.
-            # else:
-            #     self.problem.dU_err = self.problem.dU_norm/self.problem.DUold_norm
+            if (self.problem.DU_norm == 0.):
+                self.problem.dU_err_rel = 1.
+            else:
+                self.problem.dU_err_rel = self.problem.dU_norm/self.problem.DU_norm
+            self.printer.print_sci("dU_err_rel",self.problem.dU_err_rel)
 
             if (self.write_iterations):
                 self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
 
             # exit test
             self.success = True
-            if (self.tol_res_rel is not None) and (self.res_err_rel    > self.tol_res_rel):
+            if (self.tol_res_rel is not None) and (self.res_err_rel        > self.tol_res_rel):
                 self.success = False
-            if (self.tol_dU      is not None) and (self.problem.dU_err > self.tol_dU     ):
+            if (self.tol_dU      is not None) and (self.problem.dU_err     > self.tol_dU     ):
+                self.success = False
+            if (self.tol_dU_rel  is not None) and (self.problem.dU_err_rel > self.tol_dU_rel ):
                 self.success = False
 
             # exit

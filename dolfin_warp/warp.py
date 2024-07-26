@@ -72,6 +72,7 @@ def warp(
         tol_res                                     : float       = None                            , # None
         tol_res_rel                                 : float       = None                            ,
         tol_dU                                      : float       = None                            ,
+        tol_dU_rel                                  : float       = None                            ,
         tol_im                                      : float       = None                            , # None
         n_iter_max                                  : int         = 100                             ,
         continue_after_fail                         : bool        = False                           ,
@@ -262,7 +263,8 @@ def warp(
 
     if (normalize_energies):
         dwarp.compute_energies_normalization(
-            problem=problem)
+            problem=problem,
+            verbose=1)
 
     if (nonlinearsolver == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
@@ -277,6 +279,7 @@ def warp(
                 "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
+                "tol_dU_rel":tol_dU_rel,
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "reduced_kinematic_newton"):
@@ -296,6 +299,7 @@ def warp(
                 "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
+                "tol_dU_rel":tol_dU_rel,
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "cma"):
@@ -340,44 +344,3 @@ fedic2 = warp
 if (__name__ == "__main__"):
     import fire
     fire.Fire(warp)
-
-    # import argparse
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--working_folder", type=str)
-    # parser.add_argument("--working_basename", type=str)
-    # parser.add_argument("--images_folder", type=str)
-    # parser.add_argument("--images_basename", type=str)
-    # parser.add_argument("--images_ext", type=str, choices=["vti", "vtk"])
-    # parser.add_argument("--mesh_folder", type=str)
-    # parser.add_argument("--mesh_basename", type=str)
-    # parser.add_argument("--mesh_degree", type=int)
-    # parser.add_argument("--regul_types", type=str, choices=["continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic", "discrete-linear-equilibrated", "discrete-linear-elastic", "discrete-equilibrated", "discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential"], nargs="?")
-    # parser.add_argument("--regul_model", type=str, choices=["hooke", "kirchhoff", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin"])
-    # parser.add_argument("--regul_levels", type=float, nargs="?")
-    # parser.add_argument("--regul_poisson", type=float)
-    # parser.add_argument("--relax_type", type=str, choices=["constant", "aitken", "backtracking", "gss"])
-    # parser.add_argument("--relax_tol", type=float)
-    # parser.add_argument("--relax_n_iter_max", type=int)
-    # parser.add_argument("--tol_dU", type=float)
-    # parser.add_argument("--n_iter_max", type=int)
-    # args = parser.parse_args()
-    # print(type(args))
-
-    # dwarp.warp(
-    #     working_folder = args.working_folder,
-    #     working_basename = args.working_basename,
-    #     images_folder = args.images_folder,
-    #     images_basename = args.images_basename,
-    #     images_ext = args.images_ext,
-    #     mesh_folder = args.mesh_folder,
-    #     mesh_basename = args.mesh_basename,
-    #     mesh_degree = args.mesh_degree,
-    #     regul_types = args.regul_types,
-    #     regul_model = args.regul_model,
-    #     regul_levels = args.regul_levels,
-    #     regul_poisson = args.regul_poisson,
-    #     relax_type = args.relax_type,
-    #     relax_tol = args.relax_tol,
-    #     relax_n_iter_max = args.relax_n_iter_max,
-    #     tol_dU = args.tol_dU,
-    #     n_iter_max = args.n_iter_max)

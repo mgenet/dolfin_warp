@@ -174,9 +174,8 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             n_frames,
             **kwargs):
 
-        self.printer.print_str("Updating body force…")
-
         if (self.b_fin is not None):
+            self.printer.print_str("Updating body force…")
             print(self.b.str(1))
             self.b.assign(dolfin.Constant(numpy.asarray(self.b_fin)*k_frame/(n_frames-1)))
             print(self.b.str(1))

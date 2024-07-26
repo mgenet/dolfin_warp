@@ -133,6 +133,9 @@ class WarpingProblem(Problem):
         self.DUold = dolfin.Function(
             self.U_fs,
             name="previous displacement increment")
+        self.DU = dolfin.Function(
+            self.U_fs,
+            name="displacement increment")
         self.dU = dolfin.Function(
             self.U_fs,
             name="displacement correction")
