@@ -19,15 +19,20 @@ def compute_energies_normalization(
         x0=None,
         verbose=False):
 
+    printer = problem.printer
+
+    printer.print_str("Compute energies normalization…")
+    printer.inc()
+
     dim = problem.mesh_dimension
 
     if (k is None):
         k = [0.1 * math.pi / problem.mesh.hmin()]*dim
-    if (verbose): print("k:", k)
+    if (verbose): printer.print_var("k",k)
 
     if (x0 is None):
         x0 = [0.]*dim
-    if (verbose): print("x0:", x0)
+    if (verbose): printer.print_var("x0",x0)
 
     if (dim == 2):
         U_expr = dolfin.Expression(
@@ -48,7 +53,9 @@ def compute_energies_normalization(
 
     for energy in problem.energies:
         energy.ener0 = energy.assemble_ener(w_weight=0)
-        if (verbose): print(energy.name, ":", energy.ener0)
+        if (verbose): printer.print_var(energy.name, energy.ener0)
 
     problem.U.vector().zero()
     problem.U_norm = 0
+
+    printer.dec()
