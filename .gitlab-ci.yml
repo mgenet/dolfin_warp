@@ -57,9 +57,9 @@ tests-on-ubuntu-24.04-with-apt:
     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
     # - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
-    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
-    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
-    - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install --break-system-packages gmsh
+    - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
+    - pip install --break-system-packages git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
 
 # tests-on-ubuntu-20.04:
