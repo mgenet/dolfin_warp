@@ -42,7 +42,7 @@ tests-on-ubuntu-22.04-with-apt: # MG2023068: This leads to seg fault while manip
     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
 
-tests-on-ubuntu-24.04-with-apt:
+tests-on-ubuntu-24.04-with-apt: # MG 20241017: apt python version is 3.12, which seems incompatible with numpy 1.23…
   stage: test
   only:
     - devel
