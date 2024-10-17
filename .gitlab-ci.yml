@@ -38,7 +38,7 @@ tests-on-ubuntu-22.04-with-apt: # MG2023068: This leads to seg fault while manip
     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
-    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.23.5 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
 
@@ -58,7 +58,7 @@ tests-on-ubuntu-24.04-with-apt:
     # - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install --break-system-packages gmsh
-    - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
+    - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install numpy==1.23.5 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
     - pip install --break-system-packages git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
 
@@ -149,7 +149,7 @@ tests-on-ubuntu-20.04-with-full-conda:
     - eval "$(/root/miniconda/bin/conda shell.bash hook)"
     - conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.1 meshio=5.3 mpi4py=3.1.5 numpy=1.26 pandas=2.1 pip python=3.12 scipy=1.11 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2
+    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.1 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2
     - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
     - pip install gmsh git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
@@ -172,7 +172,7 @@ tests-on-ubuntu-22.04-with-full-conda:
     - eval "$(/root/miniconda/bin/conda shell.bash hook)"
     - conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.21 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2
+    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.1 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
     - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
     - pip install gmsh git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
@@ -195,7 +195,7 @@ tests-on-ubuntu-24.04-with-full-conda:
     - eval "$(/root/miniconda/bin/conda shell.bash hook)"
     - conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.6 meshio=5.3 mpi4py=3.1.3 numpy=1.21 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2
+    - conda create -y -c conda-forge -n dolfin_warp fenics=2019.1.0 matplotlib=3.1 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
     - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
     - pip install gmsh git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
     - cd Tests; ln -s ../dolfin_warp; make
