@@ -56,6 +56,8 @@ def warp(
         relax_n_iter_max                            : int         = None                            ,
         relax_must_advance                          : bool        = None                            ,
         normalize_energies                          : bool        = False                           ,
+        initialize_reduced_U_from_file              : bool        = False                           ,
+        initialize_reduced_U_filename               : str         = None                            ,
         initialize_U_from_file                      : bool        = False                           ,
         initialize_U_folder                         : str         = None                            ,
         initialize_U_basename                       : str         = None                            ,
@@ -267,6 +269,8 @@ def warp(
             verbose=1)
 
     if (nonlinearsolver == "newton"):
+        assert (initialize_reduced_U_from_file is False),\
+            "Not implemented. Aborting."
         solver = dwarp.NewtonNonlinearSolver(
             problem=problem,
             parameters={
@@ -283,6 +287,8 @@ def warp(
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "reduced_kinematic_newton"):
+        assert (initialize_U_from_file is False),\
+            "Not implemented. Aborting."
         motion = dwarp.MotionModel(
             problem=problem,
             type="translation_and_scaling")
@@ -317,6 +323,8 @@ def warp(
             "working_folder":working_folder,
             "working_basename":working_basename,
             "register_ref_frame":register_ref_frame,
+            "initialize_reduced_U_from_file":initialize_reduced_U_from_file,
+            "initialize_reduced_U_filename":initialize_reduced_U_filename,
             "initialize_U_from_file":initialize_U_from_file,
             "initialize_U_folder":initialize_U_folder,
             "initialize_U_basename":initialize_U_basename,

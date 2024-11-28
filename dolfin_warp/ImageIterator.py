@@ -37,6 +37,8 @@ class ImageIterator():
         self.working_folder                              = parameters.get("working_folder"                             , "."           )
         self.working_basename                            = parameters.get("working_basename"                           , "sol"         )
         self.register_ref_frame                          = parameters.get("register_ref_frame"                         , False         )
+        self.initialize_reduced_U_from_file              = parameters.get("initialize_reduced_U_from_file"             , False         )
+        self.initialize_reduced_U_filename               = parameters.get("initialize_reduced_U_filename"              , "init"        )
         self.initialize_U_from_file                      = parameters.get("initialize_U_from_file"                     , False         )
         self.initialize_U_folder                         = parameters.get("initialize_U_folder"                        , "."           )
         self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"        )
@@ -143,6 +145,9 @@ class ImageIterator():
             init_U.set_allow_extrapolation(True)
             # init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs) # MG20230321: Somehow this is problematic when VTUs are saved with preserved connectivity…
 
+        if (self.initialize_reduced_U_from_file):
+            init_reduced_disp = numpy.loadtxt(self.initialize_reduced_U_filename)
+
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
             self.printer.print_var("forward_or_backward",forward_or_backward)
@@ -201,6 +206,9 @@ class ImageIterator():
                             V=self.problem.U_fs,
                             function=self.problem.U)
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
+
+                elif (self.initialize_reduced_U_from_file):
+                    self.solver.reduced_disp = init_reduced_disp[k_frame,:]
 
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
