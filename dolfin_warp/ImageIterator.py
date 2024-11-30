@@ -147,6 +147,19 @@ class ImageIterator():
 
         if (self.initialize_reduced_U_from_file):
             init_reduced_disp = numpy.loadtxt(self.initialize_reduced_U_filename)
+            assert (init_reduced_disp.ndim in [1,2]),\
+                "Number of dimension of reduced displacement should be 1 (single frame) or 2 (multiple frames). Aborting "
+            if init_reduced_disp.ndim ==1:
+                assert (init_reduced_disp.shape[0] in [3,6]),\
+                    "Number of modes should be 3 (translation or scaling) or 6 (translation and scaling). Aborting "
+                if init_reduced_disp.shape[0] == 3:
+                    init_reduced_disp = init_reduced_disp.reshape(-1,3)
+                else:
+                    init_reduced_disp = init_reduced_disp.reshape(-1,6)
+            else:
+                assert (init_reduced_disp.shape[1] in [3,6]),\
+                "Number of modes should be 3 (translation or scaling) or 6 (translation and scaling). Aborting "
+
 
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
@@ -208,7 +221,7 @@ class ImageIterator():
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_reduced_U_from_file):
-                    self.solver.reduced_disp = init_reduced_disp[k_frame,:]
+                    self.solver.reduced_disp = init_reduced_disp[k_frame-1,:]
 
                 elif (self.initialize_DU_with_DUold):
                     self.problem.U.vector().axpy(1., self.problem.DUold.vector())
