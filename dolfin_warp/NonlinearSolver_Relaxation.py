@@ -25,7 +25,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
     def __init__(self,
             parameters={}):
 
-        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "gss"
+        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "backtracking"
 
         if (self.relax_type == "constant"):
             self.compute_relax = self.compute_relax_constant
