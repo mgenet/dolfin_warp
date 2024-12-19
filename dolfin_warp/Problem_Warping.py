@@ -23,30 +23,6 @@ class WarpingProblem(Problem):
 
 
 
-    def __init__(self,
-            mesh=None,
-            mesh_folder=None,
-            mesh_basename=None,
-            U_family="Lagrange",
-            U_degree=1,
-            silent=False):
-
-        self.printer = mypy.Printer(
-            silent=silent)
-
-        self.set_mesh(
-            mesh=mesh,
-            mesh_folder=mesh_folder,
-            mesh_basename=mesh_basename)
-
-        self.set_displacement(
-            U_family=U_family,
-            U_degree=U_degree)
-
-        self.energies = []
-
-
-
     def close(self):
 
         self.printer.close()
@@ -101,64 +77,9 @@ class WarpingProblem(Problem):
         self.printer.print_sci("mesh_h0",self.mesh_h0)
         self.mesh_h0 = dolfin.Constant(self.mesh_h0)
 
+        self.X = dolfin.SpatialCoordinate(self.mesh)
+
         self.printer.dec()
-
-
-
-    def set_displacement(self,
-            U_family="Lagrange",
-            U_degree=1):
-
-        self.printer.print_str("Defining functions…")
-
-        self.U_family = U_family
-        self.U_degree = U_degree
-        self.U_fe = dolfin.VectorElement(
-            family=self.U_family,
-            cell=self.mesh.ufl_cell(),
-            degree=self.U_degree)
-        self.U_fs = dolfin.FunctionSpace(
-            self.mesh,
-            self.U_fe)
-        self.U = dolfin.Function(
-            self.U_fs,
-            name="displacement")
-        self.U.vector().zero()
-        self.U_norm = 0.
-        self.Uold = dolfin.Function(
-            self.U_fs,
-            name="previous displacement")
-        self.Uold.vector().zero()
-        self.Uold_norm = 0.
-        self.DUold = dolfin.Function(
-            self.U_fs,
-            name="previous displacement increment")
-        self.DU = dolfin.Function(
-            self.U_fs,
-            name="displacement increment")
-        self.dU = dolfin.Function(
-            self.U_fs,
-            name="displacement correction")
-        self.dU_trial = dolfin.TrialFunction(self.U_fs)
-        self.dU_test = dolfin.TestFunction(self.U_fs)
-
-        # for mesh volume computation
-        self.I = dolfin.Identity(self.mesh_dimension)
-        self.F = self.I + dolfin.grad(self.U)
-        self.J = dolfin.det(self.F)
-
-
-
-    def reinit(self):
-
-        self.U.vector().zero()
-        self.U_norm = 0.
-        self.Uold.vector().zero()
-        self.Uold_norm = 0.
-        self.DUold.vector().zero()
-
-        for energy in self.energies:
-            energy.reinit()
 
 
 
@@ -204,9 +125,15 @@ class WarpingProblem(Problem):
 
 
 
+    def update_disp(self): pass
+
+
+
     def call_before_assembly(self,
             *kargs,
             **kwargs):
+
+        self.update_disp()
 
         for energy in self.energies:
             energy.call_before_assembly(
@@ -260,13 +187,20 @@ class WarpingProblem(Problem):
 
 
 
+    def reinit(self):
+
+        self.reinit_displacement()
+
+        for energy in self.energies:
+            energy.reinit()
+
+
+
     def call_after_solve(self,
             *kargs,
             **kwargs):
 
-        self.DUold.vector()[:] = self.U.vector() - self.Uold.vector()
-        self.Uold.vector()[:] = self.U.vector()
-        self.Uold_norm = self.U_norm
+        self.save_old_displacement()
 
         for energy in self.energies:
             energy.call_after_solve(

@@ -225,7 +225,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         if (self.dynamic_scaling):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
-        # Charactristic functions
+        # Characteristic functions
         if (self.w_char_func):
 
             self.printer.dec()

@@ -257,8 +257,8 @@ class CMANonlinearSolver(NonlinearSolver):
         disp_rot = disp[2]
 
         U_rbm_expr = dolfin.Expression(
-            ("UX + (x[0]-Cx_THETA)*(cos(THETA)-1) - (x[1]-Cy_THETA)* sin(THETA)   ",
-                "UY + (x[0]-Cx_THETA)* sin(THETA)    + (x[1]-Cy_THETA)*(cos(THETA)-1)"),
+                ("UX + (x[0]-Cx_THETA)*(cos(THETA)-1) - (x[1]-Cy_THETA)* sin(THETA)   ",
+                 "UY + (x[0]-Cx_THETA)* sin(THETA)    + (x[1]-Cy_THETA)*(cos(THETA)-1)"),
             UX=disp_x,
             UY=disp_y,
             THETA=disp_rot*numpy.pi/180,

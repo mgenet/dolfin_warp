@@ -30,23 +30,15 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
 
     def __init__(self,
             problem,
-            motion_model,
             parameters={}):
 
         self.problem = problem
-        self.motion_model = motion_model
         self.printer = self.problem.printer
 
         # residual & jacobian
         self.res_vec = dolfin.Vector()
         self.jac_mat = dolfin.Matrix()
-
-        # reduced residual & jacobian
-        self.JU_vec          = dolfin.Vector()
-        self.n_motion_modes  = self.motion_model.n_modes
-        self.reduced_disp    = numpy.zeros(self.n_motion_modes)
-        self.reduced_res_arr = numpy.zeros(self.n_motion_modes)
-        self.reduced_jac_arr = numpy.zeros((self.n_motion_modes, self.n_motion_modes))
+        self.Utmp_vec = self.problem.U.vector().copy()
 
         # iterations control
         self.tol_dU      = parameters.get("tol_dU"     , None)
@@ -54,7 +46,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.n_iter_max  = parameters.get("n_iter_max" , 32  )
 
         # relaxation
-        RelaxationNonlinearSolver.__init__(self, parameters=parameters)
+        # RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # write iterations
         self.write_iterations = parameters.get("write_iterations", False)
@@ -90,8 +82,6 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.k_iter = 0
         self.success = False
         self.printer.inc()
-        # Test with some initial values
-        # self.reduced_disp[-1] += 0.6
         while (True):
             self.k_iter += 1
             self.printer.print_var("k_iter",self.k_iter,-1)
@@ -102,17 +92,24 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
                 break
 
             # relaxation
-            self.compute_relax()
-            self.reduced_ddisp *= self.relax
-            self.problem.dU.vector()[:] *= self.relax
-            self.problem.dU_norm *= abs(self.relax)
+            # self.compute_relax()
+            # self.reduced_ddisp *= self.relax
+            # self.problem.dU.vector()[:] *= self.relax
+            # self.problem.dU_norm *= abs(self.relax)
 
             # solution update
-            self.reduced_disp += 1. * self.reduced_ddisp
+            self.Utmp_vec[:] = self.problem.U.vector()
+            self.Utmp_vec_norm = self.problem.U_norm
 
-            self.problem.U.vector().axpy(1., self.problem.dU.vector())
-            self.problem.U_norm = self.problem.U.vector().norm("l2")
+            self.problem.reduced_displacement.vector().axpy(1., self.problem.dreduced_displacement.vector())
+            self.printer.print_var("reduced_displacement",self.problem.reduced_displacement.vector().get_local())
+
+            self.problem.update_disp()
             self.printer.print_sci("U_norm",self.problem.U_norm)
+
+            self.problem.dU.vector()[:] = self.problem.U.vector() - self.Utmp_vec
+            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
+            self.printer.print_sci("dU_norm",self.problem.dU_norm)
 
             if (self.write_iterations):
                 dmech.write_VTU_file(
@@ -171,9 +168,6 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
 
     def linear_solve(self):
 
-        # Update motion model
-        self.motion_model.update_disp(self.reduced_disp, self.problem.U.vector())
-
         # res_old
         if (self.k_iter > 1):
             if (hasattr(self, "res_old_vec")):
@@ -194,6 +188,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             res_vec=self.res_vec)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
+        self.printer.print_var("res_vec",self.res_vec.get_local())
 
         self.printer.inc()
 
@@ -217,39 +212,6 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.res_err_rel = self.dres_norm / self.res_old_norm
             self.printer.print_sci("res_err_rel",self.res_err_rel)
 
-        # reduced_res_old
-        if (self.k_iter > 1):
-            if (hasattr(self, "reduced_res_old_arr")):
-                self.reduced_res_old_arr[:] = self.reduced_res_arr[:]
-            else:
-                self.reduced_res_old_arr = self.reduced_res_arr.copy()
-            self.reduced_res_old_norm = self.reduced_res_norm
-
-        # linear system: residual reduction
-        for i in range(self.n_motion_modes):
-            self.reduced_res_arr[i] = self.res_vec.inner(self.motion_model.modes[i].vector())
-        # self.printer.print_var("reduced_res_arr",self.reduced_res_arr)
-
-        # reduced_res_norm
-        self.reduced_res_norm = numpy.linalg.norm(self.reduced_res_arr)
-        # self.printer.print_sci("reduced_res_norm",self.reduced_res_norm)
-
-        # dreduced_res
-        if (self.k_iter > 1):
-            if (hasattr(self, "reduced_dres_arr")):
-                self.reduced_dres_arr[:] = self.reduced_res_arr[:] - self.reduced_res_old_arr[:]
-            else:
-                self.reduced_dres_arr = self.reduced_res_arr - self.reduced_res_old_arr
-            self.reduced_dres_norm = numpy.linalg.norm(self.reduced_dres_arr)
-            # self.printer.print_sci("reduced_dres_norm",self.reduced_dres_norm)
-
-        # reduced_res_err_rel
-        if (self.k_iter == 1):
-            self.reduced_res_err_rel = 1.
-        else:
-            self.reduced_res_err_rel = self.reduced_dres_norm / self.reduced_res_old_norm
-            # self.printer.print_sci("reduced_res_err_rel",self.reduced_res_err_rel)
-
         self.printer.dec()
 
         # linear system: matrix assembly
@@ -259,36 +221,19 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             jac_mat=self.jac_mat)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
-
-        # linear system: matrix reduction
-        for i in range(self.n_motion_modes):
-            for j in range(i):
-                self.reduced_jac_arr[i,j] = self.reduced_jac_arr[j,i]
-            self.jac_mat.mult(self.motion_model.modes[i].vector(), self.JU_vec)
-            for j in range(i, self.n_motion_modes):
-                self.reduced_jac_arr[i,j] = self.JU_vec.inner(self.motion_model.modes[j].vector())
-        # self.printer.print_var("reduced_jac_arr",self.reduced_jac_arr)
+        self.printer.print_var("jac_mat",self.jac_mat.array())
 
         # linear system: solve
         try:
-            self.reduced_ddisp = numpy.linalg.solve(self.reduced_jac_arr, -self.reduced_res_arr)
+            self.printer.print_str("Solve…",newline=False)
+            timer = time.time()
+            self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(self.jac_mat.array(), -self.res_vec.get_local())
+            timer = time.time() - timer
+            self.printer.print_str(" "+str(timer)+" s",tab=False)
+            self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
         # self.printer.print_var("reduced_ddisp",self.reduced_ddisp)
-
-        # Update motion model
-        self.motion_model.update_disp(self.reduced_ddisp, self.problem.dU.vector())
-
-        self.printer.inc()
-
-        # dU_norm
-        self.problem.dU_norm = self.problem.dU.vector().norm("l2")
-        self.printer.print_sci("dU_norm",self.problem.dU_norm)
-        if not (numpy.isfinite(self.problem.dU_norm)):
-            self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
-            self.problem.dU.vector().zero()
-
-        self.printer.dec()
 
         return True
