@@ -30,9 +30,9 @@ Interactive tutorials can be found at [https://mgenet.gitlabpages.inria.fr/dolfi
 A working installation of [FEniCS](https://fenicsproject.org) (version 2019.1.0; including the dolfin python interface) & [VTK](https://vtk.org) (also including python interface) is required to run `dolfin_warp`.
 To setup a system, the simplest is to use [conda](https://conda.io): first install [miniconda](https://docs.conda.io/projects/miniconda/en/latest) (note that for Microsoft Windows machines you first need to install WSL, the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install), and then install miniconda for linux inside the WSL; for Apple MacOS machines with Apple Silicon CPUs, you still need to install the MacOS Intel x86_64 version of miniconda), and then install the necessary packages:
 ```
-conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1
+conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2
 conda activate dolfin_warp
-conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1
+conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2
 conda activate dolfin_warp
 pip install dolfin_warp
 ```
