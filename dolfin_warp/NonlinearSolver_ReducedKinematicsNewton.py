@@ -19,7 +19,7 @@ import myPythonLibrary as mypy
 import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
-from .NonlinearSolver import NonlinearSolver
+from .NonlinearSolver            import           NonlinearSolver
 from .NonlinearSolver_Relaxation import RelaxationNonlinearSolver
 
 ################################################################################
@@ -35,21 +35,34 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.problem = problem
         self.printer = self.problem.printer
 
-        # residual & jacobian
+        # linear solver
+        self.linear_solver_name = parameters["linear_solver_name"] if ("linear_solver_name" in parameters) and (parameters["linear_solver_name"] is not None) else "mumps"
+
+        # self.res_vec = dolfin.PETScVector()
+        # self.jac_mat = dolfin.PETScMatrix()
         self.res_vec = dolfin.Vector()
         self.jac_mat = dolfin.Matrix()
-        self.Utmp_vec = self.problem.U.vector().copy()
+
+        self.linear_solver = dolfin.LUSolver(
+            self.jac_mat,
+            self.linear_solver_name)
+        self.linear_solver.parameters['report']               = bool(0)
+        # self.linear_solver.parameters['reuse_factorization']  = bool(0)
+        # self.linear_solver.parameters['same_nonzero_pattern'] = bool(1)
+        self.linear_solver.parameters['symmetric']            = bool(1)
+        self.linear_solver.parameters['verbose']              = bool(0)
+
+        # relaxation
+        RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # iterations control
         self.tol_dU      = parameters.get("tol_dU"     , None)
+        self.tol_dU_rel  = parameters.get("tol_dU_rel" , None)
         self.tol_res_rel = parameters.get("tol_res_rel", None)
         self.n_iter_max  = parameters.get("n_iter_max" , 32  )
 
-        # relaxation
-        # RelaxationNonlinearSolver.__init__(self, parameters=parameters)
-
         # write iterations
-        self.write_iterations = parameters.get("write_iterations", False)
+        self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
         if (self.write_iterations):
             self.working_folder   = parameters["working_folder"]
@@ -80,6 +93,7 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.frame_filebasename = None
 
         self.k_iter = 0
+        self.problem.DU.vector().zero()
         self.success = False
         self.printer.inc()
         while (True):
@@ -92,22 +106,17 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
                 break
 
             # relaxation
-            # self.compute_relax()
-            # self.reduced_ddisp *= self.relax
-            # self.problem.dU.vector()[:] *= self.relax
-            # self.problem.dU_norm *= abs(self.relax)
+            self.compute_relax()
 
             # solution update
-            self.Utmp_vec[:] = self.problem.U.vector()
-            self.Utmp_vec_norm = self.problem.U_norm
-
-            self.problem.reduced_displacement.vector().axpy(1., self.problem.dreduced_displacement.vector())
-            self.printer.print_var("reduced_displacement",self.problem.reduced_displacement.vector().get_local())
-
-            self.problem.update_disp()
+            self.problem.update_displacement(relax=self.relax)
+            self.problem.U_norm = self.problem.U.vector().norm("l2")
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
-            self.problem.dU.vector()[:] = self.problem.U.vector() - self.Utmp_vec
+            self.problem.DU.vector().axpy(self.relax, self.problem.dU.vector())
+
+            # self.printer.print_var("reduced_displacement",self.problem.reduced_displacement.vector().get_local())
+
             self.problem.dU_norm = self.problem.dU.vector().norm("l2")
             self.printer.print_sci("dU_norm",self.problem.dU_norm)
 
@@ -188,13 +197,16 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             res_vec=self.res_vec)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
-        self.printer.print_var("res_vec",self.res_vec.get_local())
+        # self.printer.print_var("res_vec",self.res_vec.get_local())
 
         self.printer.inc()
 
         # res_norm
         self.res_norm = self.res_vec.norm("l2")
         self.printer.print_sci("res_norm",self.res_norm)
+        if not (numpy.isfinite(self.res_norm)):
+            self.printer.print_str("Warning! Residual is NaN!",tab=False)
+            return False
 
         # dres
         if (self.k_iter > 1):
@@ -221,19 +233,32 @@ class ReducedKinematicsNewtonNonlinearSolver(RelaxationNonlinearSolver):
             jac_mat=self.jac_mat)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
-        self.printer.print_var("jac_mat",self.jac_mat.array())
+        # self.printer.print_var("jac_mat",self.jac_mat.array())
 
         # linear system: solve
         try:
             self.printer.print_str("Solve…",newline=False)
             timer = time.time()
-            self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(self.jac_mat.array(), -self.res_vec.get_local())
+            self.linear_solver.solve(
+                self.problem.dreduced_displacement.vector(),
+                -self.res_vec)
+            # self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(
+            #     self.jac_mat.array(),
+            #     -self.res_vec.get_local())
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
-            self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
-        # self.printer.print_var("reduced_ddisp",self.reduced_ddisp)
+        # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
+
+        self.printer.inc()
+        
+        self.problem.dreduced_displacement_norm = self.problem.dreduced_displacement.vector().norm("l2")
+        if not (numpy.isfinite(self.problem.dreduced_displacement_norm)):
+            self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
+            self.problem.dreduced_displacement.vector().zero()
+            return False
+        self.printer.dec()
 
         return True

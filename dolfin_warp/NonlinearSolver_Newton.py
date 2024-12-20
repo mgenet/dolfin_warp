@@ -109,7 +109,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.compute_relax()
 
             # solution update
-            self.problem.U.vector().axpy(self.relax, self.problem.dU.vector())
+            self.problem.update_displacement(relax=self.relax)
             self.problem.U_norm = self.problem.U.vector().norm("l2")
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
@@ -204,6 +204,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             res_vec=self.res_vec)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
+        # self.printer.print_var("res_vec",self.res_vec.get_local())
 
         self.printer.inc()
 
@@ -239,6 +240,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             jac_mat=self.jac_mat)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
+        # self.printer.print_var("jac_mat",self.jac_mat.array())
 
         # linear system: solve
         try:
@@ -252,7 +254,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
-        #self.printer.print_var("dU",dU.vector().get_local())
+        # self.printer.print_var("dU",dU.vector().get_local())
 
         self.printer.inc()
 

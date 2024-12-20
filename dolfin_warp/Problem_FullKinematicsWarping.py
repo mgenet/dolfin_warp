@@ -88,6 +88,13 @@ class FullKinematicsWarpingProblem(WarpingProblem):
 
 
 
+    def update_displacement(self,
+            relax=1):
+
+        self.U.vector().axpy(relax, self.dU.vector())
+
+
+
     def reinit_displacement(self):
 
         self.U.vector().zero()

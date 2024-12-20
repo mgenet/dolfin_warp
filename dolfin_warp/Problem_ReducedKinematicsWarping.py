@@ -88,7 +88,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.reduced_displacement_fs = dolfin.FunctionSpace(
             self.mesh,
             self.reduced_displacement_fe)
-        self.printer.print_var("reduced_displacement_fs.dim()",self.reduced_displacement_fs.dim())
+        # self.printer.print_var("reduced_displacement_fs.dim()",self.reduced_displacement_fs.dim())
         self.reduced_displacement = dolfin.Function(
             self.reduced_displacement_fs,
             name="reduced displacement")
@@ -170,12 +170,8 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
 
         if (self.mesh_dimension==2):
             T = dolfin.as_vector([T_X, T_Y])
-            R = dolfin.as_matrix([[1-R_Z,  -R_Z],
-                                  [ +R_Z, 1-R_Z]])
-            # R = dolfin.as_matrix([[1-R_Z,  -R_Z],
-            #                       [ +R_Z, 1-R_Z]])
-            # R = dolfin.as_matrix([[+dolfin.cos(R_Z), -dolfin.sin(R_Z)],
-            #                       [+dolfin.sin(R_Z), +dolfin.cos(R_Z)]])
+            R = dolfin.as_matrix([[+dolfin.cos(R_Z), -dolfin.sin(R_Z)],
+                                  [+dolfin.sin(R_Z), +dolfin.cos(R_Z)]])
             U = dolfin.as_matrix([[U_XX, U_XY],
                                   [U_XY, U_YY]])
         if (self.mesh_dimension==3):
@@ -209,11 +205,15 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.U = dolfin.Function(
             self.U_fs,
             name="displacement")
+        self.U_vec_cp = self.U.vector().copy()
         self.U_norm = 0.
         self.Uold = dolfin.Function(
             self.U_fs,
             name="previous displacement")
         self.Uold_norm = 0.
+        self.DU = dolfin.Function(
+            self.U_fs,
+            name="displacement increment")
         self.dU = dolfin.Function(
             self.U_fs,
             name="displacement correction")
@@ -235,6 +235,16 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
             V=self.U_fs,
             function=self.U)
         self.U_norm = self.U.vector().norm("l2")
+
+
+
+    def update_displacement(self,
+            relax=1):
+
+        self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())
+        self.U_vec_cp[:] = self.U.vector()
+        self.update_disp()
+        self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
 
 
 

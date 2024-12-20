@@ -33,6 +33,8 @@ def warp(
         mesh_folder                                 : str         = None                                ,
         mesh_basename                               : str         = None                                ,
         mesh_degree                                 : int         = 1                                   ,
+        kinematics_type                             : str         = "full"                              , # full, reduced
+        reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
         regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
         regul_types                                 : list        = None                                ,
         regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
@@ -65,7 +67,7 @@ def warp(
         gimic                                       : bool        = False                               ,
         gimic_texture                               : str         = "no"                                ,
         gimic_resample                              : int         = 1                                   ,
-        nonlinearsolver                             : str         = "newton"                            , # newton, CMA
+        nonlinearsolver                             : str         = None                                , # None, newton, reduced_kinematics_newton, CMA
         tol_res_rel                                 : float       = None                                ,
         tol_dU                                      : float       = None                                ,
         tol_dU_rel                                  : float       = None                                ,
@@ -121,12 +123,22 @@ def warp(
     # print (regul_models)
     # print (regul_levels)
 
-    problem = dwarp.WarpingProblem(
-        mesh=mesh,
-        mesh_folder=mesh_folder,
-        mesh_basename=mesh_basename,
-        U_degree=mesh_degree,
-        silent=silent)
+    if (kinematics_type == "full"):
+        problem = dwarp.FullKinematicsWarpingProblem(
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            U_degree=mesh_degree,
+            silent=silent)
+    elif (kinematics_type == "reduced"):
+        problem = dwarp.ReducedKinematicsWarpingProblem(
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            model=reduced_kinematics_model,
+            silent=silent)
+    else:
+        assert (0), "\"kinematics_type\" (="+str(kinematics_type)+") must be \"full\" or \"reduced\". Aborting."
 
     images_series = dwarp.ImagesSeries(
         folder=images_folder,
@@ -229,9 +241,14 @@ def warp(
             problem=problem,
             verbose=1)
 
+    if (nonlinearsolver is None):
+        if (kinematics_type == "full"):
+            nonlinearsolver = "newton"
+        elif (kinematics_type == "reduced"):
+            nonlinearsolver = "reduced_kinematics_newton"
     if (nonlinearsolver == "newton"):
         assert (initialize_reduced_U_from_file is False),\
-            "Not implemented. Aborting."
+            "Should use \"initialize_U_from_file\", not \"initialize_reduced_U_from_file\". Aborting."
         solver = dwarp.NewtonNonlinearSolver(
             problem=problem,
             parameters={
@@ -247,15 +264,11 @@ def warp(
                 "tol_dU_rel":tol_dU_rel,
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
-    elif (nonlinearsolver == "reduced_kinematic_newton"):
+    elif (nonlinearsolver == "reduced_kinematics_newton"):
         assert (initialize_U_from_file is False),\
             "Not implemented. Aborting."
-        motion = dwarp.MotionModel(
-            problem=problem,
-            type="translation_and_scaling")
         solver = dwarp.ReducedKinematicsNewtonNonlinearSolver(
             problem=problem,
-            motion_model=motion,
             parameters={
                 "working_folder":working_folder,
                 "working_basename":working_basename,
@@ -270,6 +283,8 @@ def warp(
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "cma"):
+        assert (relax_type is None),\
+            "Not implemented. Aborting."
         solver = dwarp.CMANonlinearSolver(
             problem=problem,
             parameters={

@@ -145,20 +145,11 @@ class ImageIterator():
             # init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs) # MG20230321: Somehow this is problematic when VTUs are saved with preserved connectivity…
 
         if (self.initialize_reduced_U_from_file):
-            init_reduced_disp = numpy.loadtxt(self.initialize_reduced_U_filename)
-            assert (init_reduced_disp.ndim in [1,2]),\
-                "Number of dimension of reduced displacement should be 1 (single frame) or 2 (multiple frames). Aborting "
-            if init_reduced_disp.ndim ==1:
-                assert (init_reduced_disp.shape[0] in [3,6]),\
-                    "Number of modes should be 3 (translation or scaling) or 6 (translation and scaling). Aborting "
-                if init_reduced_disp.shape[0] == 3:
-                    init_reduced_disp = init_reduced_disp.reshape(-1,3)
-                else:
-                    init_reduced_disp = init_reduced_disp.reshape(-1,6)
-            else:
-                assert (init_reduced_disp.shape[1] in [3,6]),\
-                "Number of modes should be 3 (translation or scaling) or 6 (translation and scaling). Aborting "
-
+            init_reduced_displacement = numpy.loadtxt(self.initialize_reduced_U_filename, ndmin=2)
+            assert (init_reduced_displacement.shape[0] == self.problem.reduced_displacement_fs.dim()),\
+                "\"init_reduced_displacement.shape[0]\" ("+str(init_reduced_displacement.shape[0])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
+            assert (init_reduced_displacement.shape[1] == self.problem.images_n_frames),\
+                "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.images_n_frames\" (="+str(self.problem.images_n_frames)+"). Aborting."
 
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
@@ -220,10 +211,7 @@ class ImageIterator():
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_reduced_U_from_file):
-                    self.solver.reduced_disp = init_reduced_disp[k_frame-1,:]
-
-                elif (self.initialize_DU_with_DUold):
-                    self.problem.U.vector().axpy(1., self.problem.DUold.vector())
+                    self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[k_frame-1,:]
 
                 self.problem.call_before_solve(
                     k_frame=k_frame,

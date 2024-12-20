@@ -72,7 +72,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             self.printer.print_var("k_relax",k_relax,-1)
             relax = 1./self.relax_backtracking_factor**(k_relax-1)
             self.printer.print_sci("relax",relax)
-            self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
+            self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
             ener = self.problem.assemble_ener()
             self.printer.print_sci("ener",ener)
             if (ener < ener0):
@@ -85,7 +85,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             k_relax += 1
         self.printer.dec()
         relax = 0.
-        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
+        self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
 
 
 
