@@ -287,18 +287,14 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.printer.inc()
 
         # Psi_c
-        self.Psi_c  = (self.Idef - self.Iref)**2/2
-        self.DPsi_c = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
-
-        self.DDPsi_c     = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c_ref = dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
+        self.Psi_c   = (self.Idef - self.Iref)**2/2
+        self.DPsi_c  = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.DDPsi_c = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
 
         if (self.w_char_func):
-            self.Psi_c  *= self.Phi_def * self.Phi_ref
-            self.DPsi_c *= self.Phi_def * self.Phi_ref
-
-            self.DDPsi_c     *= self.Phi_def * self.Phi_ref
-            self.DDPsi_c_ref *= self.Phi_def * self.Phi_ref
+            self.Psi_c   *= self.Phi_def * self.Phi_ref
+            self.DPsi_c  *= self.Phi_def * self.Phi_ref
+            self.DDPsi_c *= self.Phi_def * self.Phi_ref
 
         # forms
         self.ener_form = self.Psi_c   * self.dV

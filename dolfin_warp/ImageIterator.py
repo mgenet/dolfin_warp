@@ -45,7 +45,6 @@ class ImageIterator():
         self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"         )
         self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
         self.initialize_U_method                         = parameters.get("initialize_U_method"                        , "dofs_transfer")
-        self.initialize_DU_with_DUold                    = parameters.get("initialize_DU_with_DUold"                   , False         )
         self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
         self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
         self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )

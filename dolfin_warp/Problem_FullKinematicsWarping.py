@@ -72,9 +72,6 @@ class FullKinematicsWarpingProblem(WarpingProblem):
             name="previous displacement")
         self.Uold.vector().zero()
         self.Uold_norm = 0.
-        self.DUold = dolfin.Function(
-            self.U_fs,
-            name="previous displacement increment")
         self.DU = dolfin.Function(
             self.U_fs,
             name="displacement increment")
@@ -97,7 +94,6 @@ class FullKinematicsWarpingProblem(WarpingProblem):
         self.U_norm = 0.
         self.Uold.vector().zero()
         self.Uold_norm = 0.
-        self.DUold.vector().zero()
 
 
 
@@ -105,6 +101,5 @@ class FullKinematicsWarpingProblem(WarpingProblem):
             *kargs,
             **kwargs):
 
-        self.DUold.vector()[:] = self.U.vector() - self.Uold.vector()
         self.Uold.vector()[:] = self.U.vector()
         self.Uold_norm = self.U_norm
