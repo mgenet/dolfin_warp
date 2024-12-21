@@ -92,6 +92,7 @@ class FullKinematicsWarpingProblem(WarpingProblem):
             relax=1):
 
         self.U.vector().axpy(relax, self.dU.vector())
+        self.U_norm = self.U.vector().norm("l2")
 
 
 

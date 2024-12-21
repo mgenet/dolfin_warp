@@ -110,8 +110,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 relax_c = relax_b - (relax_b - relax_a) / phi
                 relax_list.append(relax_c)
                 self.printer.print_sci("relax_c",relax_c)
-                self.problem.U.vector().axpy(relax_c-relax_cur, self.problem.dU.vector())
-                relax_cur = relax_c
+                self.problem.update_displacement(relax=relax_c-relax_cur); relax_cur = relax_c
                 relax_fc  = self.problem.assemble_ener()
                 #self.printer.print_sci("relax_fc",relax_fc)
                 if (numpy.isnan(relax_fc)):
@@ -123,8 +122,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 relax_d = relax_a + (relax_b - relax_a) / phi
                 relax_list.append(relax_d)
                 self.printer.print_sci("relax_d",relax_d)
-                self.problem.U.vector().axpy(relax_d-relax_cur, self.problem.dU.vector())
-                relax_cur = relax_d
+                self.problem.update_displacement(relax=relax_d-relax_cur); relax_cur = relax_d
                 relax_fd  = self.problem.assemble_ener()
                 if (numpy.isnan(relax_fd)):
                     relax_fd = float('+inf')
@@ -170,7 +168,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             k_relax += 1
         self.printer.dec()
         relax = 0.
-        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
+        self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
         #self.printer.print_var("ener_list",ener_list)
 
         if (self.write_iterations):

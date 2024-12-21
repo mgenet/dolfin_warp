@@ -245,6 +245,18 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.U_vec_cp[:] = self.U.vector()
         self.update_disp()
         self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
+        self.dU_norm = self.dU.vector().norm("l2")
+
+
+
+    def update_displacement_increment(self,
+            relax=1):
+
+        self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())
+        self.U_vec_cp[:] = self.U.vector()
+        self.update_disp()
+        self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
+        self.dU_norm = self.dU.vector().norm("l2")
 
 
 

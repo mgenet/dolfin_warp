@@ -110,10 +110,9 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
 
             # solution update
             self.problem.update_displacement(relax=self.relax)
-            self.problem.U_norm = self.problem.U.vector().norm("l2")
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
-            self.problem.DU.vector().axpy(self.relax, self.problem.dU.vector())
+            self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()
             self.problem.DU_norm = self.problem.DU.vector().norm("l2")
             self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
@@ -124,8 +123,6 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
                     time=self.k_iter)
 
             # displacement error
-            self.problem.dU_norm *= abs(self.relax)
-            self.printer.print_sci("dU_norm",self.problem.dU_norm)
             if (self.problem.U_norm == 0.):
                 if (self.problem.Uold_norm == 0.):
                     self.problem.dU_err = 0.
@@ -246,25 +243,41 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         try:
             self.printer.print_str("Solve…",newline=False)
             timer = time.time()
-            self.linear_solver.solve(
-                self.problem.dU.vector(),
-                -self.res_vec)
+            if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                self.linear_solver.solve(
+                    self.problem.dU.vector(),
+                    -self.res_vec)
+                # self.printer.print_var("dU",dU.vector().get_local())
+            elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                self.linear_solver.solve(
+                    self.problem.dreduced_displacement.vector(),
+                    -self.res_vec)
+                # self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(
+                #     self.jac_mat.array(),
+                #     -self.res_vec.get_local())
+                # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
-        # self.printer.print_var("dU",dU.vector().get_local())
 
         self.printer.inc()
 
-        # dU_norm
-        self.problem.dU_norm = self.problem.dU.vector().norm("l2")
-        self.printer.print_sci("dU_norm",self.problem.dU_norm)
-        if not (numpy.isfinite(self.problem.dU_norm)):
-            self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
-            self.problem.dU.vector().zero()
-            return False
+        if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
+            self.printer.print_sci("dU_norm",self.problem.dU_norm)
+            if not (numpy.isfinite(self.problem.dU_norm)):
+                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
+                self.problem.dU.vector().zero()
+                return False
+        elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.problem.dreduced_displacement_norm = self.problem.dreduced_displacement.vector().norm("l2")
+            self.printer.print_sci("dreduced_displacement_norm",self.problem.dreduced_displacement_norm)
+            if not (numpy.isfinite(self.problem.dreduced_displacement_norm)):
+                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
+                self.problem.dreduced_displacement.vector().zero()
+                return False
 
         self.printer.dec()
 

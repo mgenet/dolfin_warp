@@ -17,7 +17,6 @@ from .ModalAnalysis import *
 from .NonlinearSolver import *
 from .NonlinearSolver_CMA import *
 from .NonlinearSolver_Newton import *
-from .NonlinearSolver_ReducedKinematicsNewton import *
 from .NonlinearSolver_Relaxation import *
 from .Problem import *
 from .Problem_FullKinematicsWarping import *
