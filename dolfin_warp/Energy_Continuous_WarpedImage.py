@@ -290,6 +290,8 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.Psi_c   = (self.Idef - self.Iref)**2/2
         self.DPsi_c  = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
         self.DDPsi_c = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        if (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.DDPsi_c += (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.ddU_test_trial)
 
         if (self.w_char_func):
             self.Psi_c   *= self.Phi_def * self.Phi_ref

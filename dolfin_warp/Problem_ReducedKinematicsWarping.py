@@ -219,6 +219,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
             name="displacement correction")
         self.dU_test = dolfin.derivative(self.U_expr, self.reduced_displacement, self.reduced_displacement_test)
         self.dU_trial = dolfin.derivative(self.U_expr, self.reduced_displacement, self.reduced_displacement_trial)
+        self.ddU_test_trial = dolfin.derivative(self.dU_test, self.reduced_displacement, self.reduced_displacement_trial)
 
         # for mesh volume computation
         self.I = dolfin.Identity(self.mesh_dimension)
