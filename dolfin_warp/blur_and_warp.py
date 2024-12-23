@@ -61,42 +61,44 @@ def gaussian_windowing(
 
 
 def blur_and_warp(
-        working_folder               : str,
-        working_basename             : str,
-        images_folder                : str,
-        images_basename              : str,
-        attenuation_factors          : list        = None                                   , # List of attenuation coefficients at the cut-off frequency
-        images_quadrature            : int         = None                                   ,
-        images_quadrature_from       : str         = "points_count"                         , # points_count, integral
-        mesh                         : dolfin.Mesh = None                                   ,
-        kinematics_type              : str         = "reduced"                              ,
-        reduced_kinematics_model     : str         = "translation+rotation+scaling+shear"   ,
-        refinement_levels            : list        = [0]                                    ,
-        meshes                       : list        = None                                   ,
-        mesh_folder                  : str         = None                                   ,
-        mesh_basenames               : list        = None                                   ,
-        regul_type                   : str         = "continuous-equilibrated"              , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
-        regul_types                  : list        = None                                   ,
-        regul_model                  : str         = "ogdenciarletgeymonatneohookean"       , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
-        regul_models                 : list        = None                                   ,
-        regul_level                  : float       = 0.                                     ,
-        regul_levels                 : list        = None                                   ,
-        regul_poisson                : float       = 0.                                     ,
-        regul_b                      : float       = None                                   ,
-        regul_volume_subdomain_data                = None                                   ,
-        regul_volume_subdomain_id                  = None                                   ,
-        regul_surface_subdomain_data               = None                                   ,
-        regul_surface_subdomain_id                 = None                                   ,
-        relax_type                   : str         = "backtracking"                         , # constant, aitken, backtracking, gss
-        relax_tol                    : float       = None                                   ,
-        relax_n_iter_max             : int         = None                                   ,
-        normalize_energies           : bool        = False                                  ,
-        tol_dU                       : float       = None                                   ,
-        n_iter_max                   : int         = 100                                    ,
-        continue_after_fail          : bool        = False                                  ,
-        write_qois_limited_precision : bool        = False                                  ,
-        print_iterations             : bool        = False                                  ,
-        silent                       : bool        = False                                  ):
+        working_folder                  : str,
+        working_basename                : str,
+        images_folder                   : str,
+        images_basename                 : str,
+        attenuation_factors             : list        = None                                   , # List of attenuation coefficients at the cut-off frequency
+        images_quadrature               : int         = None                                   ,
+        images_quadrature_from          : str         = "points_count"                         , # points_count, integral
+        mesh                            : dolfin.Mesh = None                                   ,
+        kinematics_type                 : str         = "reduced"                              ,
+        reduced_kinematics_model        : str         = "translation+rotation+scaling+shear"   ,
+        refinement_levels               : list        = [0]                                    ,
+        meshes                          : list        = None                                   ,
+        mesh_folder                     : str         = None                                   ,
+        mesh_basenames                  : list        = None                                   ,
+        regul_type                      : str         = "continuous-equilibrated"              , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_types                     : list        = None                                   ,
+        regul_model                     : str         = "ogdenciarletgeymonatneohookean"       , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
+        regul_models                    : list        = None                                   ,
+        regul_level                     : float       = 0.                                     ,
+        regul_levels                    : list        = None                                   ,
+        regul_poisson                   : float       = 0.                                     ,
+        regul_b                         : float       = None                                   ,
+        regul_volume_subdomain_data                   = None                                   ,
+        regul_volume_subdomain_id                     = None                                   ,
+        regul_surface_subdomain_data                  = None                                   ,
+        regul_surface_subdomain_id                    = None                                   ,
+        relax_type                      : str         = "backtracking"                         , # constant, aitken, backtracking, gss
+        relax_tol                       : float       = None                                   ,
+        relax_n_iter_max                : int         = None                                   ,
+        normalize_energies              : bool        = False                                  ,
+        tol_dU                          : float       = None                                   ,
+        n_iter_max                      : int         = 100                                    ,
+        continue_after_fail             : bool        = False                                  ,
+        write_qois_limited_precision    : bool        = False                                  ,
+        print_iterations                : bool        = False                                  ,
+        silent                          : bool        = False                                  ,
+        initialize_reduced_U_from_file  : bool        = True                                   ,
+        initialize_reduced_U_filename   : str         = None                                   ):
 
         assert ((images is not None) or ((image is not None) and (blurring_levels is not None)) or ((image_folder is not None) and (image_basenames is not None))),\
         "Must provide an image sequence or an image file with a sequence of blurring factors or a folder containing images sequences, along with their base name. Aborting."
@@ -136,8 +138,8 @@ def blur_and_warp(
                     relax_type                      = relax_type,
                     tol_dU                          = tol_dU,
                     write_qois_limited_precision    = write_qois_limited_precision, 
-                    initialize_reduced_U_from_file  = True,
-                    initialize_reduced_U_filename   = "Reduced_kinematics_"+lung+"_downsampled="+str(attenuation_factor)+"dat",
+                    initialize_reduced_U_from_file  = initialize_reduced_U_from_file,
+                    initialize_reduced_U_filename   = initialize_reduced_U_filename,
                     )
 
                     ###### Check that .dat is saved in reduced kinematics for latter initialisation
@@ -156,6 +158,6 @@ def blur_and_warp(
                     tol_dU                          = tol_dU,
                     write_qois_limited_precision    = write_qois_limited_precision, 
                     initialize_reduced_U_from_file  = True,
-                    initialize_reduced_U_filename   = "initial_scaling_"+lung+".dat",
+                    initialize_reduced_U_filename   = working_basename+"_downsampled="+str(attenuation_factor)+".dat",
                     )
 
