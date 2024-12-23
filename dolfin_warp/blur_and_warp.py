@@ -67,6 +67,7 @@ def blur_and_warp(
         images_quadrature            : int         = None                            ,
         images_quadrature_from       : str         = "points_count"                  , # points_count, integral
         mesh                         : dolfin.Mesh = None                            ,
+        kinematics_type              : str         ="reduced"                        ,
         refinement_levels            : list        = [0]                             ,
         meshes                       : list        = None                            ,
         mesh_folder                  : str         = None                            ,
@@ -96,6 +97,8 @@ def blur_and_warp(
 
         assert ((images is not None) or ((image is not None) and (blurring_levels is not None)) or ((image_folder is not None) and (image_basenames is not None))),\
         "Must provide an image sequence or an image file with a sequence of blurring factors or a folder containing images sequences, along with their base name. Aborting."
+
+        assert kinematics_type=="reduced", "blur and warp only defined for reduced kinematics. Aborting"
 
         if images is None:
             images = []
