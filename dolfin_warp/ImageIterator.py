@@ -146,10 +146,11 @@ class ImageIterator():
 
         if (self.initialize_reduced_U_from_file):
             init_reduced_displacement = numpy.loadtxt(self.initialize_reduced_U_filename, ndmin=2)
-            assert (init_reduced_displacement.shape[0] == self.problem.reduced_displacement_fs.dim()),\
-                "\"init_reduced_displacement.shape[0]\" ("+str(init_reduced_displacement.shape[0])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
-            assert (init_reduced_displacement.shape[1] == self.problem.images_n_frames),\
-                "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.images_n_frames\" (="+str(self.problem.images_n_frames)+"). Aborting."
+            print(f"shape of initial reduced disp vector is {init_reduced_displacement.shape}")
+            assert (init_reduced_displacement.shape[1] == self.problem.reduced_displacement_fs.dim()),\
+                "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
+            assert (init_reduced_displacement.shape[0] == self.problem.images_n_frames-1),\
+                "\"init_reduced_displacement.shape[0]\" ("+str(init_reduced_displacement.shape[0])+") should match \"problem.images_n_frames-1\" (="+str(self.problem.images_n_frames-1)+"). Aborting."
 
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
