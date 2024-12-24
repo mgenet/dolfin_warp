@@ -146,7 +146,6 @@ class ImageIterator():
 
         if (self.initialize_reduced_U_from_file):
             init_reduced_displacement = numpy.loadtxt(self.initialize_reduced_U_filename, ndmin=2)
-            print(f"shape of initial reduced disp vector is {init_reduced_displacement.shape}")
             assert (init_reduced_displacement.shape[1] == self.problem.reduced_displacement_fs.dim()),\
                 "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
             assert (init_reduced_displacement.shape[0] == self.problem.images_n_frames-1),\
