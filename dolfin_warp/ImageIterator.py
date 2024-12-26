@@ -281,4 +281,10 @@ class ImageIterator():
         commandline += "\""
         os.system(commandline)
 
+
+        
+        self.printer.print_str("Wrtiting redcued-dip vector")
+        numpy.savetxt(self.working_basename+"_reduced_kin_n-1.dat", self.problem.reduced_displacement.vector()[:])                      # Save the reduced displacements
+
+
         return success
