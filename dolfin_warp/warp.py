@@ -53,6 +53,7 @@ def warp(
         relax_tol                                   : float       = None                                ,
         relax_n_iter_max                            : int         = None                                ,
         relax_must_advance                          : bool        = None                                ,
+        save_reduced_disp                           : bool        = False                               ,
         normalize_energies                          : bool        = False                               ,
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
@@ -291,6 +292,7 @@ def warp(
             "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
             "write_XML_files":write_XML_files,
             "iteration_mode":iteration_mode,
+            "save_reduced_disp":save_reduced_disp,
             "continue_after_fail":continue_after_fail})
 
     success = image_iterator.iterate()
