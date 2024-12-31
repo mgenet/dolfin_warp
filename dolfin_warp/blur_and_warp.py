@@ -61,44 +61,72 @@ def gaussian_windowing(
 
 
 def blur_and_warp(
-        working_folder                  : str,
-        working_basename                : str,
-        images_folder                   : str,
-        images_basename                 : str,
+        working_folder                              : str,
+        working_basename                            : str,
+        images_folder                               : str,
+        images_basename                             : str,
         attenuation_factors             : list        = None                                   , # List of attenuation coefficients at the cut-off frequency
-        images_quadrature               : int         = None                                   ,
-        images_quadrature_from          : str         = "points_count"                         , # points_count, integral
-        mesh                            : dolfin.Mesh = None                                   ,
-        kinematics_type                 : str         = "reduced"                              ,
-        reduced_kinematics_model        : str         = "translation+rotation+scaling+shear"   ,
-        refinement_levels               : list        = [0]                                    ,
-        meshes                          : list        = None                                   ,
-        mesh_folder                     : str         = None                                   ,
-        mesh_basenames                  : list        = None                                   ,
-        regul_type                      : str         = "continuous-equilibrated"              , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
-        regul_types                     : list        = None                                   ,
-        regul_model                     : str         = "ogdenciarletgeymonatneohookean"       , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
-        regul_models                    : list        = None                                   ,
-        regul_level                     : float       = 0.                                     ,
-        regul_levels                    : list        = None                                   ,
-        regul_poisson                   : float       = 0.                                     ,
-        regul_b                         : float       = None                                   ,
-        regul_volume_subdomain_data                   = None                                   ,
-        regul_volume_subdomain_id                     = None                                   ,
-        regul_surface_subdomain_data                  = None                                   ,
-        regul_surface_subdomain_id                    = None                                   ,
-        relax_type                      : str         = "backtracking"                         , # constant, aitken, backtracking, gss
-        relax_tol                       : float       = None                                   ,
-        relax_n_iter_max                : int         = None                                   ,
-        normalize_energies              : bool        = False                                  ,
-        tol_dU                          : float       = None                                   ,
-        n_iter_max                      : int         = 100                                    ,
-        continue_after_fail             : bool        = False                                  ,
-        write_qois_limited_precision    : bool        = False                                  ,
-        print_iterations                : bool        = False                                  ,
-        silent                          : bool        = False                                  ,
-        initialize_reduced_U_from_file  : bool        = True                                   ,
-        initialize_reduced_U_filename   : str         = None                                   ):
+        images_grad_basename                        : str         = None                                ,
+        images_ext                                  : str         = "vti"                               , # vti, vtk
+        images_n_frames                             : int         = None                                ,
+        images_ref_frame                            : int         = 0                                   ,
+        images_quadrature                           : int         = None                                ,
+        images_quadrature_from                      : str         = "points_count"                      , # points_count, integral
+        images_static_scaling                       : bool        = False                               ,
+        images_dynamic_scaling                      : bool        = False                               ,
+        images_char_func                            : bool        = True                                ,
+        images_is_cone                              : bool        = False                               ,
+        mesh                                        : dolfin.Mesh = None                                ,
+        mesh_folder                                 : str         = None                                ,
+        mesh_basename                               : str         = None                                ,
+        mesh_degree                                 : int         = 1                                   ,
+        kinematics_type                             : str         = "full"                              , # full, reduced
+        reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
+        regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_types                                 : list        = None                                ,
+        regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
+        regul_models                                : list        = None                                ,
+        regul_quadrature                            : int         = None                                ,
+        regul_level                                 : float       = 0.                                  ,
+        regul_levels                                : list        = None                                ,
+        regul_poisson                               : float       = 0.                                  ,
+        regul_b                                     : float       = None                                ,
+        regul_volume_subdomain_data                               = None                                ,
+        regul_volume_subdomain_id                                 = None                                ,
+        regul_surface_subdomain_data                              = None                                ,
+        regul_surface_subdomain_id                                = None                                ,
+        relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
+        relax_backtracking_factor                   : float       = None                                ,
+        relax_tol                                   : float       = None                                ,
+        relax_n_iter_max                            : int         = None                                ,
+        relax_must_advance                          : bool        = None                                ,
+        save_reduced_disp                           : bool        = False                               ,
+        normalize_energies                          : bool        = False                               ,
+        initialize_reduced_U_from_file              : bool        = False                               ,
+        initialize_reduced_U_filename               : str         = None                                ,
+        initialize_U_from_file                      : bool        = False                               ,
+        initialize_U_folder                         : str         = None                                ,
+        initialize_U_basename                       : str         = None                                ,
+        initialize_U_ext                            : str         = "vtu"                               ,
+        initialize_U_array_name                     : str         = "displacement"                      ,
+        initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
+        register_ref_frame                          : bool        = False                               ,
+        iteration_mode                              : str         = "normal"                            , # normal, loop
+        gimic                                       : bool        = False                               ,
+        gimic_texture                               : str         = "no"                                ,
+        gimic_resample                              : int         = 1                                   ,
+        nonlinearsolver                             : str         = "newton"                            , # None, newton, CMA
+        tol_res_rel                                 : float       = None                                ,
+        tol_dU                                      : float       = None                                ,
+        tol_dU_rel                                  : float       = None                                ,
+        n_iter_max                                  : int         = 100                                 ,
+        continue_after_fail                         : bool        = False                               ,
+        write_qois_limited_precision                : bool        = False                               ,
+        write_VTU_files                             : bool        = True                                ,
+        write_VTU_files_with_preserved_connectivity : bool        = False                               ,
+        write_XML_files                             : bool        = False                               ,
+        print_iterations                            : bool        = False                               ,
+        silent                                      : bool        = False                               ):
 
         
         assert kinematics_type=="reduced", "blur_and_warp only defined for reduced kinematics. Aborting"
@@ -156,6 +184,8 @@ def blur_and_warp(
                 tol_dU                          = tol_dU,
                 write_qois_limited_precision    = write_qois_limited_precision, 
                 initialize_reduced_U_from_file  = True,
-                initialize_reduced_U_filename   = initialize_reduced_U_filename
+                initialize_reduced_U_filename   = initialize_reduced_U_filename,
+                print_iterations                = print_iterations, 
+                save_reduced_disp               = save_reduced_disp,
                 )
 
