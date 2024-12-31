@@ -45,6 +45,8 @@ class FullKinematicsWarpingProblem(WarpingProblem):
 
         self.energies = []
 
+        self.kinematics_type == "full"
+
 
 
     def set_displacement(self,

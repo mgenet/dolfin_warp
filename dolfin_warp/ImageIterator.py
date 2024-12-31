@@ -34,24 +34,24 @@ class ImageIterator():
         self.printer = self.problem.printer
         self.solver  = solver
 
-        self.working_folder                              = parameters.get("working_folder"                             , "."           )
-        self.working_basename                            = parameters.get("working_basename"                           , "sol"         )
-        self.register_ref_frame                          = parameters.get("register_ref_frame"                         , False         )
-        self.initialize_reduced_U_from_file              = parameters.get("initialize_reduced_U_from_file"             , False         )
-        self.initialize_reduced_U_filename               = parameters.get("initialize_reduced_U_filename"              , "init"        )
-        self.initialize_U_from_file                      = parameters.get("initialize_U_from_file"                     , False         )
-        self.initialize_U_folder                         = parameters.get("initialize_U_folder"                        , "."           )
-        self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"        )
-        self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"         )
-        self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
+        self.working_folder                              = parameters.get("working_folder"                             , "."            )
+        self.working_basename                            = parameters.get("working_basename"                           , "sol"          )
+        self.register_ref_frame                          = parameters.get("register_ref_frame"                         , False          )
+        self.initialize_reduced_U_from_file              = parameters.get("initialize_reduced_U_from_file"             , False          )
+        self.initialize_reduced_U_filename               = parameters.get("initialize_reduced_U_filename"              , "init"         )
+        self.initialize_U_from_file                      = parameters.get("initialize_U_from_file"                     , False          )
+        self.initialize_U_folder                         = parameters.get("initialize_U_folder"                        , "."            )
+        self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"         )
+        self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"          )
+        self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement" )
         self.initialize_U_method                         = parameters.get("initialize_U_method"                        , "dofs_transfer")
-        self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
-        self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
-        self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
-        self.write_XML_files                             = parameters.get("write_XML_files"                            , False         )
-        self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"      ) # MG20200616: This should be a bool
-        self.continue_after_fail                         = parameters.get("continue_after_fail"                        , False         )
-
+        self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False          )
+        self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True           )
+        self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False          )
+        self.write_XML_files                             = parameters.get("write_XML_files"                            , False          )
+        self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"       ) # MG20200616: This should be a bool
+        self.continue_after_fail                         = parameters.get("continue_after_fail"                        , False          )
+        self.save_reduced_disp                           = parameters.get("save_reduced_disp"                           , False         )
 
 
     def iterate(self):
@@ -283,8 +283,8 @@ class ImageIterator():
 
 
         # Add bool  to plot or not and check that in reduced mode and not full kinematics
-        if export_reduced_dispo:
-            assert kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
+        if self.save_reduced_disp:
+            assert self.problem.kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
             self.printer.print_str("Wrtiting redcued-dip vector")
             numpy.savetxt(self.working_basename+"_reduced_kin_n-1.dat", self.problem.reduced_displacement.vector()[:])                      # Save the reduced displacements
 
