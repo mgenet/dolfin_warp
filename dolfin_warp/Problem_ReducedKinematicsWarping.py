@@ -42,8 +42,8 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.set_displacement()
 
         self.energies = []
-        
-        self.kinematics_type == "reduced"
+
+        self.kinematics_type = "reduced"
 
 
     def set_displacement(self):

@@ -45,7 +45,7 @@ class FullKinematicsWarpingProblem(WarpingProblem):
 
         self.energies = []
 
-        self.kinematics_type == "full"
+        self.kinematics_type = "full"
 
 
 
