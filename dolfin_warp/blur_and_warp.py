@@ -100,11 +100,12 @@ def blur_and_warp(
         initialize_reduced_U_from_file  : bool        = True                                   ,
         initialize_reduced_U_filename   : str         = None                                   ):
 
-        assert ((images is not None) or ((image is not None) and (blurring_levels is not None)) or ((image_folder is not None) and (image_basenames is not None))),\
-        "Must provide an image sequence or an image file with a sequence of blurring factors or a folder containing images sequences, along with their base name. Aborting."
+        
+        assert kinematics_type=="reduced", "blur_and_warp only defined for reduced kinematics. Aborting"
 
-        assert kinematics_type=="reduced", "blur and warp only defined for reduced kinematics. Aborting"
 
+        initialize_reduced_U_filename_0 = initialize_reduced_U_filename                             # Save intial reduced dispalcement used for the first initialisation
+        
         if images is None:
             images = []
 
@@ -112,52 +113,49 @@ def blur_and_warp(
         images_quadrature_progressive = np.linspace(1, images_quadrature, len(attenuation_factors))  # Generate m evenly spaced values
         images_quadrature_progressive = np.round(images_quadrature_progressive).astype(int)
 
-        for i in range(len(attenuation_factors)):
+        attenuation_factors.sort(reverse=True)                                                                   # 
 
-            gaussian_windowing(
-                working_folder                              = working_folder,
-                images_folder                               = images_folder, 
-                image_name                                  = images_basename,
-                attenuation_factor                          = attenuation_factors[i],   
-                verbose                                     = True
-                )
+        if attenuation_factors[-1] != 1:
+            attenuation_factors.apend(1)
+
+        for i in range(len(attenuation_factors)):
+            attenuation_factor = attenuation_factors[i]
+            if attenuation_factor != 1:
+                gaussian_windowing(
+                    working_folder                              = working_folder,
+                    images_folder                               = images_folder, 
+                    image_name                                  = images_basename,
+                    attenuation_factor                          = attenuation_factor,   
+                    verbose                                     = True
+                    )
+                working_basename_current = working_basename+"_downsampled="+str(attenuation_factor)
+            else:
+                working_basename_current = working_basename+"_sharp"
+
 
             images_basename_blur_factor     = images_basename + "_downsampled="+str(attenuation_factor)
-
             if i >=1 :
-                dwarp.warp(
-                    working_folder                  = working_folder,
-                    working_basename                = working_basename+"_downsampled="+str(attenuation_factor),
-                    images_folder                   = images_folder,
-                    images_basename                 = images_basename_blur_factor,
-                    images_quadrature               = images_quadrature_progressive[i],
-                    mesh                            = mesh,
-                    kinematics_type                 = kinematics_type,
-                    reduced_kinematics_model        = reduced_kinematics_model,
-                    normalize_energies              = normalize_energies,
-                    relax_type                      = relax_type,
-                    tol_dU                          = tol_dU,
-                    write_qois_limited_precision    = write_qois_limited_precision, 
-                    initialize_reduced_U_from_file  = initialize_reduced_U_from_file,
-                    initialize_reduced_U_filename   = initialize_reduced_U_filename,
-                    )
-
-                    ###### Check that .dat is saved in reduced kinematics for latter initialisation
+                import os
+                initialize_reduced_U_filename = working_basename+"_downsampled="+str(attenuation_factors[i-1])+"_reduced_kinematics.dat"
+                assert os.path.isfile(initialize_reduced_U_filename), "initialize_reduced_U_filename not found. Aborting"
+                    
             else:
-                dwarp.warp(
-                    working_folder                  = working_folder,
-                    working_basename                = working_basename+"_downsampled="+str(attenuation_factor),
-                    images_folder                   = images_folder,
-                    images_basename                 = images_basename_blur_factor,
-                    images_quadrature               = images_quadrature_progressive[i],
-                    mesh                            = mesh,
-                    kinematics_type                 = kinematics_type,
-                    reduced_kinematics_model        = reduced_kinematics_model,
-                    normalize_energies              = normalize_energies,
-                    relax_type                      = relax_type,
-                    tol_dU                          = tol_dU,
-                    write_qois_limited_precision    = write_qois_limited_precision, 
-                    initialize_reduced_U_from_file  = True,
-                    initialize_reduced_U_filename   = working_basename+"_downsampled="+str(attenuation_factor)+".dat",
-                    )
+                initialize_reduced_U_filename = initialize_reduced_U_filename_0
+            
+            dwarp.warp(
+                working_folder                  = working_folder,
+                working_basename                = working_basename_current,
+                images_folder                   = images_folder,
+                images_basename                 = images_basename_blur_factor,
+                images_quadrature               = images_quadrature_progressive[i],
+                mesh                            = mesh,
+                kinematics_type                 = kinematics_type,
+                reduced_kinematics_model        = reduced_kinematics_model,
+                normalize_energies              = normalize_energies,
+                relax_type                      = relax_type,
+                tol_dU                          = tol_dU,
+                write_qois_limited_precision    = write_qois_limited_precision, 
+                initialize_reduced_U_from_file  = True,
+                initialize_reduced_U_filename   = initialize_reduced_U_filename
+                )
 
