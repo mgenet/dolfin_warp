@@ -2,6 +2,8 @@ import dolfin
 
 import dolfin_warp as dwarp
 
+import numpy as np
+
 ################################################################################
 
 
@@ -14,44 +16,51 @@ def gaussian_windowing(
         attenuation_factor          : float         = 2,                                # attenuation coef of the cut-off frequency
         image_ext                   : str           = '.vti',
         suffix                      : str           = "_downsampled=",
-        verbose                     : bool          = False
+        verbose                     : bool          = False,
         ):
 
     import vtk
+
+
+    images_list = glob.glob(images_folder+"/"+image_name+"_??"+image_ext)
+
+
     suffix+=str(attenuation_factor)
     working_folder+="/"+images_folder+"/"
     # Start by getting voxel_size
-    file = working_folder+image_name+image_ext
-    reader = vtk.vtkXMLImageDataReader()
-    reader.SetFileName(file)
-    reader.Update()
 
-    image = reader.GetOutput()
-    voxel_sizes = image.GetSpacing()                                                    # (dx, dy, dz)
-    dimensions = image.GetDimensions()                                                  # (nx, ny, nz)
+    for file in images_list:
+        match_part = file_name[len(image_name) + 1:-len(image_ext)]
+        # file = working_folder+image_name+image_ext
+        reader = vtk.vtkXMLImageDataReader()
+        reader.SetFileName(file)
+        reader.Update()
 
-    #Compute the standard deviation associated with the attenuation factor
-    import numpy as np
-    sigma = np.sqrt(-(np.log(1/attenuation_factor))/(2*np.pi*np.array(voxel_sizes))**2)
-    radius = np.ceil(6 * sigma)
-    radius[radius % 2 == 0] += 1                                                        # Add 1 to even numbers to make them odd
-    if verbose:
-        print(f"* dimensions are {dimensions}")
-        print(f"* voxel sizes are {voxel_sizes}")
-        print(f"* standard deviation is {sigma}")
-        print(f"* radius is {radius}")
+        image = reader.GetOutput()
+        voxel_sizes = image.GetSpacing()                                                    # (dx, dy, dz)
+        dimensions = image.GetDimensions()                                                  # (nx, ny, nz)
 
-    gaussian = vtk.vtkImageGaussianSmooth()
-    gaussian.SetInputConnection(reader.GetOutputPort())
-    gaussian.SetStandardDeviations(sigma)                                               # Standard deviations for the Gaussian in X, Y, Z
-    gaussian.SetRadiusFactors(radius)                                                   # Radius factors 
-    gaussian.Update()
+        #Compute the standard deviation associated with the attenuation factor
+        sigma = np.sqrt(-(np.log(1/attenuation_factor))/(2*np.pi*np.array(voxel_sizes))**2)
+        radius = np.ceil(6 * sigma)
+        radius[radius % 2 == 0] += 1                                                        # Add 1 to even numbers to make them odd
+        if verbose:
+            print(f"* dimensions are {dimensions}")
+            print(f"* voxel sizes are {voxel_sizes}")
+            print(f"* standard deviation is {sigma}")
+            print(f"* radius is {radius}")
 
-    writer = vtk.vtkXMLImageDataWriter()
-    writer.SetFileName(working_folder+image_name+suffix+image_ext)
-    writer.SetInputConnection(gaussian.GetOutputPort())
-    writer.Write()
-    print("Done downsampling. "+image_name)
+        gaussian = vtk.vtkImageGaussianSmooth()
+        gaussian.SetInputConnection(reader.GetOutputPort())
+        gaussian.SetStandardDeviations(sigma)                                               # Standard deviations for the Gaussian in X, Y, Z
+        gaussian.SetRadiusFactors(radius)                                                   # Radius factors 
+        gaussian.Update()
+
+        writer = vtk.vtkXMLImageDataWriter()
+        writer.SetFileName(working_folder+image_name+suffix+"_"+match+image_ext)
+        writer.SetInputConnection(gaussian.GetOutputPort())
+        writer.Write()
+        print("Done downsampling. "+file)
 
 
 
@@ -134,8 +143,6 @@ def blur_and_warp(
 
         initialize_reduced_U_filename_0 = initialize_reduced_U_filename                             # Save intial reduced dispalcement used for the first initialisation
         
-        if images is None:
-            images = []
 
         # Few integration point for blurry images with small spatial variations
         images_quadrature_progressive = np.linspace(1, images_quadrature, len(attenuation_factors))  # Generate m evenly spaced values
@@ -144,7 +151,7 @@ def blur_and_warp(
         attenuation_factors.sort(reverse=True)                                                                   # 
 
         if attenuation_factors[-1] != 1:
-            attenuation_factors.apend(1)
+            attenuation_factors.append(1)
 
         for i in range(len(attenuation_factors)):
             attenuation_factor = attenuation_factors[i]
