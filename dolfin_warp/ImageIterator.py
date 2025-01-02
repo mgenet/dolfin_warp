@@ -286,7 +286,7 @@ class ImageIterator():
         if self.save_reduced_disp:
             assert self.problem.kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
             self.printer.print_str("Wrtiting reduced-disp vector")
-            numpy.savetxt(self.working_basename+"_reduced_kinematics.dat", self.problem.reduced_displacement.vector()[:])                      # Save the reduced displacements
+            numpy.savetxt(self.working_folder+"/"+self.working_basename+"_reduced_kinematics.dat", self.problem.reduced_displacement.vector()[:])                      # Save the reduced displacements
 
 
         return success

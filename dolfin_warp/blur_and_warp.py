@@ -148,8 +148,8 @@ def blur_and_warp(
         images_quadrature_progressive = np.linspace(1, images_quadrature, len(attenuation_factors))  # Generate m evenly spaced values
         images_quadrature_progressive = np.round(images_quadrature_progressive).astype(int)
 
-        print(f"image quadrature list: {images_quadrature_progressive}")
-        print(f"image quadrature init: {images_quadrature}")
+        print(f"image quadrature list: {images_quadrature_progressive}") #DEBUG
+        print(f"image quadrature init: {images_quadrature}") #DEBUG
 
         attenuation_factors.sort(reverse=True)                                                                   # 
 
@@ -179,13 +179,14 @@ def blur_and_warp(
                     
             else:
                 initialize_reduced_U_filename = initialize_reduced_U_filename_0
-            
+
             dwarp.warp(
                 working_folder                  = working_folder,
                 working_basename                = working_basename_current,
                 images_folder                   = images_folder,
                 images_basename                 = images_basename_blur_factor,
-                images_quadrature               = images_quadrature_progressive[i],
+                # images_quadrature               = images_quadrature_progressive[i], # Issue with progressive quadrature image, DEBUG
+                images_quadrature               = images_quadrature,
                 mesh                            = mesh,
                 kinematics_type                 = kinematics_type,
                 reduced_kinematics_model        = reduced_kinematics_model,
