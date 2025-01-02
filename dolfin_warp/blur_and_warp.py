@@ -21,16 +21,16 @@ def gaussian_windowing(
 
     import vtk
 
-
+    import glob
     images_list = glob.glob(images_folder+"/"+image_name+"_??"+image_ext)
 
 
     suffix+=str(attenuation_factor)
-    working_folder+="/"+images_folder+"/"
     # Start by getting voxel_size
 
     for file in images_list:
-        match_part = file_name[len(image_name) + 1:-len(image_ext)]
+        frame = file[-len(image_ext)-2:-len(image_ext)]
+        print(f"blurring frame {frame} in progress")
         # file = working_folder+image_name+image_ext
         reader = vtk.vtkXMLImageDataReader()
         reader.SetFileName(file)
@@ -57,7 +57,7 @@ def gaussian_windowing(
         gaussian.Update()
 
         writer = vtk.vtkXMLImageDataWriter()
-        writer.SetFileName(working_folder+image_name+suffix+"_"+match+image_ext)
+        writer.SetFileName(images_folder+"/"+image_name+suffix+"_"+frame+image_ext)
         writer.SetInputConnection(gaussian.GetOutputPort())
         writer.Write()
         print("Done downsampling. "+file)
@@ -147,6 +147,9 @@ def blur_and_warp(
         # Few integration point for blurry images with small spatial variations
         images_quadrature_progressive = np.linspace(1, images_quadrature, len(attenuation_factors))  # Generate m evenly spaced values
         images_quadrature_progressive = np.round(images_quadrature_progressive).astype(int)
+
+        print(f"image quadrature list: {images_quadrature_progressive}")
+        print(f"image quadrature init: {images_quadrature}")
 
         attenuation_factors.sort(reverse=True)                                                                   # 
 
