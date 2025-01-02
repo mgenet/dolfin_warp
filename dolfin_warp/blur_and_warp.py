@@ -174,29 +174,31 @@ def blur_and_warp(
             images_basename_blur_factor     = images_basename + "_downsampled="+str(attenuation_factor)
             if i >=1 :
                 import os
-                initialize_reduced_U_filename = working_basename+"_downsampled="+str(attenuation_factors[i-1])+"_reduced_kinematics.dat"
+                initialize_reduced_U_filename = working_folder+"/"+working_basename+"_downsampled="+str(attenuation_factors[i-1])+"_reduced_kinematics.dat"
                 assert os.path.isfile(initialize_reduced_U_filename), "initialize_reduced_U_filename not found. Aborting"
                     
             else:
                 initialize_reduced_U_filename = initialize_reduced_U_filename_0
 
             dwarp.warp(
-                working_folder                  = working_folder,
-                working_basename                = working_basename_current,
-                images_folder                   = images_folder,
-                images_basename                 = images_basename_blur_factor,
+                working_folder                  = working_folder                ,
+                working_basename                = working_basename_current      ,
+                images_folder                   = images_folder                 ,
+                images_basename                 = images_basename_blur_factor   ,
                 # images_quadrature               = images_quadrature_progressive[i], # Issue with progressive quadrature image, DEBUG
-                images_quadrature               = images_quadrature,
-                mesh                            = mesh,
-                kinematics_type                 = kinematics_type,
-                reduced_kinematics_model        = reduced_kinematics_model,
-                normalize_energies              = normalize_energies,
-                relax_type                      = relax_type,
-                tol_dU                          = tol_dU,
-                write_qois_limited_precision    = write_qois_limited_precision, 
-                initialize_reduced_U_from_file  = True,
-                initialize_reduced_U_filename   = initialize_reduced_U_filename,
-                print_iterations                = print_iterations, 
-                save_reduced_disp               = save_reduced_disp,
-                )
+                images_quadrature               = images_quadrature             ,
+                mesh                            = mesh                          ,
+                kinematics_type                 = kinematics_type               ,
+                reduced_kinematics_model        = reduced_kinematics_model      ,
+                normalize_energies              = normalize_energies            ,
+                relax_type                      = relax_type                    ,
+                tol_dU                          = tol_dU                        ,
+                write_qois_limited_precision    = write_qois_limited_precision  , 
+                initialize_reduced_U_from_file  = True                          ,
+                initialize_reduced_U_filename   = initialize_reduced_U_filename ,
+                print_iterations                = print_iterations              , 
+                save_reduced_disp               = save_reduced_disp             ,
+                n_iter_max                      = n_iter_max                    ,
+                continue_after_fail             = continue_after_fail
+                        )
 

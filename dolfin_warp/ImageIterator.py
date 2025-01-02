@@ -146,6 +146,8 @@ class ImageIterator():
 
         if (self.initialize_reduced_U_from_file):
             init_reduced_displacement = numpy.loadtxt(self.initialize_reduced_U_filename, ndmin=2)
+            print(f"*** loaded file is {self.initialize_reduced_U_filename}")   #DEBUG
+            print(f"*** loaded file shape is {init_reduced_displacement.shape}")#DEBUG
             assert (init_reduced_displacement.shape[1] == self.problem.reduced_displacement_fs.dim()),\
                 "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
             assert (init_reduced_displacement.shape[0] == self.problem.images_n_frames-1),\
@@ -286,7 +288,11 @@ class ImageIterator():
         if self.save_reduced_disp:
             assert self.problem.kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
             self.printer.print_str("Wrtiting reduced-disp vector")
-            numpy.savetxt(self.working_folder+"/"+self.working_basename+"_reduced_kinematics.dat", self.problem.reduced_displacement.vector()[:])                      # Save the reduced displacements
+            print(f"self.problem.reduced_displacement.vector()[:] is: {self.problem.reduced_displacement.vector()[:]}")
+            print(f"self.problem.reduced_displacement.vector() is: {self.problem.reduced_displacement.vector()}")
+            print(f"self.problem.reduced_displacement is: {self.problem.reduced_displacement}")
+
+            numpy.savetxt(self.working_folder+"/"+self.working_basename+"_reduced_kinematics.dat", numpy.array([self.problem.reduced_displacement.vector()[:]]))                      # Save the reduced displacements
 
 
         return success
