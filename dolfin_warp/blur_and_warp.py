@@ -201,6 +201,7 @@ def blur_and_warp(
                 print_iterations                = print_iterations              , 
                 save_reduced_disp               = save_reduced_disp             ,
                 n_iter_max                      = n_iter_max                    ,
-                continue_after_fail             = continue_after_fail
+                continue_after_fail             = continue_after_fail           ,
+                images_char_func                =images_char_func
                         )
 

@@ -258,8 +258,8 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
                 # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
-            print(f"**** d reduced displacement linear solve: {self.problem.dreduced_displacement.vector()[:]}") #DEBUG
-            print(f"**** reduced displacement linear solve: {self.problem.reduced_displacement.vector()[:]}") #DEBUG
+            # print(f"**** d reduced displacement linear solve: {self.problem.dreduced_displacement.vector()[:]}") #DEBUG
+            # print(f"**** reduced displacement linear solve: {self.problem.reduced_displacement.vector()[:]}") #DEBUG
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
