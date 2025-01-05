@@ -166,12 +166,14 @@ def blur_and_warp(
                     attenuation_factor                          = attenuation_factor,   
                     verbose                                     = True
                     )
-                working_basename_current = working_basename+"_downsampled="+str(attenuation_factor)
+                working_basename_current        = working_basename+"_downsampled="+str(attenuation_factor)
+                images_basename_blur_factor     = images_basename + "_downsampled="+str(attenuation_factor)
+
             else:
-                working_basename_current = working_basename+"_sharp"
+                working_basename_current        = working_basename+"_sharp"
+                images_basename_blur_factor     = images_basename 
 
 
-            images_basename_blur_factor     = images_basename + "_downsampled="+str(attenuation_factor)
             if i >=1 :
                 import os
                 initialize_reduced_U_filename = working_folder+"/"+working_basename+"_downsampled="+str(attenuation_factors[i-1])+"_reduced_kinematics.dat"
