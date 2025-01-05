@@ -248,6 +248,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.update_disp()
         self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
         self.dU_norm = self.dU.vector().norm("l2")
+        print(f"**** Updated reduced displacement linear solve: {self.reduced_displacement.vector()[:]}") #DEBUG
 
 
 
