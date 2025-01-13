@@ -1,3 +1,5 @@
+import os
+
 import dolfin
 
 import dolfin_warp as dwarp
@@ -41,7 +43,8 @@ def gaussian_windowing(
         dimensions = image.GetDimensions()                                                  # (nx, ny, nz)
 
         #Compute the standard deviation associated with the attenuation factor
-        sigma = np.sqrt(-(np.log(1/attenuation_factor))/(2*np.pi*np.array(voxel_sizes))**2)
+        # sigma = np.sqrt(-(np.log(1/attenuation_factor))/(2*np.pi*np.array(voxel_sizes))**2)
+        sigma = attenuation_factor*np.array(voxel_sizes)
         radius = np.ceil(6 * sigma)
         radius[radius % 2 == 0] += 1                                                        # Add 1 to even numbers to make them odd
         if verbose:
@@ -74,7 +77,8 @@ def blur_and_warp(
         working_basename                            : str,
         images_folder                               : str,
         images_basename                             : str,
-        attenuation_factors             : list        = None                                   , # List of attenuation coefficients at the cut-off frequency
+        attenuation_factors                         : list        = None                                , # List of attenuation coefficients at the cut-off frequency
+        sharp_attenuation                           : bool        = True                                ,
         images_grad_basename                        : str         = None                                ,
         images_ext                                  : str         = "vti"                               , # vti, vtk
         images_n_frames                             : int         = None                                ,
@@ -153,29 +157,30 @@ def blur_and_warp(
 
         attenuation_factors.sort(reverse=True)                                                                   # 
 
-        if attenuation_factors[-1] != 1:
+        if attenuation_factors[-1] != 1 and sharp_attenuation:
             attenuation_factors.append(1)
 
         for i in range(len(attenuation_factors)):
             attenuation_factor = attenuation_factors[i]
             if attenuation_factor != 1:
-                gaussian_windowing(
-                    working_folder                              = working_folder,
-                    images_folder                               = images_folder, 
-                    image_name                                  = images_basename,
-                    attenuation_factor                          = attenuation_factor,   
-                    verbose                                     = True
-                    )
                 working_basename_current        = working_basename+"_downsampled="+str(attenuation_factor)
                 images_basename_blur_factor     = images_basename + "_downsampled="+str(attenuation_factor)
 
+                if not os.path.isfile(images_basename_blur_factor+"_00.vti"):
+                    gaussian_windowing(
+                        working_folder                              = working_folder,
+                        images_folder                               = images_folder, 
+                        image_name                                  = images_basename,
+                        attenuation_factor                          = attenuation_factor,   
+                        verbose                                     = True
+                        )
             else:
                 working_basename_current        = working_basename+"_sharp"
                 images_basename_blur_factor     = images_basename 
 
 
             if i >=1 :
-                import os
+                
                 initialize_reduced_U_filename = working_folder+"/"+working_basename+"_downsampled="+str(attenuation_factors[i-1])+"_reduced_kinematics.dat"
                 assert os.path.isfile(initialize_reduced_U_filename), "initialize_reduced_U_filename not found. Aborting"
                     
@@ -183,25 +188,38 @@ def blur_and_warp(
                 initialize_reduced_U_filename = initialize_reduced_U_filename_0
 
             dwarp.warp(
-                working_folder                  = working_folder                ,
-                working_basename                = working_basename_current      ,
-                images_folder                   = images_folder                 ,
-                images_basename                 = images_basename_blur_factor   ,
-                # images_quadrature               = images_quadrature_progressive[i], # Issue with progressive quadrature image, DEBUG
-                images_quadrature               = images_quadrature             ,
-                mesh                            = mesh                          ,
-                kinematics_type                 = kinematics_type               ,
-                reduced_kinematics_model        = reduced_kinematics_model      ,
-                normalize_energies              = normalize_energies            ,
-                relax_type                      = relax_type                    ,
-                tol_dU                          = tol_dU                        ,
-                write_qois_limited_precision    = write_qois_limited_precision  , 
-                initialize_reduced_U_from_file  = True                          ,
-                initialize_reduced_U_filename   = initialize_reduced_U_filename ,
-                print_iterations                = print_iterations              , 
-                save_reduced_disp               = save_reduced_disp             ,
-                n_iter_max                      = n_iter_max                    ,
-                continue_after_fail             = continue_after_fail           ,
-                images_char_func                =images_char_func
+                working_folder                              = working_folder                                ,
+                working_basename                            = working_basename_current                      ,
+                images_folder                               = images_folder                                 ,
+                images_basename                             = images_basename_blur_factor                   ,
+                # images_quadrature                           = images_quadrature_progressiv                e[i], # Issue with progressive quadrature image, DEBUG
+                images_quadrature                           = images_quadrature                             ,
+                images_ext                                  = images_ext                                    ,
+                mesh                                        = mesh                                          ,
+                kinematics_type                             = kinematics_type                               ,
+                reduced_kinematics_model                    = reduced_kinematics_model                      ,
+                normalize_energies                          = normalize_energies                            ,
+                relax_type                                  = relax_type                                    ,
+                regul_level                                 = regul_level                                   ,
+                regul_model                                 = regul_model                                   ,
+                regul_type                                  = regul_type                                    ,
+                regul_poisson                               = regul_poisson                                 ,
+                tol_dU                                      = tol_dU                                        ,
+                write_qois_limited_precision                = write_qois_limited_precision                  , 
+                initialize_reduced_U_from_file              = initialize_reduced_U_from_file                ,
+                initialize_reduced_U_filename               = initialize_reduced_U_filename                 ,
+                print_iterations                            = print_iterations                              , 
+                save_reduced_disp                           = save_reduced_disp                             ,
+                n_iter_max                                  = n_iter_max                                    ,
+                continue_after_fail                         = continue_after_fail                           ,
+                images_char_func                            = images_char_func                              ,
+                initialize_U_from_file                      = initialize_U_from_file                        ,
+                initialize_U_folder                         = initialize_U_folder                           ,
+                initialize_U_basename                       = initialize_U_basename                         ,
+                initialize_U_ext                            = initialize_U_ext                              ,
+                initialize_U_array_name                     = initialize_U_array_name                       ,    
+                initialize_U_method                         = initialize_U_method                           , 
+                write_VTU_files                             = write_VTU_files                               ,
+                write_VTU_files_with_preserved_connectivity = write_VTU_files_with_preserved_connectivity   ,
                         )
 
