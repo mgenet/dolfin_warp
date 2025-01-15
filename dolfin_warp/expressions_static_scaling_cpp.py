@@ -22,6 +22,12 @@ double getStaticScalingFactor
     {
         return pow(2,  8)-1;
     }
+
+    if (strcmp(scalar_type_as_string, "signed char" ) == 0)
+    {
+        return 1.;
+    }
+
     if (strcmp(scalar_type_as_string, "unsigned short") == 0)
     {
         return pow(2, 16)-1;
