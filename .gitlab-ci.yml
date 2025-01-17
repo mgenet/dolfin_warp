@@ -2,65 +2,59 @@ stages:
   - test
   - deploy
 
-# tests-on-ubuntu-20.04-with-apt: # MG2023068: This leads to seg fault while manipulating vtk objects inside cpp fenics expressions… # MG20241020: I think the mesh reader fails…
-#   stage: test
-#   only:
-#     - devel
-#     - /^devel-.*/
-#   tags:
-#     - ci.inria.fr
-#     - large
-#   image: ubuntu:20.04
-#   script:
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
-# #     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20221201: This seems to fail in Ubuntu 20.04
-#     - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
-#     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
-#     - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.23.5 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
-#     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
-#     - cd Tests; ln -s ../dolfin_warp; make
+tests-on-ubuntu-20.04-with-apt: # MG20230608: This leads to seg fault while manipulating vtk objects inside cpp fenics expressions… # MG20241020: I think the mesh reader fails…
+  stage: test
+  when: manual
+  tags:
+    - ci.inria.fr
+    - large
+  image: ubuntu:20.04
+  script:
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
+#     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20221201: This seems to fail in Ubuntu 20.04
+    - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.23.5 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
+    - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - cd Tests; ln -s ../dolfin_warp; make
 
-# tests-on-ubuntu-22.04-with-apt: # MG2023068: This leads to seg fault while manipulating vtk objects inside cpp fenics expressions… # MG20241020: I think the image reader fails…
-#   stage: test
-#   only:
-#     - devel
-#     - /^devel-.*/
-#   tags:
-#     - ci.inria.fr
-#     - large
-#   image: ubuntu:22.04
-#   script:
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-#     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
-#     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
-#     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
-#     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
-#     - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.24.4 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
-#     - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
-#     - cd Tests; ln -s ../dolfin_warp; make
+tests-on-ubuntu-22.04-with-apt: # MG20230608: This leads to seg fault while manipulating vtk objects inside cpp fenics expressions… # MG20241020: I think the image reader fails…
+  stage: test
+  when: manual
+  tags:
+    - ci.inria.fr
+    - large
+  image: ubuntu:22.04
+  script:
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
+    - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
+    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.24.4 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
+    - pip install git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - cd Tests; ln -s ../dolfin_warp; make
 
-# tests-on-ubuntu-24.04-with-apt: # MG 20241017: apt python version is 3.12, which seems incompatible with numpy 1.24…
-#   stage: test
-#   only:
-#     - devel
-#     - /^devel-.*/
-#   tags:
-#     - ci.inria.fr
-#     - large
-#   image: ubuntu:24.04
-#   script:
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
-#     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
-#     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
-#     # - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
-#     - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
-#     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install --break-system-packages gmsh
-#     - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install --break-system-packages numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
-#     - pip install --break-system-packages git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
-#     - cd Tests; ln -s ../dolfin_warp; make
+tests-on-ubuntu-24.04-with-apt: # MG 20241017: apt python version is 3.12, which seems incompatible with numpy 1.24…
+  stage: test
+  when: manual
+  tags:
+    - ci.inria.fr
+    - large
+  image: ubuntu:24.04
+  script:
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt upgrade -y
+    - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
+    - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
+    # - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
+    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
+    - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install --break-system-packages gmsh
+    - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install --break-system-packages numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
+    - pip install --break-system-packages git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+    - cd Tests; ln -s ../dolfin_warp; make
 
 tests-on-ubuntu-20.04:
   stage: test
