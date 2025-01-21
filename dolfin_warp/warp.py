@@ -79,7 +79,8 @@ def warp(
         write_VTU_files_with_preserved_connectivity : bool        = False                               ,
         write_XML_files                             : bool        = False                               ,
         print_iterations                            : bool        = False                               ,
-        silent                                      : bool        = False                               ):
+        silent                                      : bool        = False                               ,
+        warping_type                                : str         = "tracking"):                          # tracking or registration
 
     if (regul_types is not None):
         if (regul_models is not None):
@@ -175,28 +176,45 @@ def warp(
     assert (image_w > 0.),\
         "1.-sum(regul_levels) must be positive. Aborting."
 
-    if (gimic):
-        generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
-            problem=problem,
-            images_series=images_series,
-            quadrature_degree=images_quadrature,
-            texture=gimic_texture,
-            w=image_w,
-            ref_frame=images_ref_frame,
-            resample=gimic_resample)
-        problem.add_image_energy(generated_image_energy)
-    else:
-        warped_image_energy = dwarp.WarpedImageContinuousEnergy(
-            problem=problem,
-            images_series=images_series,
-            quadrature_degree=images_quadrature,
-            w=image_w,
-            ref_frame=images_ref_frame,
-            w_char_func=images_char_func,
-            im_is_cone=images_is_cone,
-            static_scaling=images_static_scaling,
-            dynamic_scaling=images_dynamic_scaling)
-        problem.add_image_energy(warped_image_energy)
+    match warping_type:
+        case "tracking":
+            if (gimic):
+                generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
+                    problem=problem,
+                    images_series=images_series,
+                    quadrature_degree=images_quadrature,
+                    texture=gimic_texture,
+                    w=image_w,
+                    ref_frame=images_ref_frame,
+                    resample=gimic_resample)
+                problem.add_image_energy(generated_image_energy)
+            else:
+
+                warped_image_energy = dwarp.WarpedImageContinuousEnergy(
+                    problem=problem,
+                    images_series=images_series,
+                    quadrature_degree=images_quadrature,
+                    w=image_w,
+                    ref_frame=images_ref_frame,
+                    w_char_func=images_char_func,
+                    im_is_cone=images_is_cone,
+                    static_scaling=images_static_scaling,
+                    dynamic_scaling=images_dynamic_scaling)
+                problem.add_image_energy(warped_image_energy)
+
+        case "registration":
+                warped_image_energy = dwarp.SignedImageEnergy(
+                    problem=problem,
+                    images_series=images_series,
+                    quadrature_degree=images_quadrature,
+                    w=image_w,
+                    ref_frame=images_ref_frame,
+                    w_char_func=images_char_func,
+                    im_is_cone=images_is_cone,
+                    static_scaling=images_static_scaling,
+                    dynamic_scaling=images_dynamic_scaling)
+                problem.add_image_energy(warped_image_energy)
+
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
         if (regul_level>0):
@@ -271,6 +289,18 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "write_iterations":print_iterations})
+
+    elif (nonlinearsolver == "cma"):
+        solver = dwarp.GradientDescentSolver(
+            problem=problem,
+            parameters={
+                "working_folder"    :working_folder,
+                "working_basename"  :working_basename,
+                "write_iterations"  :print_iterations, 
+                "min_step"          :min_step, 
+                "step"              :step,
+                "n_iter_max"        :n_iter_max
+                })
 
     image_iterator = dwarp.ImageIterator(
         problem=problem,
