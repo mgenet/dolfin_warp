@@ -22,14 +22,15 @@ class ImagesSeries(FilesSeries):
 
 
     def __init__(self,
-            folder: str,
-            basename: str,
-            grad_folder = None,
-            grad_basename = None,
-            n_frames = None,
-            ext: str = "vti",
-            verbose: bool = True,
-            printer = None):
+            folder          : str,
+            basename        : str,
+            grad_folder                 = None,
+            grad_basename               = None,
+            n_frames                    = None,
+            ext             : str       = "vti",
+            verbose         : bool      = True,
+            printer                     = None,
+            warping_type                = "tracking"):
 
         self.folder        = folder
         self.basename      = basename
@@ -48,8 +49,9 @@ class ImagesSeries(FilesSeries):
         if (verbose): self.printer.inc()
 
         self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
-        assert (len(self.filenames) >= 2),\
-            "Not enough images ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
+        if warping_type != "tracking":  # For shape registration a single image is required
+            assert (len(self.filenames) >= 2),\
+                "Not enough images ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
 
         if (self.n_frames is None):
             self.n_frames = len(self.filenames)
@@ -68,10 +70,15 @@ class ImagesSeries(FilesSeries):
             self.grad_filenames = glob.glob(self.grad_folder+"/"+self.grad_basename+"_[0-9]*"+"."+self.ext)
             assert (len(self.grad_filenames) >= self.n_frames)
 
-        image = myvtk.readImage(
-            filename=self.get_image_filename(
-                k_frame=0),
-            verbose=0)
+        if warping_type != "registration":  # should be general but this way doe not break anythinh
+            image = myvtk.readImage(
+                filename=self.filenames[0],
+                verbose=0)
+        else:
+            image = myvtk.readImage(
+                filename=self.get_image_filename(
+                    k_frame=0),
+                verbose=0)
         self.dimension = myvtk.getImageDimensionality(
             image=image,
             verbose=0)

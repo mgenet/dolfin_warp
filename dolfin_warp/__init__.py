@@ -5,6 +5,7 @@ from .Energy_Continuous import *
 from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
+from .Energy_Shape_Registration import *
 from .Energy_Discrete import *
 from .Energy_Discrete_SimpleRegularization import *
 from .Energy_Discrete_SurfaceRegularization import *
@@ -18,6 +19,7 @@ from .NonlinearSolver import *
 from .NonlinearSolver_CMA import *
 from .NonlinearSolver_Newton import *
 from .NonlinearSolver_Relaxation import *
+from .Solver_GradientDescent import *
 from .Problem import *
 from .Problem_FullKinematicsWarping import *
 from .Problem_ReducedKinematicsWarping import *

@@ -35,15 +35,18 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         self.problem = problem
         self.printer = self.problem.printer
 
+        self.res_vec = dolfin.Vector()          # Pre allocatin of res_vec
+
+
         # relaxation
         RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # iterations control
-        self.min_step       = parameters.get("min_step"   , 1e-6)
-        self.step           = parameters.get("step"       , 1)
-        self.tol_dU_rel     = parameters.get("tol_dU_rel" , None)
-        self.tol_res_rel    = parameters.get("tol_res_rel", None)
-        self.n_iter_max     = parameters.get("n_iter_max" , 32  )
+        self.min_gradient_step      = parameters.get("min_gradient_step"    , 1e-6)
+        self.step                   = parameters.get("step"                 , 1)
+        self.tol_dU_rel             = parameters.get("tol_dU_rel"           , None)
+        self.tol_res_rel            = parameters.get("tol_res_rel"          , None)
+        self.n_iter_max             = parameters.get("n_iter_max"           , 32  )
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
@@ -85,19 +88,19 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             self.k_iter += 1
             self.printer.print_var("k_iter",self.k_iter,-1)
 
-            # linear problem
-            self.linear_success = self.gradient_descent()
-            if not (self.linear_success):
-                break
+            # Gradient descent direction computation
+            self.problem.assemble_res(
+                res_vec     =self.res_vec, 
+                add_values  = False)                                        # DEBUG: compute gradient from scratch
 
+            self.problem.DU.vector()[:] = self.res_vec[:]
             # relaxation
             self.compute_relax()
 
             # solution update
-            self.problem.update_displacement(relax=self.relax)
-            self.printer.print_sci("U_norm",self.problem.U_norm)
+            # self.problem.update_displacement(relax=self.relax)            # Why needed already done in compute relax right #DEBUG?
+            # self.printer.print_sci("U_norm",self.problem.U_norm)
 
-            self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()
             self.problem.DU_norm = self.problem.DU.vector().norm("l2")
             self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
@@ -163,109 +166,3 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         return self.success, self.k_iter
 
 
-
-    def gradient_descent(self):
-
-        # res_old
-        if (self.k_iter > 1):
-            if (hasattr(self, "res_old_vec")):
-                self.res_old_vec[:] = self.res_vec[:]
-            else:
-                self.res_old_vec = self.res_vec.copy()
-            self.res_old_norm = self.res_norm
-
-        self.problem.call_before_assembly(
-            write_iterations=self.write_iterations,
-            basename=self.frame_filebasename,
-            k_iter=self.k_iter)
-
-        # linear system: residual assembly
-        self.printer.print_str("Residual assembly…",newline=False)
-        timer = time.time()
-        self.problem.assemble_res(
-            res_vec=self.res_vec)
-        timer = time.time() - timer
-        self.printer.print_str(" "+str(timer)+" s",tab=False)
-        # self.printer.print_var("res_vec",self.res_vec.get_local())
-
-        self.printer.inc()
-
-        # res_norm
-        self.res_norm = self.res_vec.norm("l2")
-        self.printer.print_sci("res_norm",self.res_norm)
-        if not (numpy.isfinite(self.res_norm)):
-            self.printer.print_str("Warning! Residual is NaN!",tab=False)
-            return False
-
-        # dres
-        if (self.k_iter > 1):
-            if (hasattr(self, "dres_vec")):
-                self.dres_vec[:] = self.res_vec[:] - self.res_old_vec[:]
-            else:
-                self.dres_vec = self.res_vec - self.res_old_vec
-            self.dres_norm = self.dres_vec.norm("l2")
-            self.printer.print_sci("dres_norm",self.dres_norm)
-
-        # res_err_rel
-        if (self.k_iter == 1):
-            self.res_err_rel = 1.
-        else:
-            self.res_err_rel = self.dres_norm / self.res_old_norm
-            self.printer.print_sci("res_err_rel",self.res_err_rel)
-
-        self.printer.dec()
-
-        # linear system: matrix assembly
-        self.printer.print_str("Jacobian assembly…",newline=False)
-        timer = time.time()
-        self.problem.assemble_jac(
-            jac_mat=self.jac_mat)
-        timer = time.time() - timer
-        self.printer.print_str(" "+str(timer)+" s",tab=False)
-        # self.printer.print_var("jac_mat",self.jac_mat.array())
-
-        # linear system: solve
-        try:
-            self.printer.print_str("Solve…",newline=False)
-            timer = time.time()
-            if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
-                self.linear_solver.solve(
-                    self.problem.dU.vector(),
-                    -self.res_vec)
-                # self.printer.print_var("dU",dU.vector().get_local())
-            elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
-                self.linear_solver.solve(
-                    self.problem.dreduced_displacement.vector(),
-                    -self.res_vec)
-                # self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(
-                #     self.jac_mat.array(),
-                #     -self.res_vec.get_local())
-                # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
-            timer = time.time() - timer
-            self.printer.print_str(" "+str(timer)+" s",tab=False)
-            # print(f"**** d reduced displacement linear solve: {self.problem.dreduced_displacement.vector()[:]}") #DEBUG
-            # print(f"**** reduced displacement linear solve: {self.problem.reduced_displacement.vector()[:]}") #DEBUG
-        except:
-            self.printer.print_str("Warning! Linear solver failed!",tab=False)
-            return False
-
-        self.printer.inc()
-
-        if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
-            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
-            self.printer.print_sci("dU_norm",self.problem.dU_norm)
-            if not (numpy.isfinite(self.problem.dU_norm)):
-                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
-                self.problem.dU.vector().zero()
-                return False
-        elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
-            self.problem.dreduced_displacement_norm = self.problem.dreduced_displacement.vector().norm("l2")
-            self.printer.print_sci("dreduced_displacement_norm",self.problem.dreduced_displacement_norm)
-            if not (numpy.isfinite(self.problem.dreduced_displacement_norm)):
-                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
-                self.problem.dreduced_displacement.vector().zero()
-                return False
-
-        self.printer.dec()
-
-        return True

@@ -8,6 +8,15 @@
 ###                                                                          ###
 ################################################################################
 
+import dolfin
+import numpy
+
+import dolfin_warp as dwarp
+
+from .Energy_Continuous  import ContinuousEnergy
+from .FilesSeries_Images import ImagesSeries
+from .Problem            import Problem
+
 class SignedImageEnergy(ContinuousEnergy):
 
 
@@ -17,7 +26,7 @@ class SignedImageEnergy(ContinuousEnergy):
             quadrature_degree: int,
             name: str = "im",
             w: float = 1.,
-            ref_frame: int = 0,
+            ref_frame: int = 1,
             w_char_func: bool = True,
             im_is_cone: bool = False,
             static_scaling: bool = False,
@@ -107,12 +116,21 @@ class SignedImageEnergy(ContinuousEnergy):
                 cppcode=cpp,
                 element=self.fe)
             self.Idef.init_disp(self.problem.U)
+        self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
+
+        print(f"* ref_image_filename is {self.ref_image_filename}")#DEBUG
+
         self.Idef.init_image(self.ref_image_filename)
         if (self.dynamic_scaling):
             self.Idef.init_dynamic_scaling(self.scaling)
 
         self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Idef_int",self.Idef_int)
+
+        self.Iref_norm = (dolfin.assemble(self.Idef**2 * self.dV)/self.problem.mesh_V0)**(1./2)  #DEBUG: Here normis compared to only image which is IDef
+        assert (self.Iref_norm > 0.),\
+            "Iref_norm = "+str(self.Iref_norm)+" <= 0. Aborting."
+        self.printer.print_sci("Iref_norm",self.Iref_norm)
 
         # Definition of \grad_x I \circ \phi(X)
         if (int(dolfin.__version__.split('.')[0]) >= 2018):
@@ -144,13 +162,13 @@ class SignedImageEnergy(ContinuousEnergy):
 
         self.Psi    = self.Idef 
         self.Psi   *= self.problem.J
-        self.dPsi   = dolfin.derivative(self.Psi, self.problem.U, self.problem.U_test)
-        self.dPsi  += self.Idef * dolfin.dot(self.DIdef, self.problem.u_test)  # DEBUG: need to check that grad im is wrt image space
+        self.dPsi   = dolfin.derivative(self.Psi, self.problem.U, self.problem.dU_test)
+        self.dPsi  += self.Idef * dolfin.dot(self.DIdef, self.problem.dU_test)  # DEBUG: need to check that grad im is wrt image space
         self.dPsi  *= self.problem.J
 
         # forms
         self.ener_form = self.Psi   * self.dV
-        self.res_form  = self.DPsi  * self.dV
+        self.res_form  = self.dPsi  * self.dV
 
 
 

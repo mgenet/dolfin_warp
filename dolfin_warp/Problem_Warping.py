@@ -156,14 +156,15 @@ class WarpingProblem(Problem):
 
 
     def assemble_res(self,
-            res_vec):
+            res_vec, 
+            add_values = 1):
 
         if (res_vec.size() > 0): res_vec.zero()
         for energy in self.energies:
             # print(energy.name)
             energy.assemble_res(
                 res_vec=res_vec,
-                add_values=1,
+                add_values=add_values,
                 w_weight=1)
         # self.printer.print_var("res_vec",res_vec.array())
 

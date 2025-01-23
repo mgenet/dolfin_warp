@@ -80,7 +80,13 @@ def warp(
         write_XML_files                             : bool        = False                               ,
         print_iterations                            : bool        = False                               ,
         silent                                      : bool        = False                               ,
-        warping_type                                : str         = "tracking"):                          # tracking or registration
+        warping_type                                : str         = "tracking"                          , # tracking or registration
+        min_gradient_step                           : int         = 1e-6                                , 
+        gradient_step                               : int         = 1):                         
+
+
+    if warping_type == "registration":
+        assert nonlinearsolver == "gradient_descent", "When performing shape registration, the nonlinearsolver must be gradient_descent. Aborting"
 
     if (regul_types is not None):
         if (regul_models is not None):
@@ -208,7 +214,6 @@ def warp(
                     images_series=images_series,
                     quadrature_degree=images_quadrature,
                     w=image_w,
-                    ref_frame=images_ref_frame,
                     w_char_func=images_char_func,
                     im_is_cone=images_is_cone,
                     static_scaling=images_static_scaling,
@@ -290,15 +295,15 @@ def warp(
                 "working_basename":working_basename,
                 "write_iterations":print_iterations})
 
-    elif (nonlinearsolver == "cma"):
+    elif (nonlinearsolver == "gradient_descent"):
         solver = dwarp.GradientDescentSolver(
             problem=problem,
             parameters={
                 "working_folder"    :working_folder,
                 "working_basename"  :working_basename,
                 "write_iterations"  :print_iterations, 
-                "min_step"          :min_step, 
-                "step"              :step,
+                "min_gradient_step" :min_gradient_step, 
+                "gradient_step"     :gradient_step,
                 "n_iter_max"        :n_iter_max
                 })
 
