@@ -45,8 +45,11 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         self.min_gradient_step      = parameters.get("min_gradient_step"    , 1e-6)
         self.step                   = parameters.get("step"                 , 1)
         self.tol_dU_rel             = parameters.get("tol_dU_rel"           , None)
+        self.tol_dU                 = parameters.get("tol_dU"               , None)
         self.tol_res_rel            = parameters.get("tol_res_rel"          , None)
         self.n_iter_max             = parameters.get("n_iter_max"           , 32  )
+        self.relax_n_iter_max       = parameters.get("relax_n_iter_max"     , None)
+
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
@@ -68,10 +71,9 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         if (self.write_iterations):
             self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(self.k_frame).zfill(len(str(self.problem.images_n_frames)))
 
-            # DEBUG
-            # self.frame_printer = mypy.DataPrinter(
-            #     names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
-            #     filename=self.frame_filebasename+".dat")
+            self.frame_printer = mypy.DataPrinter(
+                names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
+                filename=self.frame_filebasename+".dat")
 
             dmech.write_VTU_file(
                 filebasename=self.frame_filebasename,
@@ -81,6 +83,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             self.frame_filebasename = None
 
         self.k_iter = 0
+        self.problem.dU.vector().zero()
         self.problem.DU.vector().zero()
         self.success = False
         self.printer.inc()
@@ -88,20 +91,34 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             self.k_iter += 1
             self.printer.print_var("k_iter",self.k_iter,-1)
 
+            self.problem.call_before_assembly(
+                write_iterations=self.write_iterations,
+                basename=self.frame_filebasename,
+                k_iter=self.k_iter)
+
             # Gradient descent direction computation
             self.problem.assemble_res(
                 res_vec     =self.res_vec, 
                 add_values  = False)                                        # DEBUG: compute gradient from scratch
 
-            self.problem.DU.vector()[:] = self.res_vec[:]
+
+
+
+            self.problem.dU.vector()[:] = self.res_vec[:]
+            self.res_norm = self.res_vec.norm("l2")
+            print(f"* Norm of dU = {self.res_vec.norm('l2')}") #DEBUG
             # relaxation
             self.compute_relax()
 
             # solution update
-            # self.problem.update_displacement(relax=self.relax)            # Why needed already done in compute relax right #DEBUG?
-            # self.printer.print_sci("U_norm",self.problem.U_norm)
+            self.problem.update_displacement(relax=self.relax)            # Somehow need, Why needed already done in compute relax right #DEBUG?
+            self.printer.print_sci("U_norm",self.problem.U_norm)
 
+
+
+            self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()
             self.problem.DU_norm = self.problem.DU.vector().norm("l2")
+            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
             self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
             if (self.write_iterations):
@@ -120,16 +137,19 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
+
             if (self.problem.DU_norm == 0.):
                 self.problem.dU_err_rel = 1.
             else:
                 self.problem.dU_err_rel = self.problem.dU_norm/self.problem.DU_norm
             self.printer.print_sci("dU_err_rel",self.problem.dU_err_rel)
 
-            if (self.write_iterations):
-                self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
+            # if (self.write_iterations):
+            #     #DEBUG
+                # self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
 
             # exit test
+            print(f"*** self.problem.dU_err {self.problem.dU_err}")
             self.success = True
             if (self.tol_res_rel is not None) and (self.res_err_rel        > self.tol_res_rel):
                 self.success = False
@@ -137,6 +157,8 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 self.success = False
             if (self.tol_dU_rel  is not None) and (self.problem.dU_err_rel > self.tol_dU_rel ):
                 self.success = False
+
+            self.success = False #DEBUG
 
             # exit
             if (self.success):

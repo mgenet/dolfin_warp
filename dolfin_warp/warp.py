@@ -306,7 +306,8 @@ def warp(
                 "write_iterations"  :print_iterations, 
                 "min_gradient_step" :min_gradient_step, 
                 "gradient_step"     :gradient_step,
-                "n_iter_max"        :n_iter_max
+                "n_iter_max"        :n_iter_max,
+                "relax_n_iter_max"  : relax_n_iter_max,
                 })
 
     image_iterator = dwarp.ImageIterator(
