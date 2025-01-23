@@ -26,7 +26,7 @@ class SignedImageEnergy(ContinuousEnergy):
             quadrature_degree: int,
             name: str = "im",
             w: float = 1.,
-            ref_frame: int = 1,
+            ref_frame: int = 0,
             w_char_func: bool = True,
             im_is_cone: bool = False,
             static_scaling: bool = False,

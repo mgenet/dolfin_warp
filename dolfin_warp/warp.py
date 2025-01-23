@@ -87,6 +87,8 @@ def warp(
 
     if warping_type == "registration":
         assert nonlinearsolver == "gradient_descent", "When performing shape registration, the nonlinearsolver must be gradient_descent. Aborting"
+        assert register_ref_frame, "In registration mode the reference frame is the first frame on which to perform the registration. Aborting"
+
 
     if (regul_types is not None):
         if (regul_models is not None):

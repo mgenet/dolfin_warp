@@ -70,7 +70,7 @@ class ImagesSeries(FilesSeries):
             self.grad_filenames = glob.glob(self.grad_folder+"/"+self.grad_basename+"_[0-9]*"+"."+self.ext)
             assert (len(self.grad_filenames) >= self.n_frames)
 
-        if warping_type != "registration":  # should be general but this way doe not break anythinh
+        if warping_type != "registration":  # should be general but this way doe not break anything
             image = myvtk.readImage(
                 filename=self.filenames[0],
                 verbose=0)

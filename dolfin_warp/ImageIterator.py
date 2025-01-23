@@ -186,7 +186,7 @@ class ImageIterator():
 
             if (forward_or_backward == "backward"):
                 self.problem.reinit()
-
+            print(f"* self.register_ref_frame: {self.register_ref_frame}; start:{start}; end {end}; k_frames {k_frames}") #DEBUG
             self.printer.inc()
             success = True
             for k_frame in k_frames:
