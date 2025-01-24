@@ -71,11 +71,11 @@ class RelaxationNonlinearSolver(NonlinearSolver):
         k_relax = 1
         while (True):
             self.printer.print_var("k_relax",k_relax,-1)
-            relax = (1./self.relax_backtracking_factor**(k_relax-1))
+            relax = 1e-2*(1./self.relax_backtracking_factor**(k_relax-1))
             self.printer.print_sci("relax",relax)
             self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
-            # print(f"* self.U_norm is {self.problem.U_norm}") #DEBUG
-            # print(f"* self.dU_norm is {self.problem.dU.vector().norm('l2')}") #DEBUG
+            print(f"* self.U_norm is {self.problem.U_norm}") #DEBUG
+            print(f"* self.dU_norm is {self.problem.dU.vector().norm('l2')}") #DEBUG
             ener = self.problem.assemble_ener()
             print(f"ENERGY 0 is {ener0:.10e}")#DEBUG
             print(f"ENERGY is {ener:.10e}")#DEBUG

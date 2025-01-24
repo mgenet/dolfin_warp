@@ -104,11 +104,12 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
 
 
-            self.problem.dU.vector()[:] = self.res_vec[:]
+            self.problem.dU.vector()[:] = -self.res_vec[:]
             self.res_norm = self.res_vec.norm("l2")
             print(f"* Norm of dU = {self.res_vec.norm('l2')}") #DEBUG
             # relaxation
-            self.compute_relax()
+            self.compute_relax() 
+
 
             # solution update
             self.problem.update_displacement(relax=self.relax)            # Somehow need, Why needed already done in compute relax right #DEBUG?
