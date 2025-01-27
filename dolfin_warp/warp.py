@@ -301,6 +301,7 @@ def warp(
         solver = dwarp.GradientDescentSolver(
             problem=problem,
             parameters={
+                "relax_type"        : relax_type            ,
                 "working_folder"    : working_folder        ,
                 "working_basename"  : working_basename      ,
                 "write_iterations"  : print_iterations      , 
