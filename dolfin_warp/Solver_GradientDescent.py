@@ -99,17 +99,17 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             # Gradient descent direction computation
             self.problem.assemble_res(
                 res_vec     =self.res_vec, 
-                add_values  = False)                                        # DEBUG: compute gradient from scratch
+                add_values  = True)                                        #DEBUG: compute gradient from scratch
 
 
-
+            self.problem.Uold.vector()[:] = self.problem.U.vector()[:]            #DEBUG should be elswhere, ask martin
 
             self.problem.dU.vector()[:] = -self.res_vec[:]
             self.res_norm = self.res_vec.norm("l2")
-            print(f"* Norm of dU = {self.res_vec.norm('l2')}") #DEBUG
+            # print(f"* Norm of dU = {self.res_vec.norm('l2')}") #DEBUG
             # relaxation
             self.compute_relax() 
-
+            # self.res_vec.zero()#DEBUG I changes add_values to False so reset res ve here
 
             # solution update
             self.problem.update_displacement(relax=self.relax)            # Somehow need, Why needed already done in compute relax right #DEBUG?
@@ -133,9 +133,9 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 if (self.problem.Uold_norm == 0.):
                     self.problem.dU_err = 0.
                 else:
-                    self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
+                    self.problem.dU_err = self.problem.DU_norm/self.problem.Uold_norm
             else:
-                self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
+                self.problem.dU_err = self.problem.DU_norm/self.problem.U_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
 
@@ -151,6 +151,10 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
             # exit test
             print(f"*** self.problem.dU_err {self.problem.dU_err}")
+            print(f"*** self.problem.DU {self.problem.DU_norm}")
+            print(f"*** self.problem.Uold_norm {self.problem.U_norm}")
+            print(f"*** self.tol_dU {self.tol_dU}")
+
             self.success = True
             if (self.tol_res_rel is not None) and (self.res_err_rel        > self.tol_res_rel):
                 self.success = False
@@ -159,7 +163,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             if (self.tol_dU_rel  is not None) and (self.problem.dU_err_rel > self.tol_dU_rel ):
                 self.success = False
 
-            self.success = False #DEBUG
+            # self.success = False #DEBUG
 
             # exit
             if (self.success):

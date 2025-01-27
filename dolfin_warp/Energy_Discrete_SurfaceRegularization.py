@@ -407,7 +407,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             finalize_tensor=True,
             w_weight=True):
 
-        assert (add_values == True)
+        # assert (add_values == True) #DEBUG
 
         # print(res_vec.get_local())
 

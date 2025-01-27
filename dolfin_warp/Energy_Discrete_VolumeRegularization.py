@@ -216,7 +216,7 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             finalize_tensor=True,
             w_weight=True):
 
-        assert (add_values == True)
+        # assert (add_values == True) #DEBUG
 
         dolfin.assemble(
             form=self.Wint_form,

@@ -118,7 +118,6 @@ class SignedImageEnergy(ContinuousEnergy):
             self.Idef.init_disp(self.problem.U)
         self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
 
-        print(f"* ref_image_filename is {self.ref_image_filename}")#DEBUG
 
         self.Idef.init_image(self.ref_image_filename)
         if (self.dynamic_scaling):

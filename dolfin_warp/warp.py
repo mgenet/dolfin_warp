@@ -301,13 +301,14 @@ def warp(
         solver = dwarp.GradientDescentSolver(
             problem=problem,
             parameters={
-                "working_folder"    :working_folder,
-                "working_basename"  :working_basename,
-                "write_iterations"  :print_iterations, 
-                "min_gradient_step" :min_gradient_step, 
-                "gradient_step"     :gradient_step,
-                "n_iter_max"        :n_iter_max,
-                "relax_n_iter_max"  : relax_n_iter_max,
+                "working_folder"    : working_folder        ,
+                "working_basename"  : working_basename      ,
+                "write_iterations"  : print_iterations      , 
+                "min_gradient_step" : min_gradient_step     , 
+                "gradient_step"     : gradient_step         ,
+                "n_iter_max"        : n_iter_max            ,
+                "relax_n_iter_max"  : relax_n_iter_max      ,
+                "tol_dU"            : tol_dU                ,
                 })
 
     image_iterator = dwarp.ImageIterator(
