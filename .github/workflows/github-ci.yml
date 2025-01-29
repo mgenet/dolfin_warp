@@ -12,24 +12,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upgrade os
-        run: |
-          sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt upgrade -y
+      # - name: Upgrade os
+      #   run: |
+      #     sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt upgrade -y
 
-      - name: Set up dependencies
-        run: |
-          sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt install -y \
-            build-essential \
-            gcc-multilib \
-            git \
-            gnuplot \
-            libgl1-mesa-dev \
-            libglu1-mesa-dev \
-            libxcursor-dev \
-            libxinerama1 \
-            libxft-dev \
-            wget \
-            xvfb
+      # - name: Set up dependencies
+      #   run: |
+      #     sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt install -y \
+      #       build-essential \
+      #       gcc-multilib \
+      #       git \
+      #       gnuplot \
+      #       libgl1-mesa-dev \
+      #       libglu1-mesa-dev \
+      #       libxcursor-dev \
+      #       libxinerama1 \
+      #       libxft-dev \
+      #       wget \
+      #       xvfb
 
       - name: Install Miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -45,6 +45,7 @@ jobs:
 
       - name: Set up Conda environment
         run: |
+          conda init
           conda create -y -c conda-forge -n dolfin_warp \
             expat=2.5 \
             fenics=2019.1.0 \
