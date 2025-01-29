@@ -5,7 +5,7 @@ on:
       - 'devel-*'
 
 jobs:
-  tests-on-ubuntu-24.04:
+  tests-on-ubuntu-24-04:
     runs-on: ubuntu-24.04
 
     steps:
