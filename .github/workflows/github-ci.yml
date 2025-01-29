@@ -1,0 +1,75 @@
+on:
+  push:
+    branches:
+      - devel
+      - 'devel-*'
+
+jobs:
+  tests-on-ubuntu-24.04:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upgrade os
+        run: |
+          sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt upgrade -y
+
+      - name: Set up dependencies
+        run: |
+          sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt install -y \
+            build-essential \
+            gcc-multilib \
+            git \
+            gnuplot \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libxcursor-dev \
+            libxinerama1 \
+            libxft-dev \
+            wget \
+            xvfb
+
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+          echo "export PATH=$HOME/miniconda/bin:$PATH" >> $GITHUB_ENV
+          source $GITHUB_ENV
+          eval "$(conda shell.bash hook)"
+          conda init
+
+      - name: Set up Conda environment
+        run: |
+          conda create -y -c conda-forge -n dolfin_warp \
+            expat=2.5 \
+            fenics=2019.1.0 \
+            matplotlib=3.5 \
+            meshio=5.3 \
+            mpi4py=3.1.3 \
+            numpy=1.23.5 \
+            pandas=1.3 \
+            pip \
+            python=3.10 \
+            scipy=1.8 \
+            vtk=9.1
+          conda activate dolfin_warp
+          conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1
+          conda deactivate
+          conda activate dolfin_warp
+
+      - name: Install Python libraries
+        run: |
+          conda activate dolfin_warp
+          pip install \
+            git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git \
+            git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git \
+            git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git \
+            git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+
+      - name: Run tests
+        run: |
+          cd Tests
+          ln -s ../dolfin_warp
+          make
