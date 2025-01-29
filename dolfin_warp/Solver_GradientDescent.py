@@ -40,15 +40,16 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
         # iterations control
-        self.min_gradient_step      = parameters.get("min_gradient_step"    , 1e-6)
-        self.step                   = parameters.get("step"                 , 1)
-        self.tol_dU_rel             = parameters.get("tol_dU_rel"           , None)
-        self.tol_dU                 = parameters.get("tol_dU"               , None)
-        self.tol_res_rel            = parameters.get("tol_res_rel"          , None)
-        self.n_iter_max             = parameters.get("n_iter_max"           , 32  )
-        self.relax_n_iter_max       = parameters.get("relax_n_iter_max"     , None)
-        self.relax_type             = parameters.get("relax_type"           , None)
-        self.gradient_type          = parameters.get("gradient_type"        , "L2")
+        self.min_gradient_step          = parameters.get("min_gradient_step"        , 1e-6)
+        self.step                       = parameters.get("step"                     , 1)
+        self.tol_dU_rel                 = parameters.get("tol_dU_rel"               , None)
+        self.tol_dU                     = parameters.get("tol_dU"                   , None)
+        self.tol_res_rel                = parameters.get("tol_res_rel"              , None)
+        self.n_iter_max                 = parameters.get("n_iter_max"               , 32  )
+        self.relax_n_iter_max           = parameters.get("relax_n_iter_max"         , None)
+        self.relax_type                 = parameters.get("relax_type"               , None)
+        self.gradient_type              = parameters.get("gradient_type"            , "L2")
+        self.inner_product_H1_weight    = parameters.get("inner_product_H1_weight"  , 1e-2)
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
@@ -99,23 +100,28 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             if self.gradient_type == "Sobolev": 
                 found_energy = False
                 for energy in self.problem.energies:
-                    if isinstance(energy, dwarp.Energy_Shape_Registration.SignedImageEnergy):
+                    if isinstance(energy, dwarp.Energy_Shape_Registration.SignedImageEnergy): #DEBUG should make it more general and allow sobolev for all possible energy ?
                         energy_shape = energy
                         found_energy = True
                         break
                 assert found_energy, "No SignedImageEnergy. Aborting."
-                alpha           = 1e-3
-                inner_product   = dolfin.inner(dolfin.grad(energy_shape.problem.dU_trial) + dolfin.grad(energy_shape.problem.dU_trial).T, dolfin.grad(energy_shape.problem.dU_test) + dolfin.grad(energy_shape.problem.dU_test).T) * energy_shape.dV \
-                                + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * energy_shape.dV
+                alpha           = self.inner_product_H1_weight
+                # inner_product   = dolfin.inner(dolfin.grad(energy_shape.problem.dU_trial) + dolfin.grad(energy_shape.problem.dU_trial).T, dolfin.grad(energy_shape.problem.dU_test) + dolfin.grad(energy_shape.problem.dU_test).T) * energy_shape.dV \
+                #                 + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * energy_shape.dV
+                # DEBUG inner_product pulling back inner product on reference body:
+                grad_u_trial_ref = dolfin.dot(dolfin.inv(energy_shape.problem.F), dolfin.grad(energy_shape.problem.dU_trial))
+                grad_u_test_ref = dolfin.dot(dolfin.inv(energy_shape.problem.F), dolfin.grad(energy_shape.problem.dU_test))
 
-                #DEBUG: 
-                res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
-                res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
+                symmetric_grad_trial_ref =  grad_u_trial_ref + grad_u_trial_ref.T
+                symmetric_grad_test_ref = grad_u_test_ref + grad_u_test_ref.T
 
-                
+                inner_product   = dolfin.inner(symmetric_grad_trial_ref, symmetric_grad_test_ref) * self.problem.J * energy_shape.dV \
+                                + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
 
-
-                # dolfin.solve(inner_product == res_form, self.res_vec_funct)
+                #DEBUG res_form: 
+                # res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
+                # res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
+                # dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
                 dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
                 self.res_vec    = self.res_vec_funct.vector()
             else:
@@ -129,7 +135,12 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             self.res_norm               = self.res_vec.norm("l2")
 
             # relaxation
-            self.compute_relax() 
+            if self.k_iter == 1:
+                self.relax = 1
+
+            self.compute_relax(
+                                2*self.relax
+                                ) 
       
             # solution update
             self.problem.update_displacement(relax=self.relax)                                  # Somehow need although it's already done in compute_relax() #DEBUG?
