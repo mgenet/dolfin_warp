@@ -35,7 +35,10 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
         self.res_vec = dolfin.Vector()          # Pre allocatin of res_vec
 
-        self.res_vec_funct = dolfin.Function(self.problem.U_fs)
+        if self.problem.kinematics_type == "reduced":
+            self.res_vec_funct = dolfin.Function(self.problem.reduced_displacement_fs)
+        else:
+            self.res_vec_funct = dolfin.Function(self.problem.U_fs)
         # relaxation
         RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
@@ -106,9 +109,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                         break
                 assert found_energy, "No SignedImageEnergy. Aborting."
                 alpha           = self.inner_product_H1_weight
-                # inner_product   = dolfin.inner(dolfin.grad(energy_shape.problem.dU_trial) + dolfin.grad(energy_shape.problem.dU_trial).T, dolfin.grad(energy_shape.problem.dU_test) + dolfin.grad(energy_shape.problem.dU_test).T) * energy_shape.dV \
-                #                 + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * energy_shape.dV
-                # DEBUG inner_product pulling back inner product on reference body:
+                # inner_product pulling back inner product on reference body:
                 grad_u_trial_ref = dolfin.dot(dolfin.inv(energy_shape.problem.F), dolfin.grad(energy_shape.problem.dU_trial))
                 grad_u_test_ref = dolfin.dot(dolfin.inv(energy_shape.problem.F), dolfin.grad(energy_shape.problem.dU_test))
 
@@ -119,19 +120,26 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                                 + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
 
                 #DEBUG res_form: 
-                # res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
-                # res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
-                # dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
-                dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
+                res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
+                res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
+                dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
+                # dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
+
+                print(f"res_vece_func after solve: {self.res_vec_funct.vector()[:]}")#DEBUG
+
                 self.res_vec    = self.res_vec_funct.vector()
+                print(f"self.res_vec : {self.res_vec[:]}")#DEBUG
             else:
                 self.problem.assemble_res(
                     res_vec = self.res_vec) 
 
 
 
+            if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                self.problem.dU.vector()[:] = -self.res_vec[:]
+            elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                self.problem.dreduced_displacement.vector()[:] = -self.res_vec[:]
 
-            self.problem.dU.vector()[:] = -self.res_vec[:]
             self.res_norm               = self.res_vec.norm("l2")
 
             # relaxation
