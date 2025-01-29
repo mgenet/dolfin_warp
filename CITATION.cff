@@ -2,7 +2,24 @@ cff-version: 1.2.0
 authors:
   - family-names: Genet
     given-names: Martin
-    orcid: https://orcid.org/0000-0003-2204-201X
+    orcid: 0000-0003-2204-201X
+  - family-names: Patte
+    given-names: Cécile
+    orcid: 0000-0001-8553-886X
+  - family-names: Berberoğlu
+    given-names: Ezgi
+    orcid: 0000-0002-4607-8845
+  - family-names: Álvarez-Barrientos
+    given-names: Felipe
+    orcid: 0000-0003-4468-7951
+  - family-names: Laville
+    given-names: Colin
+  - family-names: Peyraut
+    given-names: Alice
+    orcid: 0009-0000-9445-8060
+  - family-names: Daby-Seesaram
+    given-names: Alexandre
+    orcid: 0000-0002-2374-0971
 title: "dolfin_warp"
 url: https://gitlab.inria.fr/mgenet/dolfin_warp
 doi: 10.5281/zenodo.8010275
