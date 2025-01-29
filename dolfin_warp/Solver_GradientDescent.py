@@ -35,7 +35,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
         self.res_vec = dolfin.Vector()          # Pre allocatin of res_vec
 
-
+        self.res_vec_funct = dolfin.Function(self.problem.U_fs)
         # relaxation
         RelaxationNonlinearSolver.__init__(self, parameters=parameters)
 
@@ -48,7 +48,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         self.n_iter_max             = parameters.get("n_iter_max"           , 32  )
         self.relax_n_iter_max       = parameters.get("relax_n_iter_max"     , None)
         self.relax_type             = parameters.get("relax_type"           , None)
-
+        self.gradient_type          = parameters.get("gradient_type"        , "L2")
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
@@ -95,8 +95,35 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 k_iter              =self.k_iter            )
 
             # Gradient descent direction computation
-            self.problem.assemble_res(
-                res_vec             =self.res_vec)                                        
+
+            if self.gradient_type == "Sobolev": 
+                found_energy = False
+                for energy in self.problem.energies:
+                    if isinstance(energy, dwarp.Energy_Shape_Registration.SignedImageEnergy):
+                        energy_shape = energy
+                        found_energy = True
+                        break
+                assert found_energy, "No SignedImageEnergy. Aborting."
+                alpha           = 1e-3
+                inner_product   = dolfin.inner(dolfin.grad(energy_shape.problem.dU_trial) + dolfin.grad(energy_shape.problem.dU_trial).T, dolfin.grad(energy_shape.problem.dU_test) + dolfin.grad(energy_shape.problem.dU_test).T) * energy_shape.dV \
+                                + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * energy_shape.dV
+
+                #DEBUG: 
+                res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
+                res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
+
+                
+
+
+                # dolfin.solve(inner_product == res_form, self.res_vec_funct)
+                dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
+                self.res_vec    = self.res_vec_funct.vector()
+            else:
+                self.problem.assemble_res(
+                    res_vec = self.res_vec) 
+
+
+
 
             self.problem.dU.vector()[:] = -self.res_vec[:]
             self.res_norm               = self.res_vec.norm("l2")

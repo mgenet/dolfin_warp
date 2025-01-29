@@ -82,7 +82,8 @@ def warp(
         silent                                      : bool        = False                               ,
         warping_type                                : str         = "tracking"                          , # tracking or registration
         min_gradient_step                           : int         = 1e-6                                , 
-        gradient_step                               : int         = 1):                         
+        gradient_step                               : int         = 1                                   ,          
+        gradient_type                               : int         = "L2"                                ,):                         
 
 
     if warping_type == "registration":
@@ -310,6 +311,7 @@ def warp(
                 "n_iter_max"        : n_iter_max            ,
                 "relax_n_iter_max"  : relax_n_iter_max      ,
                 "tol_dU"            : tol_dU                ,
+                "gradient_type"     : gradient_type         ,
                 })
 
     image_iterator = dwarp.ImageIterator(
