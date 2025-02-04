@@ -109,41 +109,35 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                         break
                 assert found_energy, "No SignedImageEnergy. Aborting."
                 alpha           = self.inner_product_H1_weight
-                # inner_product pulling back inner product on reference body:
+                # # inner_product pulling back inner product on reference body:
 
-                # grad_u_trial_ref = dolfin.inv(energy_shape.problem.F) * dolfin.grad(energy_shape.problem.dU_trial)
-                # grad_u_test_ref = dolfin.inv(energy_shape.problem.F) * dolfin.grad(energy_shape.problem.dU_test)
+                # grad_u_trial_ref = dolfin.inv(energy_shape.problem.F).T * dolfin.grad(energy_shape.problem.dU_trial) * dolfin.inv(energy_shape.problem.F)
+                # grad_u_test_ref = dolfin.inv(energy_shape.problem.F).T * dolfin.grad(energy_shape.problem.dU_test) * dolfin.inv(energy_shape.problem.F)
 
-                grad_u_trial_ref = dolfin.inv(energy_shape.problem.F).T * dolfin.grad(energy_shape.problem.dU_trial) * dolfin.inv(energy_shape.problem.F)
-                grad_u_test_ref = dolfin.inv(energy_shape.problem.F).T * dolfin.grad(energy_shape.problem.dU_test) * dolfin.inv(energy_shape.problem.F)
+                # symmetric_grad_trial_ref =  grad_u_trial_ref + grad_u_trial_ref.T
+                # symmetric_grad_test_ref = grad_u_test_ref + grad_u_test_ref.T
 
-                symmetric_grad_trial_ref =  grad_u_trial_ref + grad_u_trial_ref.T
-                symmetric_grad_test_ref = grad_u_test_ref + grad_u_test_ref.T
+                # #DEBUG u cdot v = FU cdot FV : BRENO OK
 
-                #DEBUG Martin
-                # grad_u_trial = dolfin.grad(energy_shape.problem.dU_trial) 
-                # grad_u_test = dolfin.grad(energy_shape.problem.dU_test) 
-
-                # symmetric_grad_trial_ref = dolfin.sym(grad_u_trial*dolfin.inv(energy_shape.problem.F))
-                # symmetric_grad_test_ref = dolfin.sym(grad_u_test*dolfin.inv(energy_shape.problem.F))
-
-
-                #DEBUG u cdot v = FU cdot FV : BRENO OK
-
-                inner_product   = dolfin.inner(symmetric_grad_trial_ref, symmetric_grad_test_ref) * self.problem.J * energy_shape.dV \
-                                + alpha * dolfin.inner(energy_shape.problem.F*energy_shape.problem.dU_trial, energy_shape.problem.F*energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
-                
-                #DEBUG NOT OK
                 # inner_product   = dolfin.inner(symmetric_grad_trial_ref, symmetric_grad_test_ref) * self.problem.J * energy_shape.dV \
-                #                 + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
+                #                 + alpha * dolfin.inner(energy_shape.problem.F*energy_shape.problem.dU_trial, energy_shape.problem.F*energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
+                
+
+
+
+                ##DEBUG only chain rule
+
+                grad_x_trial = dolfin.grad(energy_shape.problem.dU_trial)*dolfin.inv(energy_shape.problem.F)
+                grad_x_test = dolfin.grad(energy_shape.problem.dU_test)*dolfin.inv(energy_shape.problem.F)
+                inner_product = dolfin.inner(grad_x_trial+grad_x_trial.T,grad_x_test+grad_x_test.T) * self.problem.J * energy_shape.dV + alpha * dolfin.inner(energy_shape.problem.dU_trial, energy_shape.problem.dU_test) * self.problem.J * energy_shape.dV
+                
 
                 #DEBUG res_form: 
-                res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
-                res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
-                dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
-                # dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
+                # res_form        = self.problem.J*dolfin.inner(energy_shape.DIdef, energy_shape.problem.dU_test) * energy_shape.dV 
+                # res_form        += self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(energy_shape.problem.F).T, dolfin.grad(energy_shape.problem.dU_test))* energy_shape.dV 
+                # dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
+                dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
 
-                print(f"res_vece_func after solve: {self.res_vec_funct.vector()[:]}")#DEBUG
 
                 self.res_vec    = self.res_vec_funct.vector()
                 print(f"self.res_vec : {self.res_vec[:]}")#DEBUG
@@ -164,12 +158,13 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             if self.k_iter == 1:
                 self.relax = 1
 
-            self.compute_relax(
-                                2*self.relax
-                                ) 
+            # self.compute_relax(
+            #                     2*self.relax
+            #                     ) 
       
             # solution update
-            self.problem.update_displacement(relax=self.relax)                                  # Somehow need although it's already done in compute_relax() #DEBUG?
+            # self.problem.update_displacement(relax=self.relax)                                  # Somehow need although it's already done in compute_relax() #DEBUG?
+            self.problem.update_displacement(relax=1)                                  #DEBUG relax = 1 for comparison Somehow need although it's already done in compute_relax() #DEBUG?
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
             self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()

@@ -159,10 +159,19 @@ class SignedImageEnergy(ContinuousEnergy):
         if (self.dynamic_scaling):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
-        self.Psi    = self.Idef 
-        self.Psi   *= self.problem.J
-        self.dPsi   = dolfin.derivative(self.Psi, self.problem.U, self.problem.dU_test)
-        self.dPsi  += self.problem.J*dolfin.inner(self.DIdef, self.problem.dU_test)  # DEBUG: need to check that grad im is wrt image space
+        # self.Psi        = self.Idef 
+        self.Psi        = dolfin.Constant(1)
+        self.Psi       *= self.problem.J
+        # self.dPsi       = dolfin.derivative(self.Psi, self.problem.U, self.problem.dU_test) #DEBUG AUTODIFF
+        # self.dPsi       = self.problem.J*self.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.F*self.problem.dU_test)) #DEBUG manual dif
+        self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) #DEBUG manual dif
+        # self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T*dolfin.grad(self.problem.dU_test),dolfin.inv(self.problem.F).T) #DEBUG manual diff + pull back divergence
+        # self.dPsi  += self.problem.J*dolfin.inner(self.DIdef, self.problem.dU_test)  
+        # self.dPsi      += self.problem.J*dolfin.inner(self.DIdef, self.problem.F*self.problem.dU_test)  #DEBUG Pull-back 
+        # self.dPsi      += self.problem.J*dolfin.inner(dolfin.inv(self.problem.F)*self.DIdef, self.problem.dU_test)  #DEBUG Pull-back 
+
+
+
 
         # forms
         self.ener_form = self.Psi   * self.dV
