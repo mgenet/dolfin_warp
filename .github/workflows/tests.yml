@@ -1,0 +1,59 @@
+on:
+  push:
+    branches:
+      - 'devel-*'
+
+jobs:
+  tests:
+    # if: startsWith(github.ref, 'refs/heads/devel')
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+
+      - name: Set up Conda environment
+        run: |
+          conda create -y -c conda-forge -n dolfin_warp \
+            expat=2.5 \
+            fenics=2019.1.0 \
+            matplotlib=3.5 \
+            meshio=5.3 \
+            mpi4py=3.1.3 \
+            numpy=1.23.5 \
+            pandas=1.3 \
+            pip \
+            python=3.10 \
+            scipy=1.8 \
+            vtk=9.1
+          conda activate dolfin_warp
+          conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1
+          conda deactivate
+          conda activate dolfin_warp
+
+      - name: Install Python libraries
+        run: |
+          conda activate dolfin_warp
+          pip install \
+            git+https://gitlab.inria.fr/mgenet/myPythonLibrary.git \
+            git+https://gitlab.inria.fr/mgenet/myVTKPythonLibrary.git \
+            git+https://gitlab.inria.fr/mgenet/vtkpython_cbl.git \
+            git+https://gitlab.inria.fr/mgenet/dolfin_mech.git
+
+      - name: Run tests
+        run: |
+          conda activate dolfin_warp
+          cd Tests
+          ln -s ../dolfin_warp
+          make
