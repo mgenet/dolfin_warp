@@ -45,7 +45,6 @@ jobs:
 
       - name: Set up Conda environment
         run: |
-          conda init
           conda create -y -c conda-forge -n dolfin_warp \
             expat=2.5 \
             fenics=2019.1.0 \
