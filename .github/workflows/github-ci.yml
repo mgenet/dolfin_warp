@@ -76,6 +76,7 @@ jobs:
 
       - name: Run tests
         run: |
+          conda activate dolfin_warp
           cd Tests
           ln -s ../dolfin_warp
           make
