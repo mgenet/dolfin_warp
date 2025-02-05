@@ -1,12 +1,18 @@
 on:
   push:
     branches:
-      - devel
+      - master
       - 'devel-*'
 
 jobs:
   tests-on-ubuntu-24-04:
-    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/heads/devel')
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+
     defaults:
       run:
         shell: bash -el {0}
@@ -15,36 +21,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # - name: Upgrade os
-      #   run: |
-      #     sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt upgrade -y
-
-      # - name: Set up dependencies
-      #   run: |
-      #     sudo apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris sudo apt install -y \
-      #       build-essential \
-      #       gcc-multilib \
-      #       git \
-      #       gnuplot \
-      #       libgl1-mesa-dev \
-      #       libglu1-mesa-dev \
-      #       libxcursor-dev \
-      #       libxinerama1 \
-      #       libxft-dev \
-      #       wget \
-      #       xvfb
-
       - name: Install Miniconda
         uses: conda-incubator/setup-miniconda@v3
-
-      # - name: Install Miniconda
-      #   run: |
-      #     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      #     bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
-      #     echo "export PATH=$HOME/miniconda/bin:$PATH" >> $GITHUB_ENV
-      #     source $GITHUB_ENV
-      #     eval "$(conda shell.bash hook)"
-      #     conda init
 
       - name: Set up Conda environment
         run: |
@@ -80,3 +58,23 @@ jobs:
           cd Tests
           ln -s ../dolfin_warp
           make
+
+  deploy:
+    # if: startsWith(github.ref, 'refs/heads/master')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
