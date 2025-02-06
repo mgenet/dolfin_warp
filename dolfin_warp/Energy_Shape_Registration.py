@@ -21,16 +21,16 @@ class SignedImageEnergy(ContinuousEnergy):
 
 
     def __init__(self,
-            problem: Problem,
-            images_series: ImagesSeries,
-            quadrature_degree: int,
-            name: str = "im",
-            w: float = 1.,
-            ref_frame: int = 0,
-            w_char_func: bool = True,
-            im_is_cone: bool = False,
-            static_scaling: bool = False,
-            dynamic_scaling: bool = False):
+            problem                 : Problem                   ,
+            images_series           : ImagesSeries              ,
+            quadrature_degree       : int                       ,
+            name                    : str               = "im"  ,
+            w                       : float             = 1.    ,
+            ref_frame               : int               = 0     ,
+            w_char_func             : bool              = True  ,
+            im_is_cone              : bool              = False ,
+            static_scaling          : bool              = False ,
+            dynamic_scaling         : bool              = False ):
 
         self.problem           = problem
         self.printer           = self.problem.printer
@@ -106,6 +106,7 @@ class SignedImageEnergy(ContinuousEnergy):
                 expr(),
                 element=self.fe)
             self.Idef.init_disp(self.problem.U.cpp_object())
+            
         else:
             cpp = dwarp.get_ExprIm_cpp_swig(
                 im_dim=self.images_series.dimension,
@@ -120,13 +121,15 @@ class SignedImageEnergy(ContinuousEnergy):
 
 
         self.Idef.init_image(self.ref_image_filename)
+        print(f"integral of I after reading image {dolfin.assemble(self.Idef*self.dV)}")#DEBUG
+
         if (self.dynamic_scaling):
             self.Idef.init_dynamic_scaling(self.scaling)
 
         self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Idef_int",self.Idef_int)
 
-        self.Iref_norm = (dolfin.assemble(self.Idef**2 * self.dV)/self.problem.mesh_V0)**(1./2)  #DEBUG: Here normis compared to only image which is IDef
+        self.Iref_norm = (dolfin.assemble(self.Idef**2 * self.dV)/self.problem.mesh_V0)**(1./2)  #DEBUG: Here norm is compared to only image which is Idef
         assert (self.Iref_norm > 0.),\
             "Iref_norm = "+str(self.Iref_norm)+" <= 0. Aborting."
         self.printer.print_sci("Iref_norm",self.Iref_norm)
@@ -159,19 +162,13 @@ class SignedImageEnergy(ContinuousEnergy):
         if (self.dynamic_scaling):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
-        # self.Psi        = self.Idef 
-        self.Psi        = dolfin.Constant(1)
+        self.Psi        = self.Idef 
         self.Psi       *= self.problem.J
-        # self.dPsi       = dolfin.derivative(self.Psi, self.problem.U, self.problem.dU_test) #DEBUG AUTODIFF
-        # self.dPsi       = self.problem.J*self.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.F*self.problem.dU_test)) #DEBUG manual dif
-        self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) #DEBUG manual dif
-        # self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T*dolfin.grad(self.problem.dU_test),dolfin.inv(self.problem.F).T) #DEBUG manual diff + pull back divergence
-        # self.dPsi  += self.problem.J*dolfin.inner(self.DIdef, self.problem.dU_test)  
-        # self.dPsi      += self.problem.J*dolfin.inner(self.DIdef, self.problem.F*self.problem.dU_test)  #DEBUG Pull-back 
-        # self.dPsi      += self.problem.J*dolfin.inner(dolfin.inv(self.problem.F)*self.DIdef, self.problem.dU_test)  #DEBUG Pull-back 
+        self.dPsi       = self.problem.J*self.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))    
+        self.dPsi      += self.problem.J*self.Idef*dolfin.inner(self.DIdef, self.problem.dU_test)    
 
-
-
+        # self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))            #DEBUG minimise volume sphere
+        # self.dPsi       = dolfin.div(self.problem.J*dolfin.inv(self.problem.F)*self.problem.dU_test)                              #DEBUG minimise volume sphere MARTIN
 
         # forms
         self.ener_form = self.Psi   * self.dV
@@ -207,28 +204,28 @@ class SignedImageEnergy(ContinuousEnergy):
     def call_after_solve(self,
             **kwargs):
         pass #DEBUG
-        # if (self.dynamic_scaling):
-        #     self.printer.print_str("Updating dynamic scaling…")
-        #     self.printer.inc()
+        if (self.dynamic_scaling):
+            self.printer.print_str("Updating dynamic scaling…")
+            self.printer.inc()
 
-        #     self.get_qoi_values()
+            self.get_qoi_values()
 
-        #     self.p[0,0] = dolfin.assemble(self.Idef**2 * self.dV)
-        #     self.p[0,1] = dolfin.assemble(self.Idef * self.dV)
-        #     self.p[1,0] = self.p[0,1]
-        #     self.p[1,1] = 1.
-        #     self.q[0] = dolfin.assemble(self.Idef*self.Iref * self.dV)
-        #     self.q[1] = dolfin.assemble(self.Iref * self.dV)
-        #     self.scaling[:] = numpy.linalg.solve(self.p, self.q)
-        #     self.printer.print_var("scaling",self.scaling)
+            self.p[0,0] = dolfin.assemble(self.Idef**2 * self.dV)
+            self.p[0,1] = dolfin.assemble(self.Idef * self.dV)
+            self.p[1,0] = self.p[0,1]
+            self.p[1,1] = 1.
+            self.q[0] = dolfin.assemble(self.Idef*self.Iref * self.dV)
+            self.q[1] = dolfin.assemble(self.Iref * self.dV)
+            self.scaling[:] = numpy.linalg.solve(self.p, self.q)
+            self.printer.print_var("scaling",self.scaling)
 
-        #     if (int(dolfin.__version__.split('.')[0]) <= 2017):
-        #         self.Idef.update_dynamic_scaling(self.scaling)  # should not be needed
-        #         self.DIdef.update_dynamic_scaling(self.scaling) # should not be needed
+            if (int(dolfin.__version__.split('.')[0]) <= 2017):
+                self.Idef.update_dynamic_scaling(self.scaling)  # should not be needed
+                self.DIdef.update_dynamic_scaling(self.scaling) # should not be needed
 
-        #     self.get_qoi_values()
+            self.get_qoi_values()
 
-        #     self.printer.dec()
+            self.printer.dec()
 
 
 
