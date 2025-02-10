@@ -63,7 +63,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
 
     def compute_relax_backtracking(self, initial_step = None):
         
-        if initial_step is None:
+        if initial_step is None: #DEBUG, should put default value to one directly but was set to None initially 
             initial_step == 1
 
         relax = 0.; relax_cur = relax
@@ -78,6 +78,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
             ener = self.problem.assemble_ener()
             self.printer.print_sci("ener",ener)
+            print(f"*** old int I : {ener0:.4e}, new int I {ener:.4e}, relax {relax:.4e}") #DEBUG
             if (ener < ener0):
                 self.relax = relax
                 break
