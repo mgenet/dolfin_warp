@@ -48,6 +48,10 @@ class SignedImageEnergy(ContinuousEnergy):
 
         self.printer.print_str("Defining quadrature finite elements…")
 
+
+        #FS 
+        self.fs = dolfin.FunctionSpace(self.problem.mesh, "CG", 1)
+
         # fe
         self.fe = dolfin.FiniteElement(
             family="Quadrature",
@@ -165,10 +169,9 @@ class SignedImageEnergy(ContinuousEnergy):
         self.Psi        = self.Idef 
         self.Psi       *= self.problem.J
         self.dPsi       = self.problem.J*self.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))    
-        # self.dPsi      += self.problem.J*self.Idef*dolfin.inner(self.DIdef, self.problem.dU_test)    
+        # self.dPsi      += self.problem.J*dolfin.inner(self.DIdef, self.problem.dU_test)    
 
-        # self.dPsi       = self.problem.J*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))            #DEBUG minimise volume sphere
-        # self.dPsi       = dolfin.div(self.problem.J*dolfin.inv(self.problem.F)*self.problem.dU_test)                              #DEBUG minimise volume sphere MARTIN
+        
 
         # forms
         self.ener_form = self.Psi   * self.dV

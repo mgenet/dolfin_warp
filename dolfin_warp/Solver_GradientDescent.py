@@ -154,14 +154,17 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                        
                 #DEBUG res_form: 
                 res_form       = self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))* energy_shape.dV 
+                # res_form      += self.problem.J*dolfin.inner(energy_shape.DIdef, self.problem.dU_test) * energy_shape.dV 
+                DIdef_Euler2Lagrange = dolfin.inv(self.problem.F).T*dolfin.grad(dolfin.interpolate(energy_shape.Idef,energy_shape.fs))
+                res_form      += self.problem.J*dolfin.inner(DIdef_Euler2Lagrange, self.problem.dU_test) * energy_shape.dV #DEBUG from euler
 
+                            
                 inner_assembled = dolfin.assemble(inner_product)
                 rhs_assembled = dolfin.assemble(res_form)
 
                 dolfin.solve(inner_assembled,self.res_vec_funct.vector(),rhs_assembled)
 
 
-                # res_form      += self.problem.J*dolfin.inner(energy_shape.DIdef, self.problem.dU_test) * energy_shape.dV 
                 # dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
 
                 self.res_vec    = self.res_vec_funct.vector()
