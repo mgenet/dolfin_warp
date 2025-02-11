@@ -48,8 +48,8 @@ def compute_energies_normalization(
             element=problem.U_fe)
 
     problem.U.interpolate(U_expr)
-    problem.U.vector()[:] /= problem.U.vector().norm("l2")
     problem.U_norm = problem.U.vector().norm("l2")
+    problem.U.vector()[:] /= problem.U_norm
 
     for energy in problem.energies:
         energy.ener0 = energy.assemble_ener(w_weight=0)

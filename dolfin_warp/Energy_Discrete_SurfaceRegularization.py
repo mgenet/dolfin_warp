@@ -34,6 +34,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             b_fin: typing.Optional["list[float]"] = None,
             volume_subdomain_data = None,
             volume_subdomain_id = None,
+            ds_or_dS = "ds",
             surface_subdomain_data = None,
             surface_subdomain_id = None,
             quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
@@ -76,7 +77,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         self.dS = dolfin.Measure(
-            "ds",
+            ds_or_dS,
             domain=self.problem.mesh,
             subdomain_data=surface_subdomain_data,
             subdomain_id=surface_subdomain_id if surface_subdomain_id is not None else "everywhere",
