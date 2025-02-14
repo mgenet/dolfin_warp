@@ -32,11 +32,11 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             young: float = 1.,
             poisson: float = 0.,
             b_fin: typing.Optional["list[float]"] = None,
-            volume_subdomain_data = None,
-            volume_subdomain_id = None,
             ds_or_dS = "ds",
             surface_subdomain_data = None,
             surface_subdomain_id = None,
+            volume_subdomain_data = None,
+            volume_subdomain_id = None,
             quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
             scalar_formulation_in_2D: bool = 1):
 
@@ -82,12 +82,12 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             subdomain_data=surface_subdomain_data,
             subdomain_id=surface_subdomain_id if surface_subdomain_id is not None else "everywhere",
             metadata=form_compiler_parameters)
-        # self.dV = dolfin.Measure(
-        #     "dx",
-        #     domain=self.problem.mesh,
-        #     subdomain_data=volume_subdomain_data,
-        #     subdomain_id=volume_subdomain_id if volume_subdomain_id is not None else "everywhere",
-        #     metadata=form_compiler_parameters)
+        self.dV = dolfin.Measure(
+            "dx",
+            domain=self.problem.mesh,
+            subdomain_data=volume_subdomain_data,
+            subdomain_id=volume_subdomain_id if volume_subdomain_id is not None else "everywhere",
+            metadata=form_compiler_parameters)
 
         if (self.model == "hooke"):
             self.kinematics = dmech.LinearizedKinematics(
@@ -175,9 +175,15 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             divs_R_test = dolfin.as_vector(
                 [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
                  for i in range(self.dim)])
-            self.R_form = dolfin.inner(
-                self.F,
-                divs_R_test) * self.dS
+            if (ds_or_dS == "ds"):
+                self.R_form = dolfin.inner(
+                    self.F,
+                    divs_R_test) * self.dS
+            else:
+                self.R_form = dolfin.Constant(0) * dolfin.inner(self.R, self.R_test) * self.dV
+                self.R_form += dolfin.inner(
+                    self.F,
+                    divs_R_test)("+") * self.dS
         elif (self.type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
             if (self.dim == 2) and (scalar_formulation_in_2D):
                 divs_R_test = dolfin.inner(self.T, dolfin.grad(self.R_test))
@@ -188,18 +194,31 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
                 # divs_R_test = dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.sym(dolfin.grad(self.R_test)), self.proj_op)))
                 # divs_R_test = dolfin.inner(self.proj_op, dolfin.grad(self.R_test))
                 # divs_R_test = dolfin.inner(dolfin.outer(self.T, self.T), dolfin.grad(self.R_test))
-            self.R_form = dolfin.Constant(0.) * dolfin.inner(self.R, self.R_test) * self.dS
+            self.R_form = dolfin.Constant(0.) * dolfin.inner(self.R, self.R_test) * self.dV
             if ("-normal" in type):
-                self.R_form += dolfin.inner(
-                    self.Fn,
-                    divs_R_test) * self.dS
-                # self.R_form += dolfin.inner(
-                #     dolfin.dot(self.proj_op, dolfin.grad(self.Fn)),
-                #     self.R_test) * self.dS
+                if (ds_or_dS == "ds"):
+                    self.R_form += dolfin.inner(
+                        self.Fn,
+                        divs_R_test) * self.dS
+                    # self.R_form += dolfin.inner(
+                    #     dolfin.dot(self.proj_op, dolfin.grad(self.Fn)),
+                    #     self.R_test) * self.dS
+                else:
+                    self.R_form += dolfin.inner(
+                        self.Fn,
+                        divs_R_test)("+") * self.dS
+                    # self.R_form += dolfin.inner(
+                    #     dolfin.dot(self.proj_op, dolfin.grad(self.Fn)),
+                    #     self.R_test)("+") * self.dS
             if ("-tangential" in type):
-                self.R_form += dolfin.inner(
-                    self.Ft,
-                    divs_R_test) * self.dS
+                if (ds_or_dS == "ds"):
+                    self.R_form += dolfin.inner(
+                        self.Ft,
+                        divs_R_test) * self.dS
+                else:
+                    self.R_form += dolfin.inner(
+                        self.Ft,
+                        divs_R_test)("+") * self.dS
         self.dR_form = dolfin.derivative(self.R_form, self.problem.U, self.problem.dU_trial)
 
         # dolfin.assemble(
