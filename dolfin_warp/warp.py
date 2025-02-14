@@ -162,7 +162,8 @@ def warp(
         grad_basename=images_grad_basename,
         n_frames=images_n_frames,
         ext=images_ext,
-        printer=problem.printer)
+        printer=problem.printer, 
+        warping_type = warping_type)
 
     if (images_quadrature is None):
         problem.printer.print_str("Computing quadrature degree…")
