@@ -13,7 +13,7 @@ setuptools.setup(
     description=open("README.md", "r").readlines()[1][:-1],
     long_description = open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    url="https://gitlab.inria.fr/mgenet/dolfin_warp",
+    url="https://github.com/mgenet/dolfin_warp",
     packages=["dolfin_warp"],
     license="GPLv3",
     classifiers=[

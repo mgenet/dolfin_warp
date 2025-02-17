@@ -21,5 +21,5 @@ authors:
     given-names: Alexandre
     orcid: 0000-0002-2374-0971
 title: "dolfin_warp"
-url: https://gitlab.inria.fr/mgenet/dolfin_warp
+url: https://github.com/mgenet/dolfin_warp
 doi: 10.5281/zenodo.8010275
