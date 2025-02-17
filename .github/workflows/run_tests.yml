@@ -1,12 +1,11 @@
 on:
   push:
     branches:
+      - devel
       - 'devel-*'
 
 jobs:
   tests:
-    # if: startsWith(github.ref, 'refs/heads/devel')
-
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
