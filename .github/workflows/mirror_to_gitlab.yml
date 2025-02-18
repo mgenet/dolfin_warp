@@ -1,0 +1,16 @@
+on:
+  - push
+  - delete
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: wangchucheng/git-repo-sync@v0.1.0
+      with:
+        target-url: https://gitlab.inria.fr/mgenet/dolfin_warp
+        target-username: mgenet
+        target-token: ${{ secrets.GITLAB_TOKEN }}
