@@ -264,8 +264,14 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.bc.zero(self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat()) # MG20250209: This should be done inplace, right?
-        self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+        if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
+            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
+            self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+        else:
+            self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())
+
+        # self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat()) # MG20250209: This should be done inplace, right?
+        # self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
 
         if (w_weight):
             w = self.w
