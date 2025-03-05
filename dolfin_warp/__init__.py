@@ -2,6 +2,7 @@
 
 from .Energy import *
 from .Energy_Continuous import *
+from .Energy_Continuous_Constraint import *
 from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
