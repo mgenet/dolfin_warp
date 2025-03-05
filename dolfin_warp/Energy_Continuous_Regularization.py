@@ -90,7 +90,7 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
             "ds",
             domain=self.problem.mesh,
             subdomain_data=surface_subdomain_data,
-            subdomain_id=surface_subdomain_id if volume_subdomain_id is not None else "everywhere",
+            subdomain_id=surface_subdomain_id if (surface_subdomain_id is not None) else "everywhere",
             metadata=self.form_compiler_parameters)
 
         self.printer.print_str("Defining mechanical model…")

@@ -9,7 +9,7 @@
 ################################################################################
 
 import glob
-import vtk; from vtk.numpy_interface import dataset_adapter as dsa
+import vtk.numpy_interface.dataset_adapter as dsa
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
