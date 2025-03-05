@@ -74,7 +74,6 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.quadrature_degree = quadrature_degree
         form_compiler_parameters = {
-            # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         self.dS = dolfin.Measure(
             ds_or_dS,

@@ -73,7 +73,6 @@ class RegularizationContinuousEnergy(ContinuousEnergy):
         self.printer.print_str("Defining measures…")
 
         self.form_compiler_parameters = {
-            "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         self.dV = dolfin.Measure(
             "dx",

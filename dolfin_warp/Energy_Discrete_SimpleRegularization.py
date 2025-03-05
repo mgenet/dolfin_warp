@@ -69,7 +69,6 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
         self.printer.inc()
 
         form_compiler_parameters = {
-            "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         dV = dolfin.Measure(
             "dx",
