@@ -127,15 +127,15 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
                 if (self.problem.Uold_norm == 0.):
                     self.problem.dU_err = 0.
                 else:
-                    self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
+                    self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.Uold_norm
             else:
-                self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
+                self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.U_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
             if (self.problem.DU_norm == 0.):
                 self.problem.dU_err_rel = 1.
             else:
-                self.problem.dU_err_rel = self.problem.dU_norm/self.problem.DU_norm
+                self.problem.dU_err_rel = abs(self.relax)*self.problem.dU_norm/self.problem.DU_norm
             self.printer.print_sci("dU_err_rel",self.problem.dU_err_rel)
 
             if (self.write_iterations):
