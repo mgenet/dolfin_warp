@@ -18,6 +18,8 @@ The library has notably been used in:
 * [[Patte, Brillet, Fetita, Gille, Bernaudin, Nunes, Chapelle & Genet (2022). Estimation of regional pulmonary compliance in idiopathic pulmonary fibrosis based on personalized lung poromechanical modeling. Journal of Biomechanical Engineering.](https://doi.org/10.1115/1.4054106)]
 * [[Laville, Fetita, Gille, Brillet, Nunes, Bernaudin & Genet (2023). Comparison of optimization parametrizations for regional lung compliance estimation using personalized pulmonary poromechanical modeling. Biomechanics and Modeling in Mechanobiology.](https://doi.org/10.1007/s10237-023-01691-9)]
 * [[Genet (2023). Finite strain formulation of the discrete equilibrium gap principle: application to mechanically consistent regularization for large motion tracking. Comptes Rendus Mécanique, 351, 429-458.](https://doi.org/10.5802/crmeca.228)]
+* [[Škardová, Hussain, Genet & Chabiniok (2023). Effect of Spatial and Temporal Resolution on the Accuracy of Motion Tracking Using 2D and 3D Cine Cardiac Magnetic Resonance Imaging Data. Functional Imaging and Modeling of the Heart (FIMH) Cham: Springer Nature Switzerland.](https://doi.org/10.1007/978-3-031-35302-4_24)]
+* [[Peyraut & Genet (2024). Finite strain formulation of the discrete equilibrium gap principle: application to direct parameter estimation from large full-fields measurements. Comptes Rendus Mécanique, 353, 259-308.](https://doi.org/10.5802/crmeca.279)]
 
 (If you use it for your own work please let me know!)
 
