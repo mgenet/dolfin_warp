@@ -21,5 +21,5 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=["dolfin_mech", "matplotlib", "meshio", "myPythonLibrary", "myVTKPythonLibrary", "numpy", "pandas", "scipy", "vtk", "vtkpython_cbl"],
+    install_requires=["gnuplot", "matplotlib", "meshio", "numpy", "pandas", "scipy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "vtkpython_cbl", "dolfin_mech"],
 )
