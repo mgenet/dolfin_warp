@@ -1,4 +1,4 @@
-#k_frame Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std
+#k_frame Exx_avg Exx_std Eyy_avg Eyy_std Ezz_avg Ezz_std Exy_avg Exy_std Exz_avg Exz_std Eyz_avg Eyz_std
 0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 2 7.355435371891872e-08 0.0 7.355435371891872e-08 0.0 0.0 0.0 0.0003835475363302976 0.0 0.0 0.0 0.0 0.0
