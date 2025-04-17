@@ -48,7 +48,6 @@ jobs:
           pip install \
             git+https://github.com/mgenet/myPythonLibrary.git \
             git+https://github.com/mgenet/myVTKPythonLibrary.git \
-            git+https://github.com/mgenet/vtkpython_cbl.git \
             git+https://github.com/mgenet/dolfin_mech.git
 
       - name: Run tests

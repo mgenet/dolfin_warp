@@ -8,14 +8,9 @@
 ###                                                                          ###
 ################################################################################
 
-import math
 import numpy
-import scipy
-import scipy.interpolate
-import vtk
 
 import myVTKPythonLibrary as myvtk
-import vtkpython_cbl      as cbl
 
 import dolfin_warp as dwarp
 
@@ -34,7 +29,6 @@ def compute_strains(
         ref_mesh_folder=None,                       # MG20190612: Mesh with sectors/parts/etc.
         ref_mesh_basename=None,
         ref_mesh_ext="vtk",
-        CYL_or_PPS="PPS",
         remove_boundary_layer=1,
         threshold_value=0.5,
         threshold_by_upper_or_lower="lower",
@@ -44,24 +38,7 @@ def compute_strains(
         temporal_resolution=1,
         plot_strains=1,
         plot_regional_strains=0,
-        write_strains_vs_radius=0,
-        plot_strains_vs_radius=0,
-        write_binned_strains_vs_radius=0,
-        plot_binned_strains_vs_radius=0,
-        write_twist_vs_height=0,
-        plot_twist_vs_height=0,
-        twist_vs_height_interpolation=None,
         verbose=1):
-
-    if (write_strains_vs_radius):
-        assert (remove_boundary_layer),\
-            "write_strains_vs_radius only works after removing the boundary layer. Aborting"
-    if (write_binned_strains_vs_radius):
-        assert (remove_boundary_layer),\
-            "write_binned_strains_vs_radius only works after removing the boundary layer. Aborting"
-    if (write_twist_vs_height):
-        assert (remove_boundary_layer),\
-            "write_twist_vs_height only works after removing the boundary layer. Aborting"
 
     if  (ref_mesh_folder   is not None)\
     and (ref_mesh_basename is not None):
@@ -113,19 +90,7 @@ def compute_strains(
 
     if (write_strains):
         strain_file = open(working_folder+"/"+working_basename+"-strains.dat", "w")
-        strain_file.write("#k_frame Err_avg Err_std Ecc_avg Ecc_std Ell_avg Ell_std Erc_avg Erc_std Erl_avg Erl_std Ecl_avg Ecl_std\n")
-
-    if (write_strains_vs_radius):
-        strains_vs_radius_file = open(working_folder+"/"+working_basename+"-strains_vs_radius.dat", "w")
-        strains_vs_radius_file.write("#k_frame rr Err Ecc Ell Erc Erl Ecl\n")
-
-    if (write_binned_strains_vs_radius):
-        binned_strains_vs_radius_file = open(working_folder+"/"+working_basename+"-binned_strains_vs_radius.dat", "w")
-        binned_strains_vs_radius_file.write("#k_frame rr Err Ecc Ell Erc Erl Ecl\n")
-
-    if (write_twist_vs_height):
-        twist_vs_height_file = open(working_folder+"/"+working_basename+"-twist_vs_height.dat", "w")
-        twist_vs_height_file.write("#k_frame z beta\n")
+        strain_file.write("#k_frame Exx_avg Exx_std Eyy_avg Eyy_std Ezz_avg Ezz_std Exy_avg Exy_std Exz_avg Exz_std Eyz_avg Eyz_std\n")
 
     if (ref_frame is not None):
         mesh0 = working_series.get_mesh(k_frame=ref_frame)
@@ -150,15 +115,6 @@ def compute_strains(
                 mesh.GetCellData().AddArray(iarray_ref_part_id)
             if (iarray_ref_sector_id is not None):
                 mesh.GetCellData().AddArray(iarray_ref_sector_id)
-            if (write_strains_vs_radius       )\
-            or (write_binned_strains_vs_radius):
-                assert (ref_mesh.GetCellData().HasArray("rr"))
-                mesh.GetCellData().AddArray(ref_mesh.GetCellData().GetArray("rr"))
-            if (write_twist_vs_height):
-                assert (ref_mesh.GetPointData().HasArray("r"))
-                mesh.GetPointData().AddArray(ref_mesh.GetPointData().GetArray("r"))
-                assert (ref_mesh.GetPointData().HasArray("ll"))
-                mesh.GetPointData().AddArray(ref_mesh.GetPointData().GetArray("ll"))
         myvtk.addDeformationGradients(
             mesh=mesh,
             disp_array_name=disp_array_name,
@@ -209,16 +165,8 @@ def compute_strains(
             filename=mesh_filename,
             verbose=verbose)
 
-        if (write_strains                 )\
-        or (write_strains_vs_radius       )\
-        or (write_binned_strains_vs_radius):
-            if  (ref_mesh is not None)\
-            and (mesh.GetCellData().HasArray(strain_array_name+"_"+CYL_or_PPS)):
-                farray_strain = mesh.GetCellData().GetArray(strain_array_name+"_"+CYL_or_PPS)
-            else:
-                farray_strain = mesh.GetCellData().GetArray(strain_array_name)
-
         if (write_strains):
+            farray_strain = mesh.GetCellData().GetArray(strain_array_name)
             if (n_sector_ids in (0,1)):
                 if (n_part_ids == 0):
                     strains_all = [farray_strain.GetTuple(k_cell) for k_cell in range(n_cells)]
@@ -226,7 +174,7 @@ def compute_strains(
                     strains_all = [farray_strain.GetTuple(k_cell) for k_cell in range(n_cells) if (iarray_ref_part_id.GetTuple1(k_cell) > 0)]
             elif (n_sector_ids > 1):
                 strains_all = []
-                strains_per_sector = [[] for sector_id in range(n_sector_ids)]
+                strains_per_sector = [[] for _ in range(n_sector_ids)]
                 if (n_part_ids == 0):
                     for k_cell in range(n_cells):
                         strains_all.append(farray_strain.GetTuple(k_cell))
@@ -252,156 +200,6 @@ def compute_strains(
                     strain_file.write("".join([" " + str(strains_per_sector_avg[k_comp]) + " " + str(strains_per_sector_std[k_comp]) for k_comp in range(6)]))
             strain_file.write("\n")
 
-        if (write_strains_vs_radius):
-            farray_rr = mesh.GetCellData().GetArray("rr")
-            for k_cell in range(n_cells):
-                strains_vs_radius_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, farray_rr.GetTuple1(k_cell)]+list(farray_strain.GetTuple(k_cell))]) + "\n")
-            strains_vs_radius_file.write("\n")
-            strains_vs_radius_file.write("\n")
-
-        if (write_binned_strains_vs_radius):
-            farray_rr = mesh.GetCellData().GetArray("rr")
-            n_r = 10
-            binned_strains = [[] for k_r in range(n_r)]
-            for k_cell in range(n_cells):
-                k_r = int(farray_rr.GetTuple1(k_cell)*n_r)
-                binned_strains[k_r].append(list(farray_strain.GetTuple(k_cell)))
-            #print(binned_strains)
-            binned_strains_avg = []
-            binned_strains_std = []
-            for k_r in range(n_r):
-                binned_strains_avg.append(numpy.mean(binned_strains[k_r], 0))
-                binned_strains_std.append(numpy.std (binned_strains[k_r], 0))
-            #print(binned_strains_avg)
-            #print(binned_strains_std)
-            for k_r in range(n_r):
-                binned_strains_vs_radius_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, (k_r+0.5)/n_r]+[val for k_comp in range(6) for val in [binned_strains_avg[k_r][k_comp], binned_strains_std[k_r][k_comp]]]]) + "\n")
-            binned_strains_vs_radius_file.write("\n")
-            binned_strains_vs_radius_file.write("\n")
-
-        if (write_twist_vs_height):
-            if (twist_vs_height_interpolation is None):
-                points_AB = cbl.getABPointsFromBoundsAndCenter(
-                    mesh=mesh,
-                    AB=[0,0,1],
-                    verbose=verbose)
-                C = points_AB.GetPoint(0)
-
-            if (twist_vs_height_interpolation in ("piecewiseLinear", "2ndOrder")):
-                warper = vtk.vtkWarpVector()
-                if (vtk.vtkVersion.GetVTKMajorVersion() >= 6):
-                    warper.SetInputData(mesh)
-                else:
-                    warper.SetInput(mesh)
-                warper.Update()
-                warped_ugrid = warper.GetOutput()
-
-                warped_sector_centroids = dwarp.get_centroids(mesh=warped_ugrid)
-                ref_sector_centroids = dwarp.get_centroids(mesh=mesh)
-
-                (cell_locator,
-                 closest_point,
-                 generic_cell,
-                 cellId,
-                 subId,
-                 dist) = myvtk.getCellLocator(
-                    mesh=warped_ugrid,
-                    verbose=verbose-1)
-
-                if (twist_vs_height_interpolation == "piecewiseLinear"):
-                    warped_sector_centroids_x = scipy.interpolate.InterpolatedUnivariateSpline(
-                        numpy.flip(warped_sector_centroids[:,2]),
-                        numpy.flip(warped_sector_centroids[:,0]),
-                        k=1,
-                        ext=0)
-                    warped_sector_centroids_y = scipy.interpolate.InterpolatedUnivariateSpline(
-                        numpy.flip(warped_sector_centroids[:,2]),
-                        numpy.flip(warped_sector_centroids[:,1]),
-                        k=1,
-                        ext=0)
-                    ref_sector_centroids_x = scipy.interpolate.InterpolatedUnivariateSpline(
-                        numpy.flip(ref_sector_centroids[:,2]),
-                        numpy.flip(ref_sector_centroids[:,0]),
-                        k=1,
-                        ext=0)
-                    ref_sector_centroids_y = scipy.interpolate.InterpolatedUnivariateSpline(
-                        numpy.flip(ref_sector_centroids[:,2]),
-                        numpy.flip(ref_sector_centroids[:,1]),
-                        k=1,
-                        ext=0)
-
-                if (twist_vs_height_interpolation == "2ndOrder"):
-                    warped_sector_centroids_x = numpy.poly1d(numpy.polyfit(
-                        warped_sector_centroids[:,2],
-                        warped_sector_centroids[:,0],
-                        2))
-                    warped_sector_centroids_y = numpy.poly1d(numpy.polyfit(
-                        warped_sector_centroids[:,2],
-                        warped_sector_centroids[:,1],
-                        2))
-                    ref_sector_centroids_x = numpy.poly1d(numpy.polyfit(
-                        ref_sector_centroids[:,2],
-                        ref_sector_centroids[:,0],
-                        2))
-                    ref_sector_centroids_y = numpy.poly1d(numpy.polyfit(
-                        ref_sector_centroids[:,2],
-                        ref_sector_centroids[:,1],
-                        2))
-
-            farray_r  = mesh.GetPointData().GetArray("r")
-            farray_ll = mesh.GetPointData().GetArray("ll")
-            farray_U  = mesh.GetPointData().GetArray(disp_array_name)
-            farray_Theta = myvtk.createFloatArray(
-                name="Theta",
-                n_components=1,
-                n_tuples=n_points)
-            farray_theta = myvtk.createFloatArray(
-                name="theta",
-                n_components=1,
-                n_tuples=n_points)
-            farray_beta = myvtk.createFloatArray(
-                name="beta",
-                n_components=1,
-                n_tuples=n_points)
-            mesh.GetPointData().AddArray(farray_Theta)
-            mesh.GetPointData().AddArray(farray_theta)
-            mesh.GetPointData().AddArray(farray_beta)
-            X = numpy.empty(3)
-            U = numpy.empty(3)
-            x = numpy.empty(3)
-            for k_point in range(n_points):
-                r  = farray_r.GetTuple1(k_point)
-                ll = farray_ll.GetTuple1(k_point)
-                mesh.GetPoint(k_point, X)
-                farray_U.GetTuple(k_point, U)
-                x[:] = X[:] + U[:]
-
-                if (twist_vs_height_interpolation is None):
-                    X -= C
-                elif (twist_vs_height_interpolation in ("piecewiseLinear", "2ndOrder")):
-                    x -= [warped_sector_centroids_x(x[2]), warped_sector_centroids_y(x[2]), x[2]]
-                    X -= [   ref_sector_centroids_x(X[2]),    ref_sector_centroids_y(X[2]), X[2]]
-
-                Theta = math.degrees(math.atan2(X[1], X[0]))
-
-                theta = math.degrees(math.atan2(x[1], x[0]))
-                beta = theta - Theta
-                if (beta > +180.): beta -= 360.
-                if (beta < -180.): beta += 360.
-                farray_Theta.SetTuple1(k_point, Theta)
-                farray_theta.SetTuple1(k_point, theta)
-                farray_beta.SetTuple1(k_point, beta)
-                if (r < 15.): continue
-                # if (ll < 1./3): continue
-                twist_vs_height_file.write(" ".join([str(val) for val in [temporal_offset+k_frame*temporal_resolution, ll, beta]]) + "\n")
-            mesh_filename = working_folder+"/"+working_basename+("-wStrains")*(not in_place)+"_"+str(k_frame).zfill(working_series.zfill)+"."+working_ext
-            myvtk.writeUGrid(
-                ugrid=mesh,
-                filename=mesh_filename,
-                verbose=verbose)
-            twist_vs_height_file.write("\n")
-            twist_vs_height_file.write("\n")
-
     if (write_strains):
         strain_file.close()
 
@@ -414,36 +212,6 @@ def compute_strains(
 
         if (plot_regional_strains):
             dwarp.plot_regional_strains(
-                working_folder=working_folder,
-                working_basename=working_basename,
-                suffix=None,
-                verbose=verbose)
-
-    if (write_strains_vs_radius):
-        strains_vs_radius_file.close()
-
-        if (plot_strains_vs_radius):
-            dwarp.plot_strains_vs_radius(
-                working_folder=working_folder,
-                working_basenames=[working_basename],
-                suffix=None,
-                verbose=verbose)
-
-    if (write_binned_strains_vs_radius):
-        binned_strains_vs_radius_file.close()
-
-        if (plot_binned_strains_vs_radius):
-            dwarp.plot_binned_strains_vs_radius(
-                working_folder=working_folder,
-                working_basenames=[working_basename],
-                suffix=None,
-                verbose=verbose)
-
-    if (write_twist_vs_height):
-        twist_vs_height_file.close()
-
-        if (plot_twist_vs_height):
-            dwarp.plot_twist_vs_height(
                 working_folder=working_folder,
                 working_basename=working_basename,
                 suffix=None,
