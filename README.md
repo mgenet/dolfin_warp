@@ -1,3 +1,7 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8010275.svg?style=flat-square)](https://doi.org/10.5281/zenodo.8010275)
+[![PyPi Version](https://img.shields.io/pypi/v/dolfin-warp.svg?style=flat-square)](https://pypi.org/project/dolfin-warp)
+[![PyPI Downloads](https://static.pepy.tech/badge/dolfin-warp)](https://pepy.tech/projects/dolfin-warp)
+
 # dolfin_warp
 
 A set of FEniCS- and VTK-based python tools for Finite Element Digital Image Correlation/Image Registration/Motion Tracking, basically implementing the method described in [[Genet, Stoeck, von Deuster, Lee & Kozerke (2018). Equilibrated Warping: Finite Element Image Registration with Finite Strain Equilibrium Gap Regularization. Medical Image Analysis.](https://doi.org/10.1016/j.media.2018.07.007)] and [[Genet (2023). Finite strain formulation of the discrete equilibrium gap principle: application to mechanically consistent regularization for large motion tracking. Comptes Rendus Mécanique.](https://doi.org/10.5802/crmeca.228)].
