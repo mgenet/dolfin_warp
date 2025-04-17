@@ -1,4 +1,7 @@
 [![DOI](https://zenodo.org/badge/dolfin_warp.svg)](https://zenodo.org/badge/latestdoi/dolfin_warp)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8010275.svg?style=flat-square)](https://doi.org/10.5281/zenodo.8010275)
+[![PyPi Version](https://img.shields.io/pypi/v/dolfin-warp.svg?style=flat-square)](https://pypi.org/project/dolfin-warp)
+[![PyPI Downloads](https://static.pepy.tech/badge/dolfin-warp)](https://pepy.tech/projects/dolfin-warp)
 
 # dolfin_warp
 
