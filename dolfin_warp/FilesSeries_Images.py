@@ -49,6 +49,7 @@ class ImagesSeries(FilesSeries):
         if (verbose): self.printer.inc()
 
         self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
+
         if warping_type != "registration":  # For shape registration a single image is required
             assert (len(self.filenames) >= 2),\
                 "Not enough images ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
