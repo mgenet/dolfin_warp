@@ -156,9 +156,8 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # solve with cma.fmin
         # FA20200218: If objective_function has extra args, in cma.fmin() add them as a tuple: args=(extra_arg1, extra_arg2, ...)
-        objective_function = self.compute_corr_energy
         res = cma.fmin(
-            objective_function,
+            self.compute_energy,
             self.x_0,
             self.sigma0,
             options={
@@ -182,7 +181,7 @@ class CMANonlinearSolver(NonlinearSolver):
 
 
 
-    def compute_corr_energy(self,
+    def compute_energy(self,
             coeffs):
         """
         u = t + r + coef_n mode_n
@@ -276,6 +275,37 @@ class CMANonlinearSolver(NonlinearSolver):
 
 
 
+    def U_aff(self,
+            disp,
+            center_rot=[0.5, 0.5]):
+
+        disp_x      = disp[0]
+        disp_y      = disp[1]
+        disp_rot    = disp[2]*numpy.pi/180
+        disp_comp_x = disp[3]
+        disp_comp_y = disp[4]
+        disp_shear  = disp[5]
+
+        T = dolfin.as_vector([disp_x, disp_y])
+        R = dolfin.as_matrix([[+dolfin.cos(disp_rot), -dolfin.sin(disp_rot)],
+                              [+dolfin.sin(disp_rot), +dolfin.cos(disp_rot)]])
+        U = dolfin.as_matrix([[disp_comp_x, disp_shear ],
+                              [disp_shear , disp_comp_y]])
+        F = dolfin.dot(R, U)
+
+        X = dolfin.SpatialCoordinate(self.mesh)
+        X0 = dolfin.as_vector(center_rot)
+
+        U_rbm_expr = T + dolfin.dot(F - dolfin.Identity(2), X-X0)
+
+        U_rbm = dolfin.project(
+            v=U_rbm_expr,
+            V=self.problem.U_fs)
+
+        return U_rbm
+
+
+
     def print_state(self,
             title,
             coeffs):
@@ -287,18 +317,17 @@ class CMANonlinearSolver(NonlinearSolver):
             for dof in range(int(self.n_dofs/2)):
 
                 if (self.restrict_x0_range):
-                    dof_x = self.norm2real(coeffs[2*dof],   self.range_disp[2*dof][0], self.range_disp[2*dof][1])
+                    dof_x = self.norm2real(coeffs[2*dof  ], self.range_disp[2*dof  ][0], self.range_disp[2*dof  ][1])
                     dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
                 else:
-                    dof_x = self.norm2real(coeffs[2*dof],   self.range_disp[0], self.range_disp[1])
+                    dof_x = self.norm2real(coeffs[2*dof  ], self.range_disp[0], self.range_disp[1])
                     dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[0], self.range_disp[1])
 
                 self.printer.print_str("node "+str(dof)+": "+" "*bool(dof_x>=0)+str(round(dof_x,3))+" "*(5-len(str(round(dof_x%1,3))))+"   "+" "*bool(dof_y>=0)+str(round(dof_y,3)))
-
         else:
             self.printer.print_str("Values of displacement:")
-            self.printer.print_str("u_x   = "+str(round(self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1]),5)))
-            self.printer.print_str("u_y   = "+str(round(self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1]),5)))
+            self.printer.print_str("u_x = "+str(round(self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1]),5)))
+            self.printer.print_str("u_y = "+str(round(self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1]),5)))
 
             if (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
                 self.printer.print_str("theta = "+str(round(self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1]),5)) + "°")
