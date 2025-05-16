@@ -12,8 +12,8 @@
 ###                                                                          ###
 ################################################################################
 
+import numpy as np
 import dolfin
-import numpy
 
 try:
     import cma
@@ -50,14 +50,15 @@ class CMANonlinearSolver(NonlinearSolver):
         self.working_folder   = parameters.get("working_folder"  , "."  )
         self.working_basename = parameters.get("working_basename", "sol")
 
-        assert (parameters["x_0"] is not None) and (parameters["x_0_range"] is not None)
-        self.x_0_real       = parameters["x_0"]       # x_0: Initial guess, not normalized
-        self.x_0_real_range = parameters["x_0_range"] # x_0_range = [range for displacement, range for modal coeffs]
+        assert (parameters["x0"] is not None) and (parameters["x_bounds"] is not None)
+        self.x0_real       = parameters["x0"]  # x0: Initial guess, not normalized
+        self.x_bounds = parameters["x_bounds"] # x_bounds = [range for displacement, range for modal coeffs]
 
-        self.sigma0  = parameters.get("sigma0" , 2.     )
-        self.bounds  = parameters.get("bounds" , [0, 10])
-        self.ftarget = parameters.get("ftarget", 1e-6   )
-        self.tolfun  = parameters.get("tolfun" , 1e-11  )
+        self.sigma0     = parameters.get("sigma0",     2.     )
+        self.cma_bounds = parameters.get("cma_bounds", [0, 10])
+        self.ftarget    = parameters.get("ftarget",    1e-6   )
+        self.tolfun     = parameters.get("tolfun",     1e-11  )
+        self.popsize    = parameters.get("popsize",    None   )
 
         self.motion_model = parameters.get("motion_model", "rbm")
 
@@ -66,7 +67,7 @@ class CMANonlinearSolver(NonlinearSolver):
                 "Specify parameters for modal analysis. Aborting."
             modal_parameters = parameters["modal_params"]
 
-            self.n_modes     = len(self.x_0_real["modal_factors"])
+            self.n_modes     = len(self.x0_real["modal_factors"])
 
             assert ("modes_fixed_points" in modal_parameters) and ("material_params" in modal_parameters),\
                 "Specify boundary conditions and material parameters for modal analysis. Aborting."
@@ -88,61 +89,88 @@ class CMANonlinearSolver(NonlinearSolver):
             if self.save_modes:
                 ModalAnalysis_mesh.save_modes(self.folder_modes)
 
-        # initial guess for cma.fmin
-        if (self.motion_model == "full") or (self.motion_model == "trans") or (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
-            # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame. And by default, the range used is previous_result +- 0.07
-            self.restrict_x0_range       = parameters.get("restrict_x0_range"      , True)
-            self.restrict_x0_range_bound = parameters.get("restrict_x0_range_bound", 0.07)
-
-            if ((self.motion_model == "full") and (self.restrict_x0_range == False)) or (self.motion_model != "full"):
-                # FA20200221: "full" use the same initial guess, and range, as the one used for displacements.
-                self.range_disp = self.x_0_real_range["trans"]
-
-        if (self.motion_model == "full"):
-            assert (len(self.x_0_real) == 2),\
-                "2 values for initial guess required. Aborting."
+        
+        # x0: initial guess for cma.fmin
+        if "full" in self.motion_model:
+            assert (len(self.x0_real) == 2), "2 values for initial guess required. Aborting."
             self.n_dofs = len(self.U_tot.vector()[:])
-            self.dofs = numpy.zeros(self.n_dofs)
-            self.x_0  = numpy.zeros(self.n_dofs)
+            self.dofs   = np.zeros(self.n_dofs)
+            self.x0     = np.zeros(self.n_dofs)
 
-            if (self.restrict_x0_range):
-                self.x_real     = numpy.zeros(self.n_dofs)
-                self.range_disp = [self.x_0_real_range["trans"]]*(self.n_dofs)
+            # FA20200317: By default, in the "full" case the results in a frame are bounded according to the results in the previous frame. 
+            # By default, the range used is previous_result +- 0.07
+            self.adapt_bounds        = parameters.get("adapt_bounds"       , True)
+            self.adapt_bounds_factor = parameters.get("adapt_bounds_factor", 0.07)
+
+            # FA20200221: "full" use the same initial guess, and range, as the one used for displacements.
+            if self.adapt_bounds:
+                self.x_real     = np.zeros(self.n_dofs)
+                self.range_disp = [self.x_bounds["trans"]]*(self.n_dofs)
                 for dof in range(int(self.n_dofs/2)):
-                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[2*dof][0]  , self.range_disp[2*dof  ][1])
-                    self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
+                    self.x0[2*dof]   = self.real2norm(self.x0_real["trans_x"], self.range_disp[2*dof][0]  , self.range_disp[2*dof  ][1])
+                    self.x0[2*dof+1] = self.real2norm(self.x0_real["trans_y"], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
             else:
+                self.range_disp = self.x_bounds["trans"]
                 for dof in range(int(self.n_dofs/2)):
-                    self.x_0[2*dof]   = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
-                    self.x_0[2*dof+1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
+                    self.x0[2*dof]   = self.real2norm(self.x0_real["trans_x"], self.range_disp[0], self.range_disp[1])
+                    self.x0[2*dof+1] = self.real2norm(self.x0_real["trans_y"], self.range_disp[0], self.range_disp[1])
 
-        elif (self.motion_model == "trans"):
-            assert (len(self.x_0_real) == 2),\
-                "2 values for initial guess required. Aborting."
-            self.x_0    = numpy.zeros(len(self.x_0_real))
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0], self.range_disp[1])
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0], self.range_disp[1])
 
+        if self.motion_model in ["trans", "rbm", "affine", "rbm+eigenmodes"]:
+            self.range_disp = self.x_bounds["trans"]
+
+            self.x0    = np.zeros(len(self.x0_real))
+            self.x0[0] = self.real2norm(self.x0_real["trans_x"], self.range_disp[0], self.range_disp[1])
+            self.x0[1] = self.real2norm(self.x0_real["trans_y"], self.range_disp[0], self.range_disp[1])
+
+
+        if self.motion_model in ["rbm", "affine", "rbm+eigenmodes"]:
+            self.range_theta = self.x_bounds.get("rot", [0., 360.])
+            self.x0[2] = self.real2norm(self.x0_real["rot"], self.range_theta[0], self.range_theta[1])
+
+
+        if (self.motion_model == "trans"):
+            assert (len(self.x0_real) == 2), "2 values for initial guess required. Aborting."
+            
         elif (self.motion_model == "rbm"):
-            assert (len(self.x_0_real) == 3),\
-                "3 values for initial guess required. Aborting."
-            self.range_theta = self.x_0_real_range.get("rot", [0., 360.])
-            self.x_0    = numpy.zeros(len(self.x_0_real))
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0] , self.range_disp[1] )
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0] , self.range_disp[1] )
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"]    , self.range_theta[0], self.range_theta[1])
-
+            assert (len(self.x0_real) == 3), "3 values for initial guess required. Aborting."
+        
         elif (self.motion_model == "rbm+eigenmodes"):
-            self.range_modal = self.x_0_real_range["modal_factors"]
-            self.range_theta = self.x_0_real_range.get("rot", [0., 360.])
-
-            self.x_0    = numpy.zeros(3+self.n_modes)
-            self.x_0[0] = self.real2norm(self.x_0_real["trans_x"], self.range_disp[0] , self.range_disp[1] )
-            self.x_0[1] = self.real2norm(self.x_0_real["trans_y"], self.range_disp[0] , self.range_disp[1] )
-            self.x_0[2] = self.real2norm(self.x_0_real["rot"]    , self.range_theta[0], self.range_theta[1])
+            self.range_modal = self.x_bounds["modal_factors"]
+            self.x0_modes    = np.zeros(self.n_modes)
 
             for ind in range(self.n_modes):
-                self.x_0[3+ind] = self.real2norm(self.x_0_real["modal_factors"][ind], self.range_modal[0], self.range_modal[1])
+                self.x0_modes[ind] = self.real2norm(self.x0_real["modal_factors"][ind], self.range_modal[0], self.range_modal[1])
+
+            self.x0 = np.hstack((self.x0, self.x0_modes))
+
+        elif (self.motion_model == "affine"):
+            assert (len(self.x0_real) == 6), "6 values for initial guess required. Aborting."
+            self.range_affine_coeffs = self.x_bounds.get("affine_coeffs", [0., 5.])
+            self.range_affine_shear  = self.x_bounds.get("affine_shear", [0., 5.])
+            
+            self.x0[3] = self.real2norm(self.x0_real["affine_comp_x"], self.range_affine_coeffs[0], self.range_affine_coeffs[1])
+            self.x0[4] = self.real2norm(self.x0_real["affine_comp_y"], self.range_affine_coeffs[0], self.range_affine_coeffs[1])
+            self.x0[5] = self.real2norm(self.x0_real["affine_shear"],  self.range_affine_shear[0],  self.range_affine_shear[1])
+
+
+        if (self.motion_model == "radial_dependent"):
+            self.range_disp  = self.x_bounds["radial"]
+            self.range_theta = self.x_bounds.get("theta", [0., 5.])
+
+            self.n_regions = parameters.get("n_regions", 1)
+            self.x0   = np.zeros((self.n_regions, 2))
+
+            for region_i in range(self.x0.shape[0]):
+                self.x0[region_i, 0] = self.real2norm(self.x0_real["u_radial"], self.range_disp[0], self.range_disp[1])
+                self.x0[region_i, 1] = self.real2norm(self.x0_real["u_theta"] , self.range_theta[0], self.range_theta[1])
+
+            self.x0 = self.x0.flatten()
+
+            self.disk_center = parameters["disk_center"]
+            self.disk_ri  = parameters["disk_ri"]
+            self.disk_re  = parameters["disk_re"]
+            self.r_limits = np.linspace(self.disk_ri-1e-2, self.disk_re-1e-2, self.n_regions)
 
 
 
@@ -154,29 +182,64 @@ class CMANonlinearSolver(NonlinearSolver):
         if (self.k_frame is not None):
             self.printer.print_str("k_frame: "+str(k_frame))
 
-        # solve with cma.fmin
-        # FA20200218: If objective_function has extra args, in cma.fmin() add them as a tuple: args=(extra_arg1, extra_arg2, ...)
+        # Solve with cma
+        options_cma = {"bounds"              : [self.cma_bounds[0], self.cma_bounds[1]],
+                       "ftarget"             : self.ftarget,
+                       "tolfun"              : self.tolfun,
+                       "verb_filenameprefix" : self.working_folder+"/outcmaes/",
+                       "verb_log"            : 100,
+                       "tolflatfitness"      : 20}
+        
+        if (self.popsize is not None):
+            options_cma["popsize"] = self.popsize
+
+        # FA20200218: If the objective_function has extra args, in cma.fmin() add them as a tuple: args=(extra_arg1, extra_arg2, ...)
         res = cma.fmin(
             self.compute_energy,
-            self.x_0,
+            self.x0,
             self.sigma0,
-            options={
-                "bounds":self.bounds,
-                "ftarget":self.ftarget,
-                "tolfun":self.tolfun,
-                "verb_filenameprefix":self.working_folder+"/outcmaes/"})
+            options = options_cma)
+        
         coeffs = res[0]
-        self.print_state("CMA obtained values:",coeffs)
 
-        if (self.motion_model == "full") and (self.restrict_x0_range):
+        ##### You may also use differential_evolution #####
+        # from scipy import optimize
+        # bounds_list = [(self.cma_bounds[0], self.cma_bounds[1])] * len(self.x0)
+
+        # res = optimize.differential_evolution(
+        #             func=self.compute_energy,
+        #             bounds=bounds_list,
+        #             strategy='best1bin',  # best1bin or 'rand1bin' if you want more exploration
+        #             maxiter=1000,
+        #             popsize=15, # 25
+        #             mutation=(0.5, 1.),
+        #             recombination=0.9,
+        #             atol=1e-6,
+        #             disp=True)
+        
+        # coeffs = res.x
+        # print (res)
+        ###################################################
+
+        # In case the minimum given by cma.fmin does not correspond to the last evaluation of the objective function
+        self.update_U_tot(coeffs)
+
+        self.print_state("CMA obtained values:", coeffs)
+
+        if (self.motion_model == "full") and (self.adapt_bounds):
             for dof in range(self.n_dofs):
                 self.x_real[dof] = self.norm2real(coeffs[dof], self.range_disp[dof][0], self.range_disp[dof][1])
             for dof in range(self.n_dofs):
-                self.range_disp[dof] = [self.x_real[dof]-self.restrict_x0_range_bound, self.x_real[dof]+self.restrict_x0_range_bound]
+                self.range_disp[dof] = [self.x_real[dof]-self.adapt_bounds_factor, self.x_real[dof]+self.adapt_bounds_factor]
         else:
-            self.x_0 = coeffs
+            self.x0 = coeffs
 
-        success = True # FA20200218: CHECK: success always true?
+        success = True # FA20200218: Success always true when using cma.fmin
+        
+        ##### If using differential_evolution #####
+        # return success, res.nit
+        ###########################################
+
         return success, res[4]
 
 
@@ -193,8 +256,9 @@ class CMANonlinearSolver(NonlinearSolver):
 
         # J = dolfin.det(dolfin.Identity(2) + dolfin.grad(self.U_tot))
         J_p = dolfin.project(self.J, self.fs_J) # FA20200218: TODO: use localproject()
+
         if (min(J_p.vector()[:]) < 0.):
-            return numpy.NaN
+            return np.NaN
 
         # FA20200219: in GeneratedImageEnergy.call_before_assembly():
         #                   Igen.update_disp() and Igen.generate_image()
@@ -217,13 +281,34 @@ class CMANonlinearSolver(NonlinearSolver):
 
         if (self.motion_model == "full"):
             for dof in range(self.n_dofs):
-
-                if (self.restrict_x0_range):
+                if (self.adapt_bounds):
                     self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[dof][0], self.range_disp[dof][1])
                 else:
                     self.dofs[dof] = self.norm2real(coeffs[dof], self.range_disp[0], self.range_disp[1])
 
             self.U_tot.vector()[:] = self.dofs
+
+        elif (self.motion_model == "affine"):
+            disp_x      = self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1])
+            disp_y      = self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1])
+            disp_rot    = self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1])
+
+            affine_comp_x = self.norm2real(coeffs[3], self.range_affine_coeffs[0], self.range_affine_coeffs[1])
+            affine_comp_y = self.norm2real(coeffs[4], self.range_affine_coeffs[0], self.range_affine_coeffs[1])
+            affine_shear  = self.norm2real(coeffs[5], self.range_affine_shear[0], self.range_affine_shear[1])
+
+            U_affine      = self.U_aff(disp=[disp_x, disp_y, disp_rot, affine_comp_x, affine_comp_y, affine_shear])
+
+            self.U_tot.vector()[:] = U_affine.vector()[:]
+
+        elif (self.motion_model == "radial_dependent"):
+            coeffs_array = np.asarray(coeffs).reshape(-1,2)
+            disp_array   = np.zeros((self.n_regions, 2))
+            disp_array[:,0] = self.norm2real(coeffs_array[:,0], self.range_disp[0], self.range_disp[1])
+            disp_array[:,1] = self.norm2real(coeffs_array[:,1], self.range_theta[0], self.range_theta[1])
+
+            self.U_radial_dependent(disp=disp_array)
+
         else:
             disp_x = self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1])
             disp_y = self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1])
@@ -260,7 +345,7 @@ class CMANonlinearSolver(NonlinearSolver):
                  "UY + (x[0]-Cx_THETA)* sin(THETA)    + (x[1]-Cy_THETA)*(cos(THETA)-1)"),
             UX=disp_x,
             UY=disp_y,
-            THETA=disp_rot*numpy.pi/180,
+            THETA=disp_rot*np.pi/180,
             Cx_THETA=center_rot[0],
             Cy_THETA=center_rot[1],
             element=self.problem.U_fe)
@@ -279,30 +364,68 @@ class CMANonlinearSolver(NonlinearSolver):
             disp,
             center_rot=[0.5, 0.5]):
 
-        disp_x      = disp[0]
-        disp_y      = disp[1]
-        disp_rot    = disp[2]*numpy.pi/180
-        disp_comp_x = disp[3]
-        disp_comp_y = disp[4]
-        disp_shear  = disp[5]
+        disp_x        = dolfin.Constant(disp[0])
+        disp_y        = dolfin.Constant(disp[1])
+        disp_rot      = dolfin.Constant(disp[2]*np.pi/180)
+        affine_comp_x = dolfin.Constant(disp[3])
+        affine_comp_y = dolfin.Constant(disp[4])
+        affine_shear  = dolfin.Constant(disp[5])
 
         T = dolfin.as_vector([disp_x, disp_y])
         R = dolfin.as_matrix([[+dolfin.cos(disp_rot), -dolfin.sin(disp_rot)],
                               [+dolfin.sin(disp_rot), +dolfin.cos(disp_rot)]])
-        U = dolfin.as_matrix([[disp_comp_x, disp_shear ],
-                              [disp_shear , disp_comp_y]])
+        U = dolfin.as_matrix([[affine_comp_x, affine_shear ],
+                              [affine_shear , affine_comp_y]])
         F = dolfin.dot(R, U)
 
-        X = dolfin.SpatialCoordinate(self.mesh)
+        X  = dolfin.SpatialCoordinate(self.mesh)
         X0 = dolfin.as_vector(center_rot)
 
-        U_rbm_expr = T + dolfin.dot(F - dolfin.Identity(2), X-X0)
+        U_aff_expr = T + dolfin.dot(F - dolfin.Identity(2), X-X0)
 
-        U_rbm = dolfin.project(
-            v=U_rbm_expr,
+        U_aff = dolfin.project(
+            v=U_aff_expr,
             V=self.problem.U_fs)
 
-        return U_rbm
+        return U_aff
+    
+
+
+    def U_radial_dependent(self,
+            disp):
+        
+        disp_vector = np.asarray(disp).reshape(-1,2)
+
+        space      = self.U_tot.function_space()
+        dof_coords = space.tabulate_dof_coordinates()
+
+        dof_i = 0
+        while dof_i < len(self.U_tot.vector()[:]):
+            x, y = dof_coords[dof_i]
+            x = x - self.disk_center[0]
+            y = y - self.disk_center[1]
+
+            r     = np.sqrt(x**2 + y**2)
+            theta = np.arctan2(y, x)
+
+            # Constant per region
+            # i = np.searchsorted(self.r_limits, r, side='right') - 1
+            # assert i >= 0, "r value out of bounds"
+
+            # u_r     = disp_vector[i][0]
+            # u_theta = disp_vector[i][1]
+
+            # Linear interpolation
+            u_r     = np.interp(r, self.r_limits, disp_vector[:,0])
+            u_theta = np.interp(r, self.r_limits, disp_vector[:,1])
+
+            u_x     = u_r * np.cos(theta) - u_theta * np.sin(theta)
+            u_y     = u_r * np.sin(theta) + u_theta * np.cos(theta)
+
+            self.U_tot.vector()[dof_i]   = u_x
+            self.U_tot.vector()[dof_i+1] = u_y
+
+            dof_i += 2
 
 
 
@@ -316,7 +439,7 @@ class CMANonlinearSolver(NonlinearSolver):
             self.printer.print_str("Values of displacement in nodes:")
             for dof in range(int(self.n_dofs/2)):
 
-                if (self.restrict_x0_range):
+                if (self.adapt_bounds):
                     dof_x = self.norm2real(coeffs[2*dof  ], self.range_disp[2*dof  ][0], self.range_disp[2*dof  ][1])
                     dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[2*dof+1][0], self.range_disp[2*dof+1][1])
                 else:
@@ -324,13 +447,33 @@ class CMANonlinearSolver(NonlinearSolver):
                     dof_y = self.norm2real(coeffs[2*dof+1], self.range_disp[0], self.range_disp[1])
 
                 self.printer.print_str("node "+str(dof)+": "+" "*bool(dof_x>=0)+str(round(dof_x,3))+" "*(5-len(str(round(dof_x%1,3))))+"   "+" "*bool(dof_y>=0)+str(round(dof_y,3)))
+        
+        elif (self.motion_model == "radial_dependent"):
+            self.printer.print_str("Values of polar displacement:")
+
+            coeffs_array = np.asarray(coeffs).reshape(-1,2)
+            disp_array   = np.zeros((self.n_regions, 2))
+            disp_array[:,0] = self.norm2real(coeffs_array[:,0], self.range_disp[0], self.range_disp[1])
+            disp_array[:,1] = self.norm2real(coeffs_array[:,1], self.range_theta[0], self.range_theta[1])
+            
+            for region in range(disp_array.shape[0]):
+                dof_x = disp_array[region,0]
+                dof_y = disp_array[region,1]
+
+                self.printer.print_str("region "+str(region)+": "+" "*bool(dof_x>=0)+str(round(dof_x,3))+" "*(5-len(str(round(dof_x%1,3))))+"   "+" "*bool(dof_y>=0)+str(round(dof_y,3)))
+
         else:
             self.printer.print_str("Values of displacement:")
             self.printer.print_str("u_x = "+str(round(self.norm2real(coeffs[0], self.range_disp[0], self.range_disp[1]),5)))
             self.printer.print_str("u_y = "+str(round(self.norm2real(coeffs[1], self.range_disp[0], self.range_disp[1]),5)))
 
-            if (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes"):
+            if (self.motion_model == "rbm") or (self.motion_model == "rbm+eigenmodes") or (self.motion_model == "affine"):
                 self.printer.print_str("theta = "+str(round(self.norm2real(coeffs[2], self.range_theta[0], self.range_theta[1]),5)) + "°")
+
+            if (self.motion_model == "affine"):
+                self.printer.print_str("affine_comp_x = "+str(round(self.norm2real(coeffs[3], self.range_affine_coeffs[0], self.range_affine_coeffs[1]),5)))
+                self.printer.print_str("affine_comp_y = "+str(round(self.norm2real(coeffs[4], self.range_affine_coeffs[0], self.range_affine_coeffs[1]),5)))
+                self.printer.print_str("affine_shear  = "+str(round(self.norm2real(coeffs[5], self.range_affine_shear[0], self.range_affine_shear[1]),5)))
 
             if (self.motion_model == "rbm+eigenmodes"):
                 print("Values of modal coefficients:")
@@ -340,10 +483,12 @@ class CMANonlinearSolver(NonlinearSolver):
 
 
 
-    def norm2real(self, norm_val, real_min, real_max, norm_max=10):
-        return real_min+((real_max-real_min)*norm_val/norm_max)
+    def norm2real(self, norm_val, real_min, real_max, norm_min=None, norm_max=None):
+        norm_min = self.cma_bounds[0] if norm_min is None else norm_min
+        norm_max = self.cma_bounds[1] if norm_max is None else norm_max
+        return np.interp(norm_val, [norm_min, norm_max], [real_min, real_max])
 
-
-
-    def real2norm(self, real_val, real_min, real_max, norm_max=10):
-        return ((real_val-real_min)/(real_max-real_min))*norm_max
+    def real2norm(self, real_val, real_min, real_max, norm_min=None, norm_max=None):
+        norm_min = self.cma_bounds[0] if norm_min is None else norm_min
+        norm_max = self.cma_bounds[1] if norm_max is None else norm_max
+        return np.interp(real_val, [real_min, real_max], [norm_min, norm_max])
