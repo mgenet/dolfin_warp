@@ -172,7 +172,7 @@ class ImageIterator():
                     assert (0), \
                         "iteration_mode ("+str(self.iteration_mode)+") should be \"normal\" or \"loop\". Aborting."
                 k_frames = range(start, end, +1)
-            elif (forward_or_backward == "backward"):
+            elif (forward_or_backward == "backward"): 
                 start = self.problem.images_ref_frame - 1
                 if   (self.iteration_mode == "normal"):
                     end = -1

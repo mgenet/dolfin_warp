@@ -170,6 +170,9 @@ class SignedImageEnergy(ContinuousEnergy):
         self.Psi       *= self.problem.J
         self.dPsi       = self.problem.J*self.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))    
         # self.dPsi      += self.problem.J*dolfin.inner(self.DIdef, self.problem.dU_test)    
+        DIdef_Euler2Lagrange = dolfin.inv(self.problem.F).T*dolfin.grad(dolfin.interpolate(self.Idef,self.fs))
+        self.dPsi      += self.problem.J*dolfin.inner(DIdef_Euler2Lagrange, self.problem.dU_test)  #DEBUG from euler
+ 
 
         
 

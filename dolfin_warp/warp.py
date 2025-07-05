@@ -82,7 +82,7 @@ def warp(
         silent                                      : bool        = False                               ,
         warping_type                                : str         = "tracking"                          , # tracking or registration
         min_gradient_step                           : int         = 1e-6                                , 
-        gradient_step                               : int         = 1                                   ,          
+        gradient_step                               : int         = 1e-2                                ,          
         gradient_type                               : int         = "L2"                                ,
         inner_product_H1_weight                     : float       =1e-2                                 ,):  # weight in front of the L2 term in the H1 inner product for sobolev gradient        
 

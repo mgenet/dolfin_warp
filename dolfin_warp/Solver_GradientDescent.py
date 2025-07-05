@@ -44,7 +44,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
         # iterations control
         self.min_gradient_step          = parameters.get("min_gradient_step"        , 1e-6)
-        self.step                       = parameters.get("step"                     , 1)
+        self.step                       = parameters.get("gradient_step"            , 1e-2)
         self.tol_dU_rel                 = parameters.get("tol_dU_rel"               , None)
         self.tol_dU                     = parameters.get("tol_dU"                   , None)
         self.tol_res_rel                = parameters.get("tol_res_rel"              , None)
@@ -122,12 +122,11 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
 
                 #DEBUG PSEUDO INV
-                F_inv = dolfin.inv((self.problem.F.T*self.problem.F)) * self.problem.F.T
-                # F_inv = dolfin.inv(self.problem.F)
+                # F_inv = dolfin.inv((self.problem.F.T*self.problem.F)) * self.problem.F.T #DEBUG OK
+                F_inv = dolfin.inv(self.problem.F)
 
 
-                # grad_x_trial    = dolfin.dot(dolfin.grad(self.problem.dU_trial),dolfin.inv(self.problem.F))
-                # grad_x_test     = dolfin.dot(dolfin.grad(self.problem.dU_test),dolfin.inv(self.problem.F))
+
                 grad_x_trial    = dolfin.dot(dolfin.grad(self.problem.dU_trial),F_inv)
                 grad_x_test     = dolfin.dot(dolfin.grad(self.problem.dU_test),F_inv)
 
@@ -136,25 +135,8 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 inner_product_2   = alpha * dolfin.inner(self.problem.dU_trial, self.problem.dU_test) * self.problem.J * dV_inner
                 inner_product   = inner_product_1 + inner_product_2
 
-                # F_inner = dolfin.inner(dolfin.inv(self.problem.F),dolfin.inv(self.problem.F)) * dV_inner
-                # F_inner_assemble = dolfin.assemble(dolfin.inner(dolfin.inv(self.problem.F),dolfin.inv(self.problem.F)) * dV_inner)
-                F_inner = dolfin.inner(F_inv,F_inv) 
-                F_inner_assemble = dolfin.assemble(F_inner* dV_inner)
 
-
-
-                #DEBUG
-                # u = self.problem.dU_test
-                # v = self.problem.dU_trial
-                # inner_product       = dolfin.inner(dolfin.grad(u) + dolfin.grad(u).T, dolfin.grad(v) + dolfin.grad(v).T) * energy_shape.dV + alpha * dolfin.inner(u, v) * energy_shape.dV
-
-
-                
-                # dolfin.solve(inner_product == energy_shape.res_form, self.res_vec_funct)
-                       
-                #DEBUG res_form: 
                 res_form       = self.problem.J*energy_shape.Idef*dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test))* energy_shape.dV 
-                # res_form      += self.problem.J*dolfin.inner(energy_shape.DIdef, self.problem.dU_test) * energy_shape.dV 
                 DIdef_Euler2Lagrange = dolfin.inv(self.problem.F).T*dolfin.grad(dolfin.interpolate(energy_shape.Idef,energy_shape.fs))
                 res_form      += self.problem.J*dolfin.inner(DIdef_Euler2Lagrange, self.problem.dU_test) * energy_shape.dV #DEBUG from euler
 
@@ -168,101 +150,6 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 # dolfin.solve(inner_product == res_form, self.res_vec_funct); print("* DEBUG")
 
                 self.res_vec    = self.res_vec_funct.vector()
-
-                ##DEBUG save intermediate numpy arrays
-                # res_numpy = self.res_vec[:]
-                # print(res_numpy.shape)
-                # import os
-                # file_res = "res_lagrange_noF.dat"
-                # if os.path.exists(file_res):
-                #     res_data = numpy.loadtxt(file_res)
-                #     if res_data.ndim == 1:  # If file has only one row, reshape to column
-                #         res_data = res_data[:, numpy.newaxis]
-                #     updated_res_data = numpy.column_stack((res_data, res_numpy))
-                # else:
-                #     updated_res_data = res_numpy[:, numpy.newaxis]  
-                # numpy.savetxt(file_res, updated_res_data, fmt="%.6f")
-
-                # F_inner_numpy = numpy.array([F_inner_assemble])
-
-                # print(F_inner_numpy.shape)
-                # import os
-                # file_F_inner = "F_inner_lagrange"
-                # if os.path.exists(file_F_inner+".npy"):
-                #     F_inner_data = numpy.load(file_F_inner+".npy")
-                #     print(f"Loaded F_inner_data {F_inner_data.shape}, F_inner_numpy {F_inner_numpy.shape}")
-                #     updated_F_inner_data = numpy.concatenate((F_inner_data, F_inner_numpy))
-                #     numpy.save(file_F_inner, updated_F_inner_data)
-                # else:
-                #     updated_F_inner_data = F_inner_numpy
-                #     print(f"Init F_inner_data {updated_F_inner_data.shape}, F_inner_numpy {F_inner_numpy.shape}")
-                #     numpy.save(file_F_inner, F_inner_numpy)
-
-
-                # form_bi_numpy = dolfin.assemble(inner_product).array()[:,:]
-                # print(form_bi_numpy.shape)
-
-                # file_form_bi = "form_bi_lagrange_noF"
-                # if os.path.exists(file_form_bi+".npy"):
-                #     form_bi_data = numpy.load(file_form_bi+".npy")
-                #     if form_bi_data.ndim == 2:  # If file has only matrix, reshape to tensor
-                #         form_bi_data = form_bi_data[:, :,numpy.newaxis]
-                #         print(f"form_bi_dataafter expand {form_bi_data.shape}")
-                #     print(f"form_bi_data {form_bi_data.shape}, form_bi_numpy {form_bi_numpy.shape}")
-                #     updated_form_bi_data = numpy.concatenate((form_bi_data, form_bi_numpy[:, :,numpy.newaxis]), axis = 2)
-                #     print(f"updated_form_bi_data {updated_form_bi_data.shape}")
-                # else:
-                #     updated_form_bi_data = form_bi_numpy[:, :, numpy.newaxis]  
-                #     print(f"updated_form_bi_data initial {updated_form_bi_data.shape}")
-                # numpy.save(file_form_bi, updated_form_bi_data)
-
-                # form_bi_numpy_1 = dolfin.assemble(inner_product_1).array()[:,:]
-                # print(form_bi_numpy_1.shape)
-
-                # file_form_bi_1 = "form_bi_lagrange_1_noF"
-                # if os.path.exists(file_form_bi_1+".npy"):
-                #     form_bi_data_1 = numpy.load(file_form_bi_1+".npy")
-                #     if form_bi_data.ndim == 2:  # If file has only matrix, reshape to tensor
-                #         form_bi_data_1 = form_bi_data_1[:, :,numpy.newaxis]
-                #         print(f"form_bi_dataafter expand {form_bi_data_1.shape}")
-                #     print(f"form_bi_data {form_bi_data_1.shape}, form_bi_numpy {form_bi_numpy_1.shape}")
-                #     updated_form_bi_data_1 = numpy.concatenate((form_bi_data_1, form_bi_numpy_1[:, :,numpy.newaxis]), axis = 2)
-                #     print(f"updated_form_bi_data {updated_form_bi_data_1.shape}")
-                # else:
-                #     updated_form_bi_data_1 = form_bi_numpy_1[:, :, numpy.newaxis]  
-                #     print(f"updated_form_bi_data initial {updated_form_bi_data_1.shape}")
-                # numpy.save(file_form_bi_1, updated_form_bi_data_1)
-
-
-                # form_bi_numpy_2 = dolfin.assemble(inner_product_2).array()[:,:]
-                # file_form_bi_2 = "form_bi_lagrange_2_noF"
-                # if os.path.exists(file_form_bi_2+".npy"):
-                #     form_bi_data_2 = numpy.load(file_form_bi_2+".npy")
-                #     if form_bi_data.ndim == 2:  # If file has only matrix, reshape to tensor
-                #         form_bi_data_2 = form_bi_data_2[:, :,numpy.newaxis]
-                #         print(f"form_bi_dataafter expand {form_bi_data_2.shape}")
-                #     print(f"form_bi_data {form_bi_data_2.shape}, form_bi_numpy {form_bi_numpy_2.shape}")
-                #     updated_form_bi_data_2 = numpy.concatenate((form_bi_data_2, form_bi_numpy_2[:, :,numpy.newaxis]), axis = 2)
-                #     print(f"updated_form_bi_data {updated_form_bi_data_2.shape}")
-                # else:
-                #     updated_form_bi_data_2 = form_bi_numpy_2[:, :, numpy.newaxis]  
-                #     print(f"updated_form_bi_data initial {updated_form_bi_data_2.shape}")
-                # numpy.save(file_form_bi_2, updated_form_bi_data_2)
-
-                # form_numpy = dolfin.assemble(res_form)[:]
-                # print(form_numpy.shape)
-                # import os
-                # file_form = "form_lagrange_noF"
-                # if os.path.exists(file_form+".npy"):
-                #     form_data = numpy.load(file_form+".npy")
-                #     if form_data.ndim == 1:  #If file has only one row, reshape to column
-                #         form_data = form_data[:, numpy.newaxis]
-                #     updated_form_data = numpy.column_stack((form_data, form_numpy))
-                # else:
-                #     updated_form_data = form_numpy[:, numpy.newaxis]  
-                # numpy.save(file_form, updated_form_data)
-
-                # #### END DEBUGGING
 
             else:
                 self.problem.assemble_res(
@@ -279,7 +166,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
 
             # relaxation
             if self.k_iter == 1:
-                self.relax = 1e-2
+                self.relax = self.step
 
             self.compute_relax(
                                 1.5*self.relax
