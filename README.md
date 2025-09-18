@@ -24,6 +24,8 @@ The library has notably been used in:
 * [[Genet (2023). Finite strain formulation of the discrete equilibrium gap principle: application to mechanically consistent regularization for large motion tracking. Comptes Rendus Mécanique.](https://doi.org/10.5802/crmeca.228)]
 * [[Škardová, Hussain, Genet & Chabiniok (2023). Effect of Spatial and Temporal Resolution on the Accuracy of Motion Tracking Using 2D and 3D Cine Cardiac Magnetic Resonance Imaging Data. Functional Imaging and Modeling of the Heart (FIMH) Cham: Springer Nature Switzerland.](https://doi.org/10.1007/978-3-031-35302-4_24)]
 * [[Peyraut & Genet (2024). Finite strain formulation of the discrete equilibrium gap principle: application to direct parameter estimation from large full-fields measurements. Comptes Rendus Mécanique.](https://doi.org/10.5802/crmeca.279)]
+* [[Peyraut & Genet (2025). Inverse Uncertainty Quantification for Personalized Biomechanical Modeling: Application to Pulmonary Poromechanical Digital Twins. Journal of Biomechanical Engineering.](https://doi.org/10.1115/1.4068578)]
+* [[Álvarez-Barrientos, Škardová & Genet (2025). Motion Tracking with Finite Elements Meshes and Image Models. Functional Imaging and Modeling of the Heart. Springer Nature Switzerland.](https://doi.org/10.1007/978-3-031-94559-5_33)]
 
 (If you use it for your own work please let me know!)
 
