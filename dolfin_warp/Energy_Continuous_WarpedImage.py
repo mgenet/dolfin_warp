@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -225,7 +225,7 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         if (self.dynamic_scaling):
             self.DIdef.init_dynamic_scaling(self.scaling)
 
-        # Charactristic functions
+        # Characteristic functions
         if (self.w_char_func):
 
             self.printer.dec()
@@ -287,18 +287,16 @@ class WarpedImageContinuousEnergy(ContinuousEnergy):
         self.printer.inc()
 
         # Psi_c
-        self.Psi_c  = (self.Idef - self.Iref)**2/2
-        self.DPsi_c = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
-
-        self.DDPsi_c     = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c_ref = dolfin.dot(self.DIref, self.problem.dU_trial) * dolfin.dot(self.DIref, self.problem.dU_test)
+        self.Psi_c   = (self.Idef - self.Iref)**2/2
+        self.DPsi_c  = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        self.DDPsi_c = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+        if (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.DDPsi_c += (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.ddU_test_trial)
 
         if (self.w_char_func):
-            self.Psi_c  *= self.Phi_def * self.Phi_ref
-            self.DPsi_c *= self.Phi_def * self.Phi_ref
-
-            self.DDPsi_c     *= self.Phi_def * self.Phi_ref
-            self.DDPsi_c_ref *= self.Phi_def * self.Phi_ref
+            self.Psi_c   *= self.Phi_def * self.Phi_ref
+            self.DPsi_c  *= self.Phi_def * self.Phi_ref
+            self.DDPsi_c *= self.Phi_def * self.Phi_ref
 
         # forms
         self.ener_form = self.Psi_c   * self.dV

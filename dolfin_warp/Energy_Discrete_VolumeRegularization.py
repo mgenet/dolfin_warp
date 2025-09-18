@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -78,7 +78,6 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
 
         self.quadrature_degree = quadrature_degree
         form_compiler_parameters = {
-            # "representation":"uflacs", # MG20180327: Is that needed?
             "quadrature_degree":self.quadrature_degree}
         self.dV = dolfin.Measure(
             "dx",
@@ -174,9 +173,8 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
             n_frames,
             **kwargs):
 
-        self.printer.print_str("Updating body force…")
-
         if (self.b_fin is not None):
+            self.printer.print_str("Updating body force…")
             print(self.b.str(1))
             self.b.assign(dolfin.Constant(numpy.asarray(self.b_fin)*k_frame/(n_frames-1)))
             print(self.b.str(1))
@@ -265,8 +263,14 @@ class VolumeRegularizationDiscreteEnergy(DiscreteEnergy):
         self.bc.zero(self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
-        self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+        if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
+            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
+            self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+        else:
+            self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())
+
+        # self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat()) # MG20250209: This should be done inplace, right?
+        # self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
 
         if (w_weight):
             w = self.w

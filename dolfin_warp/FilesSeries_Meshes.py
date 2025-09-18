@@ -2,14 +2,14 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
 ################################################################################
 
 import glob
-import vtk; from vtk.numpy_interface import dataset_adapter as dsa
+import vtk.numpy_interface.dataset_adapter as dsa
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk

@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -25,7 +25,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
     def __init__(self,
             parameters={}):
 
-        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "gss"
+        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "backtracking"
 
         if (self.relax_type == "constant"):
             self.compute_relax = self.compute_relax_constant
@@ -72,7 +72,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             self.printer.print_var("k_relax",k_relax,-1)
             relax = 1./self.relax_backtracking_factor**(k_relax-1)
             self.printer.print_sci("relax",relax)
-            self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
+            self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
             ener = self.problem.assemble_ener()
             self.printer.print_sci("ener",ener)
             if (ener < ener0):
@@ -85,7 +85,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             k_relax += 1
         self.printer.dec()
         relax = 0.
-        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector()); relax_cur = relax
+        self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
 
 
 
@@ -110,8 +110,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 relax_c = relax_b - (relax_b - relax_a) / phi
                 relax_list.append(relax_c)
                 self.printer.print_sci("relax_c",relax_c)
-                self.problem.U.vector().axpy(relax_c-relax_cur, self.problem.dU.vector())
-                relax_cur = relax_c
+                self.problem.update_displacement(relax=relax_c-relax_cur); relax_cur = relax_c
                 relax_fc  = self.problem.assemble_ener()
                 #self.printer.print_sci("relax_fc",relax_fc)
                 if (numpy.isnan(relax_fc)):
@@ -123,8 +122,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
                 relax_d = relax_a + (relax_b - relax_a) / phi
                 relax_list.append(relax_d)
                 self.printer.print_sci("relax_d",relax_d)
-                self.problem.U.vector().axpy(relax_d-relax_cur, self.problem.dU.vector())
-                relax_cur = relax_d
+                self.problem.update_displacement(relax=relax_d-relax_cur); relax_cur = relax_d
                 relax_fd  = self.problem.assemble_ener()
                 if (numpy.isnan(relax_fd)):
                     relax_fd = float('+inf')
@@ -170,7 +168,7 @@ class RelaxationNonlinearSolver(NonlinearSolver):
             k_relax += 1
         self.printer.dec()
         relax = 0.
-        self.problem.U.vector().axpy(relax-relax_cur, self.problem.dU.vector())
+        self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
         #self.printer.print_var("ener_list",ener_list)
 
         if (self.write_iterations):

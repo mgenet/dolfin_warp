@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -57,6 +57,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
 
         # iterations control
         self.tol_dU      = parameters.get("tol_dU"     , None)
+        self.tol_dU_rel  = parameters.get("tol_dU_rel" , None)
         self.tol_res_rel = parameters.get("tol_res_rel", None)
         self.n_iter_max  = parameters.get("n_iter_max" , 32  )
 
@@ -92,6 +93,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.frame_filebasename = None
 
         self.k_iter = 0
+        self.problem.DU.vector().zero()
         self.success = False
         self.printer.inc()
         while (True):
@@ -107,9 +109,12 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.compute_relax()
 
             # solution update
-            self.problem.U.vector().axpy(self.relax, self.problem.dU.vector())
-            self.problem.U_norm = self.problem.U.vector().norm("l2")
+            self.problem.update_displacement(relax=self.relax)
             self.printer.print_sci("U_norm",self.problem.U_norm)
+
+            self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()
+            self.problem.DU_norm = self.problem.DU.vector().norm("l2")
+            self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
             if (self.write_iterations):
                 dmech.write_VTU_file(
@@ -118,33 +123,31 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
                     time=self.k_iter)
 
             # displacement error
-            self.problem.dU_norm *= abs(self.relax)
-            # self.printer.print_sci("dU_norm",self.problem.dU_norm)
-            if (self.problem.Uold_norm == 0.):
-                if (self.problem.U_norm == 0.):
+            if (self.problem.U_norm == 0.):
+                if (self.problem.Uold_norm == 0.):
                     self.problem.dU_err = 0.
                 else:
-                    self.problem.dU_err = self.problem.dU_norm/self.problem.U_norm
+                    self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.Uold_norm
             else:
-                self.problem.dU_err = self.problem.dU_norm/self.problem.Uold_norm
+                self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.U_norm
             self.printer.print_sci("dU_err",self.problem.dU_err)
 
-            # self.problem.DUold.vector()[:] = self.problem.U.vector()
-            # self.problem.DUold.vector().axpy(-1., self.problem.Uold.vector())
-            # self.problem.DUold_norm = self.problem.DUold.vector().norm("l2")
-            # if (self.problem.DUold_norm == 0.):
-            #     self.problem.dU_err = 0.
-            # else:
-            #     self.problem.dU_err = self.problem.dU_norm/self.problem.DUold_norm
+            if (self.problem.DU_norm == 0.):
+                self.problem.dU_err_rel = 1.
+            else:
+                self.problem.dU_err_rel = abs(self.relax)*self.problem.dU_norm/self.problem.DU_norm
+            self.printer.print_sci("dU_err_rel",self.problem.dU_err_rel)
 
             if (self.write_iterations):
                 self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
 
             # exit test
             self.success = True
-            if (self.tol_res_rel is not None) and (self.res_err_rel    > self.tol_res_rel):
+            if (self.tol_res_rel is not None) and (self.res_err_rel        > self.tol_res_rel):
                 self.success = False
-            if (self.tol_dU      is not None) and (self.problem.dU_err > self.tol_dU     ):
+            if (self.tol_dU      is not None) and (self.problem.dU_err     > self.tol_dU     ):
+                self.success = False
+            if (self.tol_dU_rel  is not None) and (self.problem.dU_err_rel > self.tol_dU_rel ):
                 self.success = False
 
             # exit
@@ -198,6 +201,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             res_vec=self.res_vec)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
+        # self.printer.print_var("res_vec",self.res_vec.get_local())
 
         self.printer.inc()
 
@@ -233,30 +237,47 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             jac_mat=self.jac_mat)
         timer = time.time() - timer
         self.printer.print_str(" "+str(timer)+" s",tab=False)
+        # self.printer.print_var("jac_mat",self.jac_mat.array())
 
         # linear system: solve
         try:
             self.printer.print_str("Solve…",newline=False)
             timer = time.time()
-            self.linear_solver.solve(
-                self.problem.dU.vector(),
-                -self.res_vec)
+            if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                self.linear_solver.solve(
+                    self.problem.dU.vector(),
+                    -self.res_vec)
+                # self.printer.print_var("dU",dU.vector().get_local())
+            elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                self.linear_solver.solve(
+                    self.problem.dreduced_displacement.vector(),
+                    -self.res_vec)
+                # self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(
+                #     self.jac_mat.array(),
+                #     -self.res_vec.get_local())
+                # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
         except:
             self.printer.print_str("Warning! Linear solver failed!",tab=False)
             return False
-        #self.printer.print_var("dU",dU.vector().get_local())
 
         self.printer.inc()
 
-        # dU_norm
-        self.problem.dU_norm = self.problem.dU.vector().norm("l2")
-        self.printer.print_sci("dU_norm",self.problem.dU_norm)
-        if not (numpy.isfinite(self.problem.dU_norm)):
-            self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
-            self.problem.dU.vector().zero()
-            return False
+        if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
+            self.printer.print_sci("dU_norm",self.problem.dU_norm)
+            if not (numpy.isfinite(self.problem.dU_norm)):
+                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
+                self.problem.dU.vector().zero()
+                return False
+        elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.problem.dreduced_displacement_norm = self.problem.dreduced_displacement.vector().norm("l2")
+            self.printer.print_sci("dreduced_displacement_norm",self.problem.dreduced_displacement_norm)
+            if not (numpy.isfinite(self.problem.dreduced_displacement_norm)):
+                self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
+                self.problem.dreduced_displacement.vector().zero()
+                return False
 
         self.printer.dec()
 

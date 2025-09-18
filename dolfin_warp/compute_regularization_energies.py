@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -59,7 +59,7 @@ def compute_regularization_energies(
     # print (mesh.num_vertices())
     # print (mesh.num_cells())
 
-    problem = dwarp.WarpingProblem(
+    problem = dwarp.FullKinematicsWarpingProblem(
         mesh=mesh,
         U_family="Lagrange",
         U_degree=1)

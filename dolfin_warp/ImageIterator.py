@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -37,13 +37,14 @@ class ImageIterator():
         self.working_folder                              = parameters.get("working_folder"                             , "."           )
         self.working_basename                            = parameters.get("working_basename"                           , "sol"         )
         self.register_ref_frame                          = parameters.get("register_ref_frame"                         , False         )
+        self.initialize_reduced_U_from_file              = parameters.get("initialize_reduced_U_from_file"             , False         )
+        self.initialize_reduced_U_filename               = parameters.get("initialize_reduced_U_filename"              , "init"        )
         self.initialize_U_from_file                      = parameters.get("initialize_U_from_file"                     , False         )
         self.initialize_U_folder                         = parameters.get("initialize_U_folder"                        , "."           )
         self.initialize_U_basename                       = parameters.get("initialize_U_basename"                      , "init"        )
         self.initialize_U_ext                            = parameters.get("initialize_U_ext"                           , "vtu"         )
         self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
         self.initialize_U_method                         = parameters.get("initialize_U_method"                        , "dofs_transfer")
-        self.initialize_DU_with_DUold                    = parameters.get("initialize_DU_with_DUold"                   , False         )
         self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
         self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
         self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
@@ -143,6 +144,13 @@ class ImageIterator():
             init_U.set_allow_extrapolation(True)
             # init_dof_to_vertex_map = dolfin.dof_to_vertex_map(init_fs) # MG20230321: Somehow this is problematic when VTUs are saved with preserved connectivity…
 
+        if (self.initialize_reduced_U_from_file):
+            init_reduced_displacement = numpy.loadtxt(self.initialize_reduced_U_filename, ndmin=2)
+            assert (init_reduced_displacement.shape[0] == self.problem.reduced_displacement_fs.dim()),\
+                "\"init_reduced_displacement.shape[0]\" ("+str(init_reduced_displacement.shape[0])+") should match \"problem.reduced_displacement_fs.dim()\" (="+str(self.problem.reduced_displacement_fs.dim())+"). Aborting."
+            assert (init_reduced_displacement.shape[1] == self.problem.images_n_frames),\
+                "\"init_reduced_displacement.shape[1]\" ("+str(init_reduced_displacement.shape[1])+") should match \"problem.images_n_frames\" (="+str(self.problem.images_n_frames)+"). Aborting."
+
         n_iter_tot = 0
         for forward_or_backward in ["forward","backward"]:
             self.printer.print_var("forward_or_backward",forward_or_backward)
@@ -202,8 +210,8 @@ class ImageIterator():
                             function=self.problem.U)
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
-                elif (self.initialize_DU_with_DUold):
-                    self.problem.U.vector().axpy(1., self.problem.DUold.vector())
+                elif (self.initialize_reduced_U_from_file):
+                    self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[k_frame-1,:]
 
                 self.problem.call_before_solve(
                     k_frame=k_frame,

@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2024                                       ###
+### Created by Martin Genet, 2016-2025                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -19,100 +19,66 @@ def warp(
         working_basename                            : str,
         images_folder                               : str,
         images_basename                             : str,
-        images_grad_basename                        : str         = None                            ,
-        images_ext                                  : str         = "vti"                           , # vti, vtk
-        images_n_frames                             : int         = None                            ,
-        images_ref_frame                            : int         = 0                               ,
-        images_quadrature                           : int         = None                            ,
-        images_quadrature_from                      : str         = "points_count"                  , # points_count, integral
-        images_expressions_type                     : str         = "cpp"                           , # cpp
-        images_static_scaling                       : bool        = False                           ,
-        images_dynamic_scaling                      : bool        = False                           ,
-        images_char_func                            : bool        = True                            ,
-        images_is_cone                              : bool        = False                           ,
-        mesh                                        : dolfin.Mesh = None                            ,
-        mesh_folder                                 : str         = None                            ,
-        mesh_basename                               : str         = None                            ,
-        mesh_degree                                 : int         = 1                               ,
-        regul_type                                  : str         = "continuous-equilibrated"       , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
-        regul_types                                 : list        = None                            ,
-        regul_model                                 : str         = "ogdenciarletgeymonatneohookean", # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
-        regul_models                                : list        = None                            ,
-        regul_quadrature                            : int         = None                            ,
-        regul_level                                 : float       = 0.                              ,
-        regul_levels                                : list        = None                            ,
-        regul_poisson                               : float       = 0.                              ,
-        regul_b                                     : float       = None                            ,
-        regul_volume_subdomain_data                               = None                            ,
-        regul_volume_subdomain_id                                 = None                            ,
-        regul_surface_subdomain_data                              = None                            ,
-        regul_surface_subdomain_id                                = None                            ,
-        tangent_type                                : str         = "Idef"                          , # Idef
-        residual_type                               : str         = "Iref"                          , # Iref
-        relax_type                                  : str         = None                            , # constant, aitken, backtracking, gss
-        relax_init                                  : float       = 1.                              , # 1.
-        relax_backtracking_factor                   : float       = None                            ,
-        relax_tol                                   : float       = None                            ,
-        relax_n_iter_max                            : int         = None                            ,
-        relax_must_advance                          : bool        = None                            ,
-        normalize_energies                          : bool        = False                           ,
-        initialize_U_from_file                      : bool        = False                           ,
-        initialize_U_folder                         : str         = None                            ,
-        initialize_U_basename                       : str         = None                            ,
-        initialize_U_ext                            : str         = "vtu"                           ,
-        initialize_U_array_name                     : str         = "displacement"                  ,
-        initialize_U_method                         : str         = "dofs_transfer"                 , # dofs_transfer, interpolation, projection
-        initialize_DU_with_DUold                    : bool        = False                           ,
-        register_ref_frame                          : bool        = False                           ,
-        iteration_mode                              : str         = "normal"                        , # normal, loop
-        gimic                                       : bool        = False                           ,
-        gimic_texture                               : str         = "no"                            ,
-        gimic_resample                              : int         = 1                               ,
-        nonlinearsolver                             : str         = "newton"                        , # newton, CMA
-        tol_res                                     : float       = None                            , # None
-        tol_res_rel                                 : float       = None                            ,
-        tol_dU                                      : float       = None                            ,
-        tol_im                                      : float       = None                            , # None
-        n_iter_max                                  : int         = 100                             ,
-        continue_after_fail                         : bool        = False                           ,
-        write_qois_limited_precision                : bool        = False                           ,
-        write_VTU_files                             : bool        = True                            ,
-        write_VTU_files_with_preserved_connectivity : bool        = False                           ,
-        write_XML_files                             : bool        = False                           ,
-        print_refined_mesh                          : bool        = False                           , # False
-        print_iterations                            : bool        = False                           ,
-        silent                                      : bool        = False                           ):
-
-    assert (images_expressions_type == "cpp"),\
-        "Python image expression are deprecated. Aborting."
-    assert (tangent_type == "Idef"),\
-        "tangent_type must be \"Idef\". Aborting."
-    assert (residual_type == "Iref"),\
-        "residual_type must be \"Iref\". Aborting."
-    assert (relax_init == 1.),\
-        "relax_init must be 1. Aborting."
-    assert (not ((initialize_U_from_file) and (initialize_DU_with_DUold))),\
-        "Cannot initialize U from file and DU with DUold together. Aborting."
-    assert (tol_res is None),\
-        "tol_res is deprecated. Aborting."
-    assert (tol_im is None),\
-        "tol_im is deprecated. Aborting."
-    assert (print_refined_mesh == 0),\
-        "print_refined_mesh is deprecated. Aborting."
-
-    # assert (regul_type is not None) or (regul_types is not None),\
-    #     "Must provide \"regul_type\" or \"regul_types\". Aborting."
-    # assert (regul_model is not None) or (regul_models is not None),\
-    #     "Must provide \"regul_model\" or \"regul_models\". Aborting."
-    # assert (regul_level is not None) or (regul_levels is not None),\
-    #     "Must provide \"regul_level\" or \"regul_levels\". Aborting."
-
-    # assert (regul_type is None) or (regul_types is None),\
-    #     "Cannot provide both \"regul_type\" and \"regul_types\". Aborting."
-    # assert (regul_model is None) or (regul_models is None),\
-    #     "Cannot provide both \"regul_model\" and \"regul_models\". Aborting."
-    # assert (regul_level is None) or (regul_levels is None),\
-    #     "Cannot provide both \"regul_level\" and \"regul_levels\". Aborting."
+        images_grad_basename                        : str         = None                                ,
+        images_ext                                  : str         = "vti"                               , # vti, vtk
+        images_n_frames                             : int         = None                                ,
+        images_ref_frame                            : int         = 0                                   ,
+        images_quadrature                           : int         = None                                ,
+        images_quadrature_from                      : str         = "points_count"                      , # points_count, integral
+        images_static_scaling                       : bool        = False                               ,
+        images_dynamic_scaling                      : bool        = False                               ,
+        images_char_func                            : bool        = True                                ,
+        images_is_cone                              : bool        = False                               ,
+        mesh                                        : dolfin.Mesh = None                                ,
+        mesh_folder                                 : str         = None                                ,
+        mesh_basename                               : str         = None                                ,
+        mesh_degree                                 : int         = 1                                   ,
+        kinematics_type                             : str         = "full"                              , # full, reduced
+        reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
+        regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        regul_types                                 : list        = None                                ,
+        regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
+        regul_models                                : list        = None                                ,
+        regul_quadrature                            : int         = None                                ,
+        regul_level                                 : float       = 0.                                  ,
+        regul_levels                                : list        = None                                ,
+        regul_poisson                               : float       = 0.                                  ,
+        regul_b                                     : float       = None                                ,
+        regul_volume_subdomain_data                               = None                                ,
+        regul_volume_subdomain_id                                 = None                                ,
+        regul_surface_subdomain_data                              = None                                ,
+        regul_surface_subdomain_id                                = None                                ,
+        relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
+        relax_backtracking_factor                   : float       = None                                ,
+        relax_tol                                   : float       = None                                ,
+        relax_n_iter_max                            : int         = None                                ,
+        relax_must_advance                          : bool        = None                                ,
+        normalize_energies                          : bool        = False                               ,
+        initialize_reduced_U_from_file              : bool        = False                               ,
+        initialize_reduced_U_filename               : str         = None                                ,
+        initialize_U_from_file                      : bool        = False                               ,
+        initialize_U_folder                         : str         = None                                ,
+        initialize_U_basename                       : str         = None                                ,
+        initialize_U_ext                            : str         = "vtu"                               ,
+        initialize_U_array_name                     : str         = "displacement"                      ,
+        initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
+        register_ref_frame                          : bool        = False                               ,
+        iteration_mode                              : str         = "normal"                            , # normal, loop
+        gimic                                       : bool        = False                               ,
+        gimic_texture                               : str         = "no"                                ,
+        gimic_resample                              : int         = 1                                   ,
+        nonlinearsolver                             : str         = "newton"                            , # None, newton, CMA
+        tol_res_rel                                 : float       = None                                ,
+        tol_dU                                      : float       = None                                ,
+        tol_dU_rel                                  : float       = None                                ,
+        n_iter_max                                  : int         = 100                                 ,
+        continue_after_fail                         : bool        = False                               ,
+        write_qois_limited_precision                : bool        = False                               ,
+        write_VTU_files                             : bool        = True                                ,
+        write_VTU_files_with_preserved_connectivity : bool        = False                               ,
+        write_XML_files                             : bool        = False                               ,
+        print_iterations                            : bool        = False                               ,
+        silent                                      : bool        = False                               ):
 
     if (regul_types is not None):
         if (regul_models is not None):
@@ -157,12 +123,26 @@ def warp(
     # print (regul_models)
     # print (regul_levels)
 
-    problem = dwarp.WarpingProblem(
-        mesh=mesh,
-        mesh_folder=mesh_folder,
-        mesh_basename=mesh_basename,
-        U_degree=mesh_degree,
-        silent=silent)
+    if (kinematics_type == "full"):
+        assert (initialize_reduced_U_from_file is False),\
+            "Should use \"initialize_U_from_file\", not \"initialize_reduced_U_from_file\". Aborting."
+        problem = dwarp.FullKinematicsWarpingProblem(
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            U_degree=mesh_degree,
+            silent=silent)
+    elif (kinematics_type == "reduced"):
+        assert (initialize_U_from_file is False),\
+            "Not implemented. Aborting."
+        problem = dwarp.ReducedKinematicsWarpingProblem(
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            model=reduced_kinematics_model,
+            silent=silent)
+    else:
+        assert (0), "\"kinematics_type\" (="+str(kinematics_type)+") must be \"full\" or \"reduced\". Aborting."
 
     images_series = dwarp.ImagesSeries(
         folder=images_folder,
@@ -262,7 +242,8 @@ def warp(
 
     if (normalize_energies):
         dwarp.compute_energies_normalization(
-            problem=problem)
+            problem=problem,
+            verbose=1)
 
     if (nonlinearsolver == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
@@ -277,28 +258,12 @@ def warp(
                 "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
-                "n_iter_max":n_iter_max,
-                "write_iterations":print_iterations})
-    elif (nonlinearsolver == "reduced_kinematic_newton"):
-        motion = dwarp.MotionModel(
-            problem=problem,
-            type="translation_and_scaling")
-        solver = dwarp.ReducedKinematicsNewtonNonlinearSolver(
-            problem=problem,
-            motion_model=motion,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "relax_type":relax_type,
-                "relax_backtracking_factor":relax_backtracking_factor,
-                "relax_tol":relax_tol,
-                "relax_n_iter_max":relax_n_iter_max,
-                "relax_must_advance":relax_must_advance,
-                "tol_res_rel":tol_res_rel,
-                "tol_dU":tol_dU,
+                "tol_dU_rel":tol_dU_rel,
                 "n_iter_max":n_iter_max,
                 "write_iterations":print_iterations})
     elif (nonlinearsolver == "cma"):
+        assert (relax_type is None),\
+            "Not implemented. Aborting."
         solver = dwarp.CMANonlinearSolver(
             problem=problem,
             parameters={
@@ -313,13 +278,14 @@ def warp(
             "working_folder":working_folder,
             "working_basename":working_basename,
             "register_ref_frame":register_ref_frame,
+            "initialize_reduced_U_from_file":initialize_reduced_U_from_file,
+            "initialize_reduced_U_filename":initialize_reduced_U_filename,
             "initialize_U_from_file":initialize_U_from_file,
             "initialize_U_folder":initialize_U_folder,
             "initialize_U_basename":initialize_U_basename,
             "initialize_U_ext":initialize_U_ext,
             "initialize_U_array_name":initialize_U_array_name,
             "initialize_U_method":initialize_U_method,
-            "initialize_DU_with_DUold":initialize_DU_with_DUold,
             "write_qois_limited_precision":write_qois_limited_precision,
             "write_VTU_files":write_VTU_files,
             "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
@@ -340,44 +306,3 @@ fedic2 = warp
 if (__name__ == "__main__"):
     import fire
     fire.Fire(warp)
-
-    # import argparse
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--working_folder", type=str)
-    # parser.add_argument("--working_basename", type=str)
-    # parser.add_argument("--images_folder", type=str)
-    # parser.add_argument("--images_basename", type=str)
-    # parser.add_argument("--images_ext", type=str, choices=["vti", "vtk"])
-    # parser.add_argument("--mesh_folder", type=str)
-    # parser.add_argument("--mesh_basename", type=str)
-    # parser.add_argument("--mesh_degree", type=int)
-    # parser.add_argument("--regul_types", type=str, choices=["continuous-equilibrated", "continuous-elastic", "continuous-hyperelastic", "discrete-linear-equilibrated", "discrete-linear-elastic", "discrete-equilibrated", "discrete-tractions", "discrete-tractions-normal", "discrete-tractions-tangential", "discrete-tractions-normal-tangential"], nargs="?")
-    # parser.add_argument("--regul_model", type=str, choices=["hooke", "kirchhoff", "ogdenciarletgeymonatneohookean", "ogdenciarletgeymonatneohookeanmooneyrivlin"])
-    # parser.add_argument("--regul_levels", type=float, nargs="?")
-    # parser.add_argument("--regul_poisson", type=float)
-    # parser.add_argument("--relax_type", type=str, choices=["constant", "aitken", "backtracking", "gss"])
-    # parser.add_argument("--relax_tol", type=float)
-    # parser.add_argument("--relax_n_iter_max", type=int)
-    # parser.add_argument("--tol_dU", type=float)
-    # parser.add_argument("--n_iter_max", type=int)
-    # args = parser.parse_args()
-    # print(type(args))
-
-    # dwarp.warp(
-    #     working_folder = args.working_folder,
-    #     working_basename = args.working_basename,
-    #     images_folder = args.images_folder,
-    #     images_basename = args.images_basename,
-    #     images_ext = args.images_ext,
-    #     mesh_folder = args.mesh_folder,
-    #     mesh_basename = args.mesh_basename,
-    #     mesh_degree = args.mesh_degree,
-    #     regul_types = args.regul_types,
-    #     regul_model = args.regul_model,
-    #     regul_levels = args.regul_levels,
-    #     regul_poisson = args.regul_poisson,
-    #     relax_type = args.relax_type,
-    #     relax_tol = args.relax_tol,
-    #     relax_n_iter_max = args.relax_n_iter_max,
-    #     tol_dU = args.tol_dU,
-    #     n_iter_max = args.n_iter_max)

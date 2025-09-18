@@ -2,6 +2,7 @@
 
 from .Energy import *
 from .Energy_Continuous import *
+from .Energy_Continuous_Constraint import *
 from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_MeshVolume import *
 from .Energy_Continuous_Regularization import *
@@ -16,13 +17,13 @@ from .FilesSeries_Images import *
 from .FilesSeries_Meshes import *
 from .ImageIterator import *
 from .ModalAnalysis import *
-from .MotionModel import *
 from .NonlinearSolver import *
 from .NonlinearSolver_CMA import *
 from .NonlinearSolver_Newton import *
-from .NonlinearSolver_ReducedKinematicsNewton import *
 from .NonlinearSolver_Relaxation import *
 from .Problem import *
+from .Problem_FullKinematicsWarping import *
+from .Problem_ReducedKinematicsWarping import *
 from .Problem_Warping import *
 from .compute_best_regularization_strength import *
 from .compute_displacement_error import *

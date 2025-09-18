@@ -1,0 +1,20 @@
+on:
+  - push
+  - delete
+
+jobs:
+  mirror_to_gitlab:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@main
+      with:
+        fetch-depth: 0
+
+    - name: Sync repo
+      uses: wangchucheng/git-repo-sync@master
+      with:
+        target-url: https://gitlab.inria.fr/mgenet/dolfin_warp
+        target-username: mgenet
+        target-token: ${{secrets.GITLAB_TOKEN}}
