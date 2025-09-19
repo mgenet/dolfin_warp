@@ -19,6 +19,9 @@ def warp(
         working_basename                            : str,
         images_folder                               : str,
         images_basename                             : str,
+        mappings_folder                             : str         = None                                ,
+        mappings_basename                           : str         = None                                ,        
+        mappings_ext                                : str         = "vtu"                                 , 
         images_grad_basename                        : str         = None                                ,
         images_ext                                  : str         = "vti"                               , # vti, vtk
         images_n_frames                             : int         = None                                ,
@@ -80,7 +83,7 @@ def warp(
         write_XML_files                             : bool        = False                               ,
         print_iterations                            : bool        = False                               ,
         silent                                      : bool        = False                               ,
-        warping_type                                : str         = "tracking"                          , # tracking or registration
+        warping_type                                : str         = "tracking"                          , # tracking, registration or barycenter
         min_gradient_step                           : int         = 1e-6                                , 
         gradient_step                               : int         = 1e-2                                ,          
         gradient_type                               : int         = "L2"                                ,
@@ -90,6 +93,9 @@ def warp(
     if warping_type == "registration":
         assert nonlinearsolver == "gradient_descent", "When performing shape registration, the nonlinearsolver must be gradient_descent. Aborting"
         assert register_ref_frame, "In registration mode the reference frame is the first frame on which to perform the registration. Aborting"
+
+    if warping_type == "barycenter":
+        assert nonlinearsolver == "gradient_descent", "When performing barycentric computation, the nonlinearsolver must be gradient_descent. Aborting"
 
 
     if (regul_types is not None):
@@ -156,36 +162,45 @@ def warp(
     else:
         assert (0), "\"kinematics_type\" (="+str(kinematics_type)+") must be \"full\" or \"reduced\". Aborting."
 
-    images_series = dwarp.ImagesSeries(
-        folder=images_folder,
-        basename=images_basename,
-        grad_basename=images_grad_basename,
-        n_frames=images_n_frames,
-        ext=images_ext,
-        printer=problem.printer, 
-        warping_type = warping_type)
+    if warping_type == "barycenter":
+        mapping_series = dwarp.MappingsSeries(
+            folder = mappings_folder,
+            basename = mappings_basename, 
+            ext=mappings_ext,
+            printer=problem.printer, 
+            warping_type = warping_type, 
+            problem = problem)        
+    else: 
+        images_series = dwarp.ImagesSeries(
+            folder=images_folder,
+            basename=images_basename,
+            grad_basename=images_grad_basename,
+            n_frames=images_n_frames,
+            ext=images_ext,
+            printer=problem.printer, 
+            warping_type = warping_type)
 
-    if (images_quadrature is None):
-        problem.printer.print_str("Computing quadrature degree…")
-        problem.printer.inc()
-        if (images_quadrature_from == "points_count"):
-            images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
-                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
-                mesh=problem.mesh,
-                verbose=1)
-        elif (images_quadrature_from == "integral"):
-            images_quadrature = dwarp.compute_quadrature_degree_from_integral(
-                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
-                mesh=problem.mesh,
-                verbose=1)
-        else:
-            assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
-        problem.printer.print_var("images_quadrature",images_quadrature)
-        problem.printer.dec()
+        if (images_quadrature is None):
+            problem.printer.print_str("Computing quadrature degree…")
+            problem.printer.inc()
+            if (images_quadrature_from == "points_count"):
+                images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
+                    image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
+                    mesh=problem.mesh,
+                    verbose=1)
+            elif (images_quadrature_from == "integral"):
+                images_quadrature = dwarp.compute_quadrature_degree_from_integral(
+                    image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
+                    mesh=problem.mesh,
+                    verbose=1)
+            else:
+                assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
+            problem.printer.print_var("images_quadrature",images_quadrature)
+            problem.printer.dec()
 
-    image_w = 1.-sum(regul_levels)
-    assert (image_w > 0.),\
-        "1.-sum(regul_levels) must be positive. Aborting."
+        image_w = 1.-sum(regul_levels)
+        assert (image_w > 0.),\
+            "1.-sum(regul_levels) must be positive. Aborting."
 
     match warping_type:
         case "tracking":
@@ -224,6 +239,11 @@ def warp(
                     static_scaling=images_static_scaling,
                     dynamic_scaling=images_dynamic_scaling)
                 problem.add_image_energy(warped_image_energy)
+        case "barycenter":
+                warped_energy = dwarp.BarycentricEnergy(
+                    mapping_series=mapping_series, 
+                    problem=problem,)
+                problem.add_barycenter_energy(warped_energy)
 
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
@@ -316,31 +336,33 @@ def warp(
                 "gradient_type"             : gradient_type             ,
                 "inner_product_H1_weight"   : inner_product_H1_weight   ,
                 })
+    if warping_type == "barycenter":
+        solver.solve()
+    else:
+        image_iterator = dwarp.ImageIterator(
+            problem=problem,
+            solver=solver,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "register_ref_frame":register_ref_frame,
+                "initialize_reduced_U_from_file":initialize_reduced_U_from_file,
+                "initialize_reduced_U_filename":initialize_reduced_U_filename,
+                "initialize_U_from_file":initialize_U_from_file,
+                "initialize_U_folder":initialize_U_folder,
+                "initialize_U_basename":initialize_U_basename,
+                "initialize_U_ext":initialize_U_ext,
+                "initialize_U_array_name":initialize_U_array_name,
+                "initialize_U_method":initialize_U_method,
+                "write_qois_limited_precision":write_qois_limited_precision,
+                "write_VTU_files":write_VTU_files,
+                "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
+                "write_XML_files":write_XML_files,
+                "iteration_mode":iteration_mode,
+                "save_reduced_disp":save_reduced_disp,
+                "continue_after_fail":continue_after_fail})
 
-    image_iterator = dwarp.ImageIterator(
-        problem=problem,
-        solver=solver,
-        parameters={
-            "working_folder":working_folder,
-            "working_basename":working_basename,
-            "register_ref_frame":register_ref_frame,
-            "initialize_reduced_U_from_file":initialize_reduced_U_from_file,
-            "initialize_reduced_U_filename":initialize_reduced_U_filename,
-            "initialize_U_from_file":initialize_U_from_file,
-            "initialize_U_folder":initialize_U_folder,
-            "initialize_U_basename":initialize_U_basename,
-            "initialize_U_ext":initialize_U_ext,
-            "initialize_U_array_name":initialize_U_array_name,
-            "initialize_U_method":initialize_U_method,
-            "write_qois_limited_precision":write_qois_limited_precision,
-            "write_VTU_files":write_VTU_files,
-            "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
-            "write_XML_files":write_XML_files,
-            "iteration_mode":iteration_mode,
-            "save_reduced_disp":save_reduced_disp,
-            "continue_after_fail":continue_after_fail})
-
-    success = image_iterator.iterate()
+        success = image_iterator.iterate()
 
     problem.close()
 

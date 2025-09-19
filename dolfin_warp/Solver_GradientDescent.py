@@ -69,6 +69,8 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             k_frame=None):
 
         self.k_frame = k_frame
+        if k_frame == None:
+            self.problem.images_n_frames = 0    # In barycenter case, no frames
 
         if (self.write_iterations):
             self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(self.k_frame).zfill(len(str(self.problem.images_n_frames)))

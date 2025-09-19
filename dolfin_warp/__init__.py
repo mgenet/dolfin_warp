@@ -3,6 +3,7 @@
 from .Energy import *
 from .Energy_Continuous import *
 from .Energy_Continuous_GeneratedImage import *
+from .Energy_Barycenter import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
 from .Energy_Shape_Registration import *
@@ -12,6 +13,7 @@ from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete_VolumeRegularization import *
 from .FilesSeries import *
 from .FilesSeries_Images import *
+from .FilesSeries_Mappings import *
 from .FilesSeries_Meshes import *
 from .ImageIterator import *
 from .ModalAnalysis import *

@@ -96,6 +96,10 @@ class WarpingProblem(Problem):
 
         self.energies += [energy]
 
+    def add_barycenter_energy(self,
+            energy):
+
+        self.energies += [energy]
 
 
     def add_regul_energy(self,
