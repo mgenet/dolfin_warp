@@ -94,8 +94,8 @@ def warp(
         assert nonlinearsolver == "gradient_descent", "When performing shape registration, the nonlinearsolver must be gradient_descent. Aborting"
         assert register_ref_frame, "In registration mode the reference frame is the first frame on which to perform the registration. Aborting"
 
-    if warping_type == "barycenter":
-        assert nonlinearsolver == "gradient_descent", "When performing barycentric computation, the nonlinearsolver must be gradient_descent. Aborting"
+    # if warping_type == "barycenter":
+    #     assert nonlinearsolver == "gradient_descent", "When performing barycentric computation, the nonlinearsolver must be gradient_descent. Aborting"
 
 
     if (regul_types is not None):
@@ -242,7 +242,8 @@ def warp(
         case "barycenter":
                 warped_energy = dwarp.BarycentricEnergy(
                     mapping_series=mapping_series, 
-                    problem=problem,)
+                    problem=problem,
+                    model = regul_model)
                 problem.add_barycenter_energy(warped_energy)
 
 
