@@ -339,6 +339,7 @@ def warp(
                 })
     if warping_type == "barycenter":
         solver.solve()
+        success = 1
     else:
         image_iterator = dwarp.ImageIterator(
             problem=problem,
