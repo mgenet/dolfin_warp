@@ -63,7 +63,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             for filename in glob.glob(self.working_folder+"/"+self.working_basename+"-frame=[0-9]*.*"):
                 os.remove(filename)
 
-
+        print(f"****************************************************************** relax is {self.relax_type}") #DEBUG
 
     def solve(self,
             k_frame=None):
@@ -170,10 +170,13 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             if self.k_iter == 1:
                 self.relax = self.step
 
-            self.compute_relax(
-                                1.5*self.relax
-                                    ) 
-      
+            if self.relax_type == "backtracking":
+                self.compute_relax(
+                                    1.5*self.relax
+                                        ) 
+            else:
+                self.compute_relax()
+                 
             # solution update
             self.problem.update_displacement(relax=self.relax)                       
             # self.problem.update_displacement(relax=1)                                  #DEBUG relax = 1 for comparison Somehow need although it's already done in compute_relax() #DEBUG?
