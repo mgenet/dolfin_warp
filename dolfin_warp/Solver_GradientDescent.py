@@ -54,6 +54,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
         self.gradient_type              = parameters.get("gradient_type"            , "L2")
         self.inner_product_H1_weight    = parameters.get("inner_product_H1_weight"  , 1e-2)
         # write iterations
+        self.write_VTU_files_with_preserved_connectivity= parameters.get("write_VTU_files_with_preserved_connectivity"  , True)
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
         if (self.write_iterations):
@@ -82,6 +83,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
             dmech.write_VTU_file(
                 filebasename=self.frame_filebasename,
                 function=self.problem.U,
+                preserve_connectivity=self.write_VTU_files_with_preserved_connectivity,
                 time=0)
         else:
             self.frame_filebasename = None
@@ -192,7 +194,8 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 dmech.write_VTU_file(
                     filebasename    =self.frame_filebasename,
                     function        =self.problem.U         ,
-                    time            =self.k_iter            )
+                    time            =self.k_iter            , 
+                    preserve_connectivity=self.write_VTU_files_with_preserved_connectivity,)
 
             # displacement error
             if (self.problem.U_norm == 0.):

@@ -240,6 +240,18 @@ def warp(
                     dynamic_scaling=images_dynamic_scaling)
                 problem.add_image_energy(warped_image_energy)
         case "barycenter":
+
+
+            if (initialize_U_from_file):
+                initialise_from_file(   initialize_U_folder, 
+                        initialize_U_basename, 
+                        initialize_U_ext, 
+                        initialize_U_method, 
+                        initialize_U_array_name,
+                        problem)
+
+
+
                 warped_energy = dwarp.BarycentricEnergy(
                     mapping_series=mapping_series, 
                     problem=problem,
@@ -336,8 +348,17 @@ def warp(
                 "tol_dU"                    : tol_dU                    ,
                 "gradient_type"             : gradient_type             ,
                 "inner_product_H1_weight"   : inner_product_H1_weight   ,
+                "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity,
                 })
-    if warping_type == "barycenter":
+    # if warping_type == "barycenter":
+    #     if (initialize_U_from_file):
+    #         initialise_from_file(   initialize_U_folder, 
+    #                 initialize_U_basename, 
+    #                 initialize_U_ext, 
+    #                 initialize_U_method, 
+    #                 initialize_U_array_name,
+    #                 problem)
+    
         solver.solve()
         success = 1
     else:
@@ -377,3 +398,61 @@ fedic2 = warp
 if (__name__ == "__main__"):
     import fire
     fire.Fire(warp)
+
+
+def initialise_from_file(   initialize_U_folder, 
+                    initialize_U_basename, 
+                    initialize_U_ext, 
+                    initialize_U_method, 
+                    initialize_U_array_name,
+                    problem):
+    
+    
+    problem.printer.print_str("Initializing displacement…")
+    
+
+    init_mesh_filename  = initialize_U_folder
+    init_mesh_filename += "/"+initialize_U_basename
+    init_mesh_filename += "-"+"mesh"
+    init_mesh_filename += "."+"xml"
+    import os
+    import meshio
+    if not os.path.isfile(init_mesh_filename):
+        vtu2mesh(initialize_U_folder, initialize_U_basename, initialize_U_ext)
+
+    init_mesh = dolfin.Mesh(init_mesh_filename)
+    init_fe = dolfin.VectorElement(
+        family="Lagrange",
+        cell=problem.mesh.ufl_cell(),
+        degree=1)
+    init_fs = dolfin.FunctionSpace(
+        init_mesh,
+        init_fe)
+    init_U = dolfin.Function(init_fs)
+    init_U.set_allow_extrapolation(True)
+    
+
+    init_U_mesh = meshio.read(initialize_U_folder+"/"+initialize_U_basename+"."+initialize_U_ext)
+
+    init_array_U = init_U_mesh.point_data[initialize_U_array_name]
+    init_U.vector()[:] = init_array_U.flatten()
+
+    if (initialize_U_method == "dofs_transfer"):
+        problem.U.vector()[:] = init_U.vector()
+    elif (initialize_U_method == "interpolation"):
+        problem.U.interpolate(init_U)
+    elif (initialize_U_method == "projection"):
+        dolfin.project(
+            v=init_U,
+            V=problem.U_fs,
+            function=problem.U)
+    problem.U_norm = problem.U.vector().norm("l2")
+
+
+def vtu2mesh(folder, name, ext):
+    import meshio
+
+    src = folder+"/"+name+"."+ext
+    tgt = folder+"/"+name+"-mesh.xml"
+    mesh = meshio.read(src)
+    meshio.write(tgt, mesh)
