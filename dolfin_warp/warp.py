@@ -350,14 +350,15 @@ def warp(
                 "inner_product_H1_weight"   : inner_product_H1_weight   ,
                 "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity,
                 })
-    # if warping_type == "barycenter":
-    #     if (initialize_U_from_file):
-    #         initialise_from_file(   initialize_U_folder, 
-    #                 initialize_U_basename, 
-    #                 initialize_U_ext, 
-    #                 initialize_U_method, 
-    #                 initialize_U_array_name,
-    #                 problem)
+
+    if warping_type == "barycenter":
+        if (initialize_U_from_file):
+            initialise_from_file(   initialize_U_folder, 
+                    initialize_U_basename, 
+                    initialize_U_ext, 
+                    initialize_U_method, 
+                    initialize_U_array_name,
+                    problem)
     
         solver.solve()
         success = 1
