@@ -9,11 +9,9 @@
 ################################################################################
 
 import dolfin
-import os
+import sys
 
 import myPythonLibrary as mypy
-
-import dolfin_warp as dwarp
 
 from .Problem_Warping import WarpingProblem
 
@@ -24,15 +22,19 @@ class FullKinematicsWarpingProblem(WarpingProblem):
 
 
     def __init__(self,
-            mesh=None,
-            mesh_folder=None,
-            mesh_basename=None,
-            U_family="Lagrange",
-            U_degree=1,
-            silent=False):
+            working_folder   : str                     ,
+            working_basename : str                     ,
+            mesh             : dolfin.Mesh = None      ,
+            mesh_folder      : str         = None      ,
+            mesh_basename    : str         = None      ,
+            U_family         : str         = "Lagrange",
+            U_degree         : int         = 1         ,
+            print_out        : bool        = True      ):
 
-        self.printer = mypy.Printer(
-            silent=silent)
+        self.set_printer(
+            print_out=print_out,
+            working_folder=working_folder,
+            working_basename=working_basename)
 
         self.set_mesh(
             mesh=mesh,

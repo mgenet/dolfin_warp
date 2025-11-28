@@ -25,7 +25,7 @@ def compute_displacements_from_ref(
         suffix=None,
         verbose=0):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

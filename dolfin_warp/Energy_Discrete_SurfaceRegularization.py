@@ -14,31 +14,34 @@ import typing
 
 import dolfin_mech as dmech
 
-from .Energy_Discrete import DiscreteEnergy
-from .Problem         import Problem
+from .Energy               import Energy
+from .EnergyMixin_Discrete import DiscreteEnergyMixin
+from .Problem              import Problem
 
 ################################################################################
 
-class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
+class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
     def __init__(self,
-            problem: Problem,
-            name: str = "reg",
-            w: float = 1.,
-            type: str = "tractions",
-            model: str = "ogdenciarletgeymonatneohookean",
-            young: float = 1.,
-            poisson: float = 0.,
-            b_fin: typing.Optional["list[float]"] = None,
-            ds_or_dS = "ds",
-            surface_subdomain_data = None,
-            surface_subdomain_id = None,
-            volume_subdomain_data = None,
-            volume_subdomain_id = None,
-            quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
-            scalar_formulation_in_2D: bool = 1):
+            problem                  : Problem                                                          ,
+            name                     : str                            = "reg"                           ,
+            w                        : float                          = 1.                              ,
+            type                     : str                            = "tractions"                     ,
+            model                    : str                            = "ogdenciarletgeymonatneohookean",
+            young                    : float                          = 1.                              ,
+            poisson                  : float                          = 0.                              ,
+            b_fin                    : typing.Optional["list[float]"] = None                            ,
+            quadrature_degree        : typing.Optional[int]           = None                            , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            ds_or_dS                 : str                            = "ds"                            ,
+            volume_subdomain_data                                     = None                            ,
+            volume_subdomain_id                                       = None                            ,
+            surface_subdomain_data                                    = None                            ,
+            surface_subdomain_id                                      = None                            ,
+            scalar_formulation_in_2D : bool                           = True                            ):
+
+
 
         self.problem = problem
         self.printer = problem.printer

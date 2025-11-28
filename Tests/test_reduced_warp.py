@@ -124,7 +124,7 @@ for n_dim in n_dim_lst:
             reduced_kinematics_model=deformation_type,
             normalize_energies=1,
             relax_type="backtracking",
-            tol_dU=1e-2,
+            newton_tol_dU=1e-2,
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(
@@ -151,7 +151,7 @@ for n_dim in n_dim_lst:
             reduced_kinematics_model="translation+rotation+scaling+shear",
             normalize_energies=1,
             relax_type="backtracking",
-            tol_dU=1e-2,
+            newton_tol_dU=1e-2,
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(

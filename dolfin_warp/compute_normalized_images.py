@@ -27,11 +27,11 @@ def compute_normalized_images(
 
     mypy.my_print(verbose, "*** compute_normalized_images ***")
 
-    images_series = dwarp.ImagesSeries(
+    image_series = dwarp.ImageSeries(
         folder=images_folder,
         basename=images_basename,
         ext=images_ext)
-    image = images_series.get_image(k_frame=0)
+    image = image_series.get_image(k_frame=0)
     image_npoints = image.GetNumberOfPoints()
 
     if   (images_ext == "vtk"):
@@ -45,8 +45,8 @@ def compute_normalized_images(
 
     global_min = float("+Inf")
     global_max = float("-Inf")
-    for k_frame in range(images_series.n_frames):
-        reader.SetFileName(images_series.get_image_filename(k_frame=k_frame))
+    for k_frame in range(image_series.n_frames):
+        reader.SetFileName(image_series.get_image_filename(k_frame=k_frame))
         reader.Update()
 
         image_scalars = reader.GetOutput().GetPointData().GetScalars()
@@ -79,9 +79,9 @@ def compute_normalized_images(
 
     writer.SetInputConnection(shifter.GetOutputPort())
 
-    for k_frame in range(images_series.n_frames):
+    for k_frame in range(image_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        reader.SetFileName(images_series.get_image_filename(k_frame=k_frame               ))
-        writer.SetFileName(images_series.get_image_filename(k_frame=k_frame, suffix=suffix))
+        reader.SetFileName(image_series.get_image_filename(k_frame=k_frame               ))
+        writer.SetFileName(image_series.get_image_filename(k_frame=k_frame, suffix=suffix))
         writer.Write()

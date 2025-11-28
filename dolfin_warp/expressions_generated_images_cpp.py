@@ -12,23 +12,17 @@
 
 def get_ExprGenIm_cpp_pybind(
         im_dim      : int        ,  # 2, 3
-        im_type     : str  = "im",  # im, grad
         im_is_def   : bool = 1   ,  #
         im_texture  : str  = "no",  # no, tagging
         im_resample : bool = 1   ,  #
         verbose     : bool = 0   ): #
 
     assert (im_dim in (2,3))
-    assert (im_type in ("im", "grad"))
-    assert (not ((im_type=="grad") and (im_is_def)))
-    assert (im_texture in ("no", "tagging", "tagging-diffComb", "tagging-signed", "tagging-signed-diffComb"))
+    assert (im_texture in ("no", "tagging"))
 
     name  = "Expr"
     name += str(im_dim)
-    if   (im_type == "im"):
-        name += "GenIm"
-    elif (im_type == "grad"):
-        name += "GenGradIm"
+    name += "GenIm"
     if   (im_is_def == 0):
         name += "Ref"
     elif (im_is_def == 1):
@@ -91,7 +85,9 @@ public:
     int                                        measured_image_dimensions[3];
     vtkSmartPointer<vtkImageFFT>               measured_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
     vtkSmartPointer<vtkImageData>              measured_fft_image = nullptr;'''+('''
-    int                                        resampling_factor;
+    double                                     resampling_factor;
+    double                                     effective_resampling_factors[3];
+    double                                     effective_resampling_factor;
     vtkSmartPointer<vtkImageData>              generated_upsampled_image = vtkSmartPointer<vtkImageData>::New();
     double                                     generated_upsampled_image_origin[3];
     double                                     generated_upsampled_image_spacing[3];
@@ -110,13 +106,16 @@ public:
     vtkSmartPointer<vtkImageData>              generated_image = vtkSmartPointer<vtkImageData>::New();
     vtkSmartPointer<vtkImageFFT>               generated_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
     vtkSmartPointer<vtkImageData>              generated_fft_image = nullptr;''')*(not im_resample)+('''
-    vtkSmartPointer<vtkImageFFT>               generated_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
+    vtkSmartPointer<vtkImageFFT>               generated_upsampled_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
+    vtkSmartPointer<vtkImageData>              generated_upsampled_fft_image = nullptr;
     vtkSmartPointer<vtkImageData>              generated_fft_image = vtkSmartPointer<vtkImageData>::New();
     vtkSmartPointer<vtkImageRFFT>              generated_rfft_filter = vtkSmartPointer<vtkImageRFFT>::New();
     vtkSmartPointer<vtkImageExtractComponents> generated_extract_filter = vtkSmartPointer<vtkImageExtractComponents>::New();
-    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+('''
-    vtkSmartPointer<vtkImageGradient>          grad = vtkSmartPointer<vtkImageGradient>::New();
-    vtkSmartPointer<vtkImageData>              grad_image = nullptr;''')*(im_type=="grad")+'''
+    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+'''
+    vtkSmartPointer<vtkImageMathematics>       diff_subtract_filter = vtkSmartPointer<vtkImageMathematics>::New();
+    vtkSmartPointer<vtkImageData>              diff_image = nullptr;
+    vtkSmartPointer<vtkImageFFT>               diff_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
+    vtkSmartPointer<vtkImageData>              diff_fft = nullptr;
     vtkSmartPointer<vtkImageInterpolator>      generated_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();'''+('''
     mutable Eigen::Matrix<double, n_dim, 1>    UX;''')*(im_is_def)+'''
 
@@ -126,17 +125,18 @@ public:
         const double &X0_=0.,
         const double &Y0_=0.,'''+('''
         const double &Z0_=0.,''')*(im_dim==3)+'''
-        const double &s_=0.,''')*(im_texture=="tagging")+'''
+        const double &s_=0.1,''')*(im_texture=="tagging")+'''
         const char* image_interpol_mode="linear",
         const double &image_interpol_out_value=0.
     ) :
-        dolfin::Expression('''+('''n_dim''')*(im_type=="grad")+''')
+        dolfin::Expression()
     {'''+('''
         std::cout << "constructor" << std::endl;''')*(verbose)+'''
 
         measured_reader->UpdateDataObject();
         measured_image = measured_reader->GetOutput();
 
+        measured_fft_filter->SetDimensionality(n_dim);
         measured_fft_filter->SetInputDataObject(measured_image);
         measured_fft_filter->UpdateDataObject();
         measured_fft_image = measured_fft_filter->GetOutput();'''+('''
@@ -148,7 +148,7 @@ public:
         X_3D[2] = Z;'''+('''
         x_3D[2] = Z;''')*(im_is_def))*(im_dim==2)+'''
 
-        probe_filter->SetInputDataObject('''+('''measured_image''')*(not im_resample)+('''generated_upsampled_image''')*(im_resample)+''');
+        probe_filter->SetInputDataObject('''+('''generated_image''')*(not im_resample)+('''generated_upsampled_image''')*(im_resample)+''');
         probe_filter->SetSourceData('''+('''ugrid''')*(not im_is_def)+('''warp_ugrid''')*(im_is_def)+''');
         probe_filter->UpdateDataObject();'''+('''
 
@@ -162,9 +162,10 @@ public:
         generated_fft_filter->UpdateDataObject();
         generated_fft_image = generated_fft_filter->GetOutput();''')*(not im_resample)+('''
 
-        generated_fft_filter->SetDimensionality(n_dim);
-        generated_fft_filter->SetInputDataObject(generated_upsampled_image);
-        generated_fft_filter->UpdateDataObject();
+        generated_upsampled_fft_filter->SetDimensionality(n_dim);
+        generated_upsampled_fft_filter->SetInputDataObject(generated_upsampled_image);
+        generated_upsampled_fft_filter->UpdateDataObject();
+        generated_upsampled_fft_image = generated_upsampled_fft_filter->GetOutput();
 
         generated_rfft_filter->SetDimensionality(n_dim);
         generated_rfft_filter->SetInputDataObject(generated_fft_image);
@@ -174,12 +175,18 @@ public:
         generated_extract_filter->SetComponents(0);
         generated_extract_filter->UpdateDataObject();
 
-        generated_image = generated_extract_filter->GetOutput();''')*(im_resample)+('''
+        generated_image = generated_extract_filter->GetOutput();''')*(im_resample)+'''
 
-        grad->SetDimensionality(n_dim);
-        grad->SetInputDataObject(generated_image);
-        grad->UpdateDataObject();
-        grad_image = grad->GetOutput();''')*(im_type=="grad")+'''
+        diff_subtract_filter->SetOperationToSubtract();
+        diff_subtract_filter->SetInput1Data(generated_image);
+        diff_subtract_filter->SetInput2Data(measured_image);
+        diff_subtract_filter->UpdateDataObject();
+        diff_image = diff_subtract_filter->GetOutput();
+
+        diff_fft_filter->SetDimensionality(n_dim);
+        diff_fft_filter->SetInputDataObject(diff_image);
+        diff_fft_filter->UpdateDataObject();
+        diff_fft = diff_fft_filter->GetOutput();
 
         if (strcmp(image_interpol_mode, "nearest") == 0)
         {
@@ -199,16 +206,16 @@ public:
             std::exit(0);
         }
         generated_interpolator->SetOutValue(image_interpol_out_value);
-        // generated_interpolator->Initialize('''+('''generated_image''')*(im_type=="im")+('''grad_image''')*(im_type=="grad")+'''); // MG20240524: Possible here? Nope! Apparently, after modifying the image content, the interpolator must be initialized again…
+        // generated_interpolator->Initialize(generated_image); // MG20240524: Possible here? Nope! Apparently, after modifying the image content, the interpolator must be initialized again…
     }
 
-    void init_image
+    void init_images
     (
         const char* filename'''+(''',
-        const int &resampling_factor_=1''')*(im_resample)+'''
+        const double &resampling_factor_=1.''')*(im_resample)+'''
     )
     {'''+('''
-        std::cout << "init_image" << std::endl;''')*(verbose)+'''
+        std::cout << "init_images" << std::endl;''')*(verbose)+'''
 
         measured_reader->SetFileName(filename);
         measured_reader->Update();
@@ -237,10 +244,6 @@ public:
         generated_image->SetDimensions(measured_image_dimensions);
         generated_image->AllocateScalars(VTK_DOUBLE, 1);''')*(not im_resample)+('''
 
-        resampling_factor = resampling_factor_;'''+('''
-        std::cout << "resampling_factor = "
-                  <<  resampling_factor << std::endl;''')*(verbose)+'''
-
         generated_upsampled_image_origin[0] = measured_image_origin[0];
         generated_upsampled_image_origin[1] = measured_image_origin[1];
         generated_upsampled_image_origin[2] = measured_image_origin[2];'''+('''
@@ -249,21 +252,37 @@ public:
                   <<  generated_upsampled_image_origin[1] << " "
                   <<  generated_upsampled_image_origin[2] << std::endl;''')*(verbose)+'''
 
-        generated_upsampled_image_spacing[0] = measured_image_spacing[0]/resampling_factor;
-        generated_upsampled_image_spacing[1] = measured_image_spacing[1]/resampling_factor;
-        generated_upsampled_image_spacing[2] = '''+('''1.''')*(im_dim==2)+('''measured_image_spacing[2]/resampling_factor''')*(im_dim==3)+''';'''+('''
-        std::cout << "generated_upsampled_image_spacing = "
-                  <<  generated_upsampled_image_spacing[0] << " "
-                  <<  generated_upsampled_image_spacing[1] << " "
-                  <<  generated_upsampled_image_spacing[2] << std::endl;''')*(verbose)+'''
+        resampling_factor = resampling_factor_;'''+('''
+        std::cout << "resampling_factor = "
+                  <<  resampling_factor << std::endl;''')*(verbose)+'''
 
-        generated_upsampled_image_dimensions[0] = measured_image_dimensions[0]*resampling_factor;
-        generated_upsampled_image_dimensions[1] = measured_image_dimensions[1]*resampling_factor;
-        generated_upsampled_image_dimensions[2] = '''+('''1''')*(im_dim==2)+('''measured_image_dimensions[2]*resampling_factor''')*(im_dim==3)+''';'''+('''
+        generated_upsampled_image_dimensions[0] = std::ceil(measured_image_dimensions[0]*resampling_factor);
+        generated_upsampled_image_dimensions[1] = std::ceil(measured_image_dimensions[1]*resampling_factor);
+        generated_upsampled_image_dimensions[2] = '''+('''1''')*(im_dim==2)+('''std::ceil(measured_image_dimensions[2]*resampling_factor)''')*(im_dim==3)+''';'''+('''
         std::cout << "generated_upsampled_image_dimensions = "
                   <<  generated_upsampled_image_dimensions[0] << " "
                   <<  generated_upsampled_image_dimensions[1] << " "
                   <<  generated_upsampled_image_dimensions[2] << std::endl;''')*(verbose)+'''
+
+        effective_resampling_factors[0] = static_cast<double>(generated_upsampled_image_dimensions[0])/measured_image_dimensions[0]; // MG20251116: static_cast needed for floating point division
+        effective_resampling_factors[1] = static_cast<double>(generated_upsampled_image_dimensions[1])/measured_image_dimensions[1]; // MG20251116: static_cast needed for floating point division
+        effective_resampling_factors[2] = static_cast<double>(generated_upsampled_image_dimensions[2])/measured_image_dimensions[2]; // MG20251116: static_cast needed for floating point division'''+('''
+        std::cout << "effective_resampling_factors = "
+                  <<  effective_resampling_factors[0] << " "
+                  <<  effective_resampling_factors[1] << " "
+                  <<  effective_resampling_factors[2] << std::endl;''')*(verbose)+'''
+
+        effective_resampling_factor = effective_resampling_factors[0]*effective_resampling_factors[1]*effective_resampling_factors[2];'''+('''
+        std::cout << "effective_resampling_factor = "
+                  <<  effective_resampling_factor << std::endl;''')*(verbose)+'''
+
+        generated_upsampled_image_spacing[0] = measured_image_spacing[0]/effective_resampling_factors[0];
+        generated_upsampled_image_spacing[1] = measured_image_spacing[1]/effective_resampling_factors[1];
+        generated_upsampled_image_spacing[2] = '''+('''1.''')*(im_dim==2)+('''measured_image_spacing[2]/effective_resampling_factors[2]''')*(im_dim==3)+''';'''+('''
+        std::cout << "generated_upsampled_image_spacing = "
+                  <<  generated_upsampled_image_spacing[0] << " "
+                  <<  generated_upsampled_image_spacing[1] << " "
+                  <<  generated_upsampled_image_spacing[2] << std::endl;''')*(verbose)+'''
 
         generated_upsampled_image->SetOrigin(generated_upsampled_image_origin);
         generated_upsampled_image->SetSpacing(generated_upsampled_image_spacing);
@@ -294,25 +313,25 @@ public:
                   <<  generated_fft_image->GetPointData()->GetScalars()->GetNumberOfComponents() << std::endl;''')*(verbose))*(im_resample)+'''
     }
 
-    void update_image
+    void update_measured_image
     (
         const char* filename
     )
     {'''+('''
-        std::cout << "update_image" << std::endl;''')*(verbose)+'''
+        std::cout << "update_measured_image" << std::endl;''')*(verbose)+'''
 
         measured_reader->SetFileName(filename);
         measured_reader->Update();
         measured_fft_filter->Update();
     }
 
-    void init_ugrid
+    void init_mesh_and_disp
     (
         std::shared_ptr<dolfin::Mesh>     mesh_,
         std::shared_ptr<dolfin::Function> U_
     )
     {'''+('''
-        std::cout << "init_ugrid" << std::endl;''')*(verbose)+'''
+        std::cout << "init_mesh_and_disp" << std::endl;''')*(verbose)+'''
 
         mesh = mesh_;
         assert (mesh->geometry()->dim() == n_dim); // MG20190704: asserts are not executed…
@@ -474,9 +493,9 @@ public:
         ugrid->Modified();
     }''')*(im_is_def)+'''
 
-    void generate_upsampled_image()
+    void '''+('''generate_image''')*(not im_resample)+('''generate_upsampled_image''')*(im_resample)+'''()
     {'''+('''
-        std::cout << "generate_upsampled_image" << std::endl;''')*(verbose)+('''
+        std::cout << "'''+('''generate_image''')*(not im_resample)+('''generate_upsampled_image''')*(im_resample)+'''" << std::endl;''')*(verbose)+('''
 
         warp_filter->Update();''')*(im_is_def)+'''
 
@@ -506,15 +525,12 @@ public:
                 probe_filter_disp->GetTuple(k_point, ux_3D.data());
                 X_3D = x_3D - ux_3D;''')*(im_is_def)+('''
 
-                I[0] = 1.;''')*(im_texture=="no")+('''
+                I[0] = 1.;''')*(im_texture=="no")+(('''
                 I[0] = pow(abs(sin(M_PI*(X_3D[0]-X0[0])/s))
-                         * abs(sin(M_PI*(X_3D[1]-X0[1])/s)), 0.5);''')*(im_texture=="tagging")+('''
-                I[0] = pow(1 + 3*abs(sin(M_PI*(X_3D[0]-X0[0])/s))
-                                *abs(sin(M_PI*(X_3D[1]-X0[1])/s)), 0.5) - 1;''')*(im_texture=="tagging-diffComb")+('''
-                I[0] = pow((1+sin(M_PI*(X_3D[0]-X0[0])/s-M_PI/2))/2
-                          *(1+sin(M_PI*(X_3D[1]-X0[1])/s-M_PI/2))/2, 0.5);''')*(im_texture=="tagging-signed")+('''
-                I[0] = pow(1 + 3*(1+sin(M_PI*(X_3D[0]-X0[0])/s-M_PI/2))/2
-                                *(1+sin(M_PI*(X_3D[1]-X0[1])/s-M_PI/2))/2, 0.5) - 1;''')*(im_texture=="tagging-signed-diffComb")+'''
+                         * abs(sin(M_PI*(X_3D[1]-X0[1])/s)), 1./2);''')*(im_dim==2)+('''
+                I[0] = pow(abs(sin(M_PI*(X_3D[0]-X0[0])/s))
+                         * abs(sin(M_PI*(X_3D[1]-X0[1])/s))
+                         * abs(sin(M_PI*(X_3D[2]-X0[2])/s)), 1./3);''')*(im_dim==3))*(im_texture=="tagging")+'''
             }
             sca->SetTuple(k_point, I);
         }
@@ -525,130 +541,189 @@ public:
     {'''+('''
         std::cout << "compute_downsampled_images" << std::endl;''')*(verbose)+'''
 
-        generated_fft_filter->Update();
+        generated_upsampled_fft_filter->Update();
 
-        vtkSmartPointer<vtkDataArray> up_sca = generated_fft_filter->GetOutput()->GetPointData()->GetScalars();
-        vtkSmartPointer<vtkDataArray> sca = generated_fft_image->GetPointData()->GetScalars();
-        int up_k_x, up_k_y, up_k_z, up_k_point;
-        int k_x, k_y, k_z, k_point;
-        double I[2];
-        for (k_z = 0; k_z<measured_image_dimensions[2]; ++k_z)
+        int N_lx = measured_image_dimensions[0];
+        int N_ly = measured_image_dimensions[1];
+        int N_lz = measured_image_dimensions[2];
+
+        bool has_nyq_x = (N_lx % 2 == 0);
+        bool has_nyq_y = (N_ly % 2 == 0);
+        bool has_nyq_z = (N_lz % 2 == 0);
+
+        int N_hx = generated_upsampled_image_dimensions[0];
+        int N_hy = generated_upsampled_image_dimensions[1];
+        int N_hz = generated_upsampled_image_dimensions[2];
+
+        // Loop over the COARSE grid
+        for (int k_z = 0; k_z < N_lz; ++k_z)
         {
-            if (k_z <= measured_image_dimensions[2]/2) // FA20200217: NOTE: This should be equivalent to python's a//b (because it is dividing int/int)
-            {
-                up_k_z = k_z;
-            }
-            else
-            {
-                up_k_z = k_z + (generated_upsampled_image_dimensions[2] - measured_image_dimensions[2]);
-            }
+            // Z-Dimension Setup
+            bool is_nyq_z = has_nyq_z && (k_z == N_lz / 2);
+            int base_k_z = (k_z <= N_lz / 2) ? k_z : k_z + (N_hz - N_lz);
+            int alias_k_z = (N_hz - base_k_z) % N_hz;
 
-            for (k_y = 0; k_y<measured_image_dimensions[1]; ++k_y)
+            // Define Iteration Set for Z: [Base] or [Base, Alias]
+            int z_indices[2] = {base_k_z, alias_k_z};
+            int z_count = is_nyq_z ? 2 : 1;
+                        
+            for (int k_y = 0; k_y < N_ly; ++k_y)
             {
-                if (k_y <= measured_image_dimensions[1]/2) // FA20200217: NOTE: This should be equivalent to python's a//b (because it is dividing int/int)
-                {
-                    up_k_y = k_y;
-                }
-                else
-                {
-                    up_k_y = k_y + (generated_upsampled_image_dimensions[1] - measured_image_dimensions[1]);
-                }
+                bool is_nyq_y = has_nyq_y && (k_y == N_ly / 2);
+                int base_k_y = (k_y <= N_ly / 2) ? k_y : k_y + (N_hy - N_ly);
+                int alias_k_y = (N_hy - base_k_y) % N_hy;
 
-                for (k_x = 0; k_x<measured_image_dimensions[0]; ++k_x)
+                int y_indices[2] = {base_k_y, alias_k_y};
+                int y_count = is_nyq_y ? 2 : 1;
+
+                for (int k_x = 0; k_x < N_lx; ++k_x)
                 {
-                    if (k_x <= measured_image_dimensions[0]/2) // FA20200217: NOTE: This should be equivalent to python's a//b (because it is dividing int/int)
+                    bool is_nyq_x = has_nyq_x && (k_x == N_lx / 2);
+                    int base_k_x = (k_x <= N_lx / 2) ? k_x : k_x + (N_hx - N_lx);
+                    int alias_k_x = (N_hx - base_k_x) % N_hx;
+
+                    int x_indices[2] = {base_k_x, alias_k_x};
+                    int x_count = is_nyq_x ? 2 : 1;
+
+                    double sum_r = 0.0;
+                    double sum_i = 0.0;
+
+                    // === COMBINATORIAL SUMMATION ===
+                    // Explicitly iterate over the valid source indices for each dimension
+                                        
+                    for (int iz = 0; iz < z_count; ++iz)
                     {
-                        up_k_x = k_x;
-                    }
-                    else
-                    {
-                        up_k_x = k_x + (generated_upsampled_image_dimensions[0] - measured_image_dimensions[0]);
+                        int curr_z = z_indices[iz];
+                        
+                        for (int iy = 0; iy < y_count; ++iy)
+                        {
+                            int curr_y = y_indices[iy];
+                            
+                            for (int ix = 0; ix < x_count; ++ix)
+                            {
+                                int curr_x = x_indices[ix];
+
+                                // Accumulate Energy
+                                sum_r += generated_upsampled_fft_image->GetScalarComponentAsDouble(curr_x, curr_y, curr_z, 0);
+                                sum_i += generated_upsampled_fft_image->GetScalarComponentAsDouble(curr_x, curr_y, curr_z, 1);
+                            }
+                        }
                     }
 
-                       k_point =    k_z*           measured_image_dimensions[1]*           measured_image_dimensions[0] +    k_y*           measured_image_dimensions[0] +    k_x;
-                    up_k_point = up_k_z*generated_upsampled_image_dimensions[1]*generated_upsampled_image_dimensions[0] + up_k_y*generated_upsampled_image_dimensions[0] + up_k_x;
-                    up_sca->GetTuple(up_k_point, I);
-                    // std::cout << "I = " << I[0] << " " << I[1] << std::endl;
-                    I[0] /= pow(resampling_factor, n_dim);
-                    I[1] /= pow(resampling_factor, n_dim);
-                    // std::cout << "I = " << I[0] << " " << I[1] << std::endl;
-                    sca->SetTuple(k_point, I);
+                    // Normalize
+                    sum_r /= effective_resampling_factor;
+                    sum_i /= effective_resampling_factor;
+
+                    // Set Output
+                    generated_fft_image->SetScalarComponentFromDouble(k_x, k_y, k_z, 0, sum_r);
+                    generated_fft_image->SetScalarComponentFromDouble(k_x, k_y, k_z, 1, sum_i);
                 }
             }
-            generated_fft_image->Modified();
         }
+        generated_fft_image->Modified();
 
         generated_rfft_filter->Update();
 
         generated_extract_filter->Update();
+
+        // generated_extract_filter->SetComponents(1);
+        // generated_extract_filter->Update();
+        // double imag_norm = compute_image_norm("generated");
+        // std::cout << "Imaginary Norm: " << imag_norm << std::endl;
+
+        // generated_extract_filter->SetComponents(0);
+        // generated_extract_filter->Update();
+        // double real_norm = compute_image_norm("generated");
+        // std::cout << "Real Norm: " << real_norm << std::endl;
     }''')*(im_resample)+'''
 
-    void generate_image()
+    void update_generated_image()
     {'''+('''
-        std::cout << "generate_image" << std::endl;''')*(verbose)+'''
+        std::cout << "update_generated_image" << std::endl;''')*(verbose)+('''
 
-        generate_upsampled_image();'''+('''
-
+        generate_image();
         generated_fft_filter->Update();''')*(not im_resample)+('''
 
-        compute_downsampled_image();''')*(im_resample)+('''
+        generate_upsampled_image();
+        compute_downsampled_image();''')*(im_resample)+'''
 
-        grad->Update();''')*(im_type=="grad")+'''
+        diff_subtract_filter->Update();
+        diff_fft_filter->Update();
 
-        generated_interpolator->Initialize('''+('''generated_image''')*(im_type=="im")+('''grad_image''')*(im_type=="grad")+'''); // MG20240524: Not needed, right? Actually, it is! Apparently, after modifying the image content, the interpolator must be initialized again…
+        generated_interpolator->Initialize(generated_image); // MG20240524: Not needed, right? Actually, it is! Apparently, after modifying the image content, the interpolator must be initialized again…
+    }
+
+    vtkSmartPointer<vtkImageData> get_image_from_name
+    (
+        const char* image_name
+    )
+    {
+        vtkSmartPointer<vtkImageData> image = vtkSmartPointer<vtkImageData>::New();
+        if (strcmp(image_name, "measured") == 0)
+        {
+            image = measured_image;
+        }
+        else if (strcmp(image_name, "measured_fft") == 0)
+        {
+            image = measured_fft_image;
+        }'''+('''
+        else if (strcmp(image_name, "generated") == 0)
+        {
+            image = generated_image;
+        }
+        else if (strcmp(image_name, "generated_fft") == 0)
+        {
+            image = generated_fft_image;
+        }''')*(not im_resample)+('''
+        else if (strcmp(image_name, "upsampled") == 0)
+        {
+            image = generated_upsampled_image;
+        }
+        else if (strcmp(image_name, "upsampled_fft") == 0)
+        {
+            image = generated_upsampled_fft_image;
+        }
+        else if (strcmp(image_name, "generated_fft") == 0)
+        {
+            image = generated_fft_image;
+        }
+        else if (strcmp(image_name, "generated") == 0)
+        {
+            image = generated_image;
+        }''')*(im_resample)+'''
+        else if (strcmp(image_name, "diff_image") == 0)
+        {
+            image = diff_image;
+        }
+        else if (strcmp(image_name, "diff_fft") == 0)
+        {
+            image = diff_fft;
+        }
+        else if (strcmp(image_name, "probe") == 0)
+        {
+            image = probe_filter->GetImageDataOutput();
+        }
+        else
+        {
+            std::cout << "image_name (" << image_name << ") must be \\"measured\\"'''+(''', \\"upsampled\\"''')*(im_resample)+''', \\"generated\\" or their fft. Aborting." << std::endl;
+            std::exit(0);
+        }
+        return image;
     }
 
     void write_image
     (
+        const char* image_name,
         const char* filename
     )
     {'''+('''
-        std::cout << "write_image" << std::endl;''')*(verbose)+'''
+        std::cout << "write_" << image_name << "_image" << std::endl;''')*(verbose)+'''
 
         vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        writer->SetInputData(generated_image);
+        writer->SetInputData(get_image_from_name(image_name));
         writer->SetFileName(filename);
         writer->Write();
-    }'''+('''
-
-    void write_grad_image
-    (
-        const char* filename
-    )
-    {'''+('''
-        std::cout << "write_gard_image" << std::endl;''')*(verbose)+'''
-
-        vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        writer->SetInputData(grad_image);
-        writer->SetFileName(filename);
-        writer->Write();
-    }''')*(im_type=="grad")+'''
-
-    void write_probe_filter_image
-    (
-        const char* filename
-    )
-    {'''+('''
-        std::cout << "write_probe_filter_image" << std::endl;''')*(verbose)+'''
-
-        vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        writer->SetInputData(probe_filter->GetImageDataOutput());
-        writer->SetFileName(filename);
-        writer->Write();
-    }'''+('''
-
-    void write_upsampled_image
-    (
-        const char* filename
-    )
-    {'''+('''
-        std::cout << "write_upsampled_image" << std::endl;''')*(verbose)+'''
-
-        vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        writer->SetInputData(generated_upsampled_image);
-        writer->SetFileName(filename);
-        writer->Write();
-    }''')*(im_resample)+'''
+    }
 
     void write_ugrid
     (
@@ -676,48 +751,104 @@ public:
         writer->Write();
     }''')*(im_is_def)+'''
 
-    double compute_measured_image_integral()
+    double compute_image_integral
+    (
+        const char* image_name
+    )
     {'''+('''
-        std::cout << "compute_measured_image_integral" << std::endl;''')*(verbose)+'''
+        std::cout << "compute_" << image_name << "_image_integral" << std::endl;''')*(verbose)+'''
 
-        double int = 0.;
+        vtkSmartPointer<vtkImageData> image = get_image_from_name(image_name);
+        
+        int* image_dimensions = image->GetDimensions();
+
+        double sum = 0.;
         double val;
-        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z) {
-         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y) {
-          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x) {
-            val = measured_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            int += val;
-            // int += pow(val, 2.0);
+        for (int k_z = 0; k_z < image_dimensions[2]; ++k_z)
+        {
+         for (int k_y = 0; k_y < image_dimensions[1]; ++k_y)
+         {
+          for (int k_x = 0; k_x < image_dimensions[0]; ++k_x)
+          {
+            val = image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            sum += val;
           }
          }
         }
-        int /= measured_image_dimensions[2]*measured_image_dimensions[1]*measured_image_dimensions[0];
-        // int = pow(int, 0.5);'''+('''
-        std::cout << "int = " << int << std::endl;''')*(verbose)+'''
+        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];'''+('''
+        std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
 
-        return int;
+        return sum;
     }
 
-    double compute_generated_image_integral()
+    double compute_image_norm
+    (
+        const char* image_name
+    )
     {'''+('''
-        std::cout << "compute_generated_image_integral" << std::endl;''')*(verbose)+'''
+        std::cout << "compute " << image_name << " image_norm" << std::endl;''')*(verbose)+'''
 
-        double int = 0.;
+        vtkSmartPointer<vtkImageData> image = get_image_from_name(image_name);'''+('''
+        std::cout << "image = " << image << std::endl;''')*(verbose)+'''
+        
+        int* image_dimensions = image->GetDimensions();'''+('''
+        std::cout << "image_dimensions = "
+                  <<  image_dimensions[0] << " "
+                  <<  image_dimensions[1] << " "
+                  <<  image_dimensions[2] << std::endl;''')*(verbose)+'''
+
+        double sum = 0.;
         double val;
-        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z) {
-         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y) {
-          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x) {
-            val = generated_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            int += val;
-            // int += pow(val, 2.0);
+        for (int k_z = 0; k_z < image_dimensions[2]; ++k_z)
+        {
+         for (int k_y = 0; k_y < image_dimensions[1]; ++k_y)
+         {
+          for (int k_x = 0; k_x < image_dimensions[0]; ++k_x)
+          {
+            val = image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            sum += pow(val, 2.0);
           }
          }
         }
-        int /= measured_image_dimensions[2]*measured_image_dimensions[1]*measured_image_dimensions[0];
-        // int = pow(int, 0.5);'''+('''
-        std::cout << "int = " << int << std::endl;''')*(verbose)+'''
+        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
+        sum = pow(sum, 0.5);'''+('''
+        std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
 
-        return int;
+        return sum;
+    }
+
+    double compute_fourier_norm
+    (
+        const char* image_name
+    )
+    {'''+('''
+        std::cout << "compute_" << image_name << "_image_integral" << std::endl;''')*(verbose)+'''
+
+        vtkSmartPointer<vtkImageData> image = get_image_from_name(image_name);
+        
+        int* image_dimensions = image->GetDimensions();
+
+        double sum = 0.;
+        double val;
+        for (int k_z = 0; k_z < image_dimensions[2]; ++k_z)
+        {
+         for (int k_y = 0; k_y < image_dimensions[1]; ++k_y)
+         {
+          for (int k_x = 0; k_x < image_dimensions[0]; ++k_x)
+          {
+            val = image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            sum += pow(val, 2.0);
+            val = image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
+            sum += pow(val, 2.0);
+          }
+         }
+        }
+        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
+        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
+        sum = pow(sum, 0.5);'''+('''
+        std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
+
+        return sum;
     }
 
     double compute_image_energy()
@@ -725,18 +856,29 @@ public:
         std::cout << "compute_image_energy" << std::endl;''')*(verbose)+'''
 
         double ener = 0., norm = 0.;
-        double ima, gen;
-        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z) {
-         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y) {
-          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x) {
-            ima = measured_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+        double gen, mes, dif;
+        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z)
+        {
+         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y)
+         {
+          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x)
+          {
             gen = generated_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            ener += pow(ima - gen, 2.0);
-            norm += pow(ima, 2.0);
+            mes = measured_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            ener += pow(gen - mes, 2.0);
+            norm += pow(mes      , 2.0);
+
+            // dif = diff_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            // if (std::abs(gen-mes-dif) > 1e-3)
+            // {
+            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif = " << dif << std::endl;
+            // }
           }
          }
         }
-        ener = pow(ener/norm, 0.5);'''+('''
+        ener /= norm;
+        // ener /= 2;
+        // ener = pow(ener, 0.5);'''+('''
         std::cout << "ener = " << ener << std::endl;''')*(verbose)+'''
 
         return ener;
@@ -744,26 +886,58 @@ public:
 
     double compute_fourier_energy()
     {'''+('''
-        std::cout << "compute_image_energy" << std::endl;''')*(verbose)+'''
+        std::cout << "compute_fourier_energy" << std::endl;''')*(verbose)+'''
 
         double ener = 0., norm = 0.;
-        double ima, gen;
-        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z) {
-         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y) {
-          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x) {
-            ima = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            gen = generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            ener += pow(ima - gen, 2.0);
-            norm += pow(ima, 2.0);
+        double gen, mes, dif1, dif2;
+        for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z)
+        {
+         for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y)
+         {
+          for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x)
+          {
+            // mes = pow(measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0), 2.0)
+            //     + pow(measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1), 2.0);
+            // mes = pow(mes, 0.5);
+            // gen = pow(generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0), 2.0)
+            //     + pow(generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1), 2.0);
+            // gen = pow(gen, 0.5);
+            // ener += pow(gen - mes, 2.0);
+            // norm += pow(mes      , 2.0);
 
-            ima = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
+            mes = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            gen = generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            ener += pow(gen - mes, 2.0);
+            norm += pow(mes      , 2.0);
+
+            // dif = diff_fft->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
+            // ener += pow(dif, 2.0);
+            // norm += pow(mes , 2.0);
+
+            // if (std::abs(gen-mes-dif) > 1e-3)
+            // {
+            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; comp = " << 0 << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif1 = " << dif1 << "; dif2 = " << dif2 << std::endl;
+            // }
+
+            mes = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
             gen = generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
-            ener += pow(ima - gen, 2.0);
-            norm += pow(ima, 2.0);
+            ener += pow(gen - mes, 2.0);
+            norm += pow(mes      , 2.0);
+
+            // dif = diff_fft->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
+            // ener += pow(dif, 2.0);
+            // norm += pow(mes , 2.0);
+
+            // if ((std::abs(gen-mes-dif1) > 1e-3) || (std::abs(gen-mes-dif2) > 1e-3))
+            // {
+            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; comp = " << 0 << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif1 = " << dif1 << "; dif2 = " << dif2 << std::endl;
+            // }
           }
          }
         }
-        ener = pow(ener/norm, 0.5);'''+('''
+        ener /= norm;
+        // ener /= 2;
+        // ener = pow(ener, 0.5);'''+('''
         std::cout << "ener = " << ener << std::endl;''')*(verbose)+'''
 
         return ener;
@@ -800,21 +974,20 @@ PYBIND11_MODULE(SIGNATURE, m)
 {
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>(m, "'''+name+'''")
     .def(pybind11::init<'''+('''const double&, ''')*(im_dim==2)+('''const double&, const double&, '''+('''const double&, ''')*(im_dim==3)+'''const double&, ''')*(im_texture=="tagging")+'''const char*, const double&>(), '''+('''pybind11::arg("Z") = 0., ''')*(im_dim==2)+('''pybind11::arg("X0") = 0., pybind11::arg("Y0") = 0., '''+('''pybind11::arg("Z0") = 0., ''')*(im_dim==3)+'''pybind11::arg("s") = 0.1, ''')*(im_texture=="tagging")+'''pybind11::arg("image_interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.)
-    .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename")'''+(''', pybind11::arg("resampling_factor_") = 1''')*(im_resample)+''')
-    .def("update_image", &'''+name+'''::update_image, pybind11::arg("filename"))
-    .def("init_ugrid", &'''+name+'''::init_ugrid, pybind11::arg("mesh_"), pybind11::arg("U_"))'''+('''
-    .def("update_disp", &'''+name+'''::update_disp)''')*(im_is_def)+'''
-    .def("generate_upsampled_image", &'''+name+'''::generate_upsampled_image)'''+('''
+    .def("init_images", &'''+name+'''::init_images, pybind11::arg("filename")'''+(''', pybind11::arg("resampling_factor_") = 1.''')*(im_resample)+''')
+    .def("update_measured_image", &'''+name+'''::update_measured_image, pybind11::arg("filename"))
+    .def("init_mesh_and_disp", &'''+name+'''::init_mesh_and_disp, pybind11::arg("mesh_"), pybind11::arg("U_"))'''+('''
+    .def("update_disp", &'''+name+'''::update_disp)''')*(im_is_def)+('''
+    .def("generate_image", &'''+name+'''::generate_image)''')*(not im_resample)+('''
+    .def("generate_upsampled_image", &'''+name+'''::generate_upsampled_image)
     .def("compute_downsampled_image", &'''+name+'''::compute_downsampled_image)''')*(im_resample)+'''
-    .def("generate_image", &'''+name+'''::generate_image)
-    .def("write_image", &'''+name+'''::write_image, pybind11::arg("filename"))'''+('''
-    .def("write_grad_image", &'''+name+'''::write_grad_image, pybind11::arg("filename"))''')*(im_type=="grad")+('''
-    .def("write_upsampled_image", &'''+name+'''::write_upsampled_image, pybind11::arg("filename"))''')*(im_resample)+'''
-    .def("write_probe_filter_image", &'''+name+'''::write_probe_filter_image, pybind11::arg("filename"))
+    .def("update_generated_image", &'''+name+'''::update_generated_image)
+    .def("write_image", &'''+name+'''::write_image, pybind11::arg("image_name"), pybind11::arg("filename"))
     .def("write_ugrid", &'''+name+'''::write_ugrid, pybind11::arg("filename"))'''+('''
     .def("write_warp_ugrid", &'''+name+'''::write_warp_ugrid, pybind11::arg("filename"))''')*(im_is_def)+'''
-    .def("compute_measured_image_integral", &'''+name+'''::compute_measured_image_integral)
-    .def("compute_generated_image_integral", &'''+name+'''::compute_generated_image_integral)
+    .def("compute_image_integral", &'''+name+'''::compute_image_integral, pybind11::arg("image_name"))
+    .def("compute_image_norm", &'''+name+'''::compute_image_norm, pybind11::arg("image_name"))
+    .def("compute_fourier_norm", &'''+name+'''::compute_fourier_norm, pybind11::arg("image_name"))
     .def("compute_image_energy", &'''+name+'''::compute_image_energy)
     .def("compute_fourier_energy", &'''+name+'''::compute_fourier_energy);
 }

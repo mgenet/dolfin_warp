@@ -19,12 +19,12 @@ import myPythonLibrary as mypy
 import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
-from .NonlinearSolver            import           NonlinearSolver
-from .NonlinearSolver_Relaxation import RelaxationNonlinearSolver
+from .NonlinearSolver                 import NonlinearSolver
+from .NonlinearSolverMixin_Relaxation import RelaxationNonlinearSolverMixin
 
 ################################################################################
 
-class NewtonNonlinearSolver(RelaxationNonlinearSolver):
+class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
 
 
 
@@ -53,7 +53,7 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
         self.linear_solver.parameters['verbose']              = bool(0)
 
         # relaxation
-        RelaxationNonlinearSolver.__init__(self, parameters=parameters)
+        self.init_relax(parameters=parameters)
 
         # iterations control
         self.tol_dU      = parameters.get("tol_dU"     , None)

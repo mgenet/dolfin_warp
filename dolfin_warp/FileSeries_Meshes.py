@@ -14,11 +14,11 @@ import vtk.numpy_interface.dataset_adapter as dsa
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-from .FilesSeries import FilesSeries
+from .FileSeries import FileSeries
 
 ################################################################################
 
-class MeshesSeries(FilesSeries):
+class MeshSeries(FileSeries):
 
 
 

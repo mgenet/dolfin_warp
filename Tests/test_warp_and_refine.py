@@ -122,7 +122,7 @@ for n_dim in n_dim_lst:
             regul_poisson=regul_poisson,
             normalize_energies=1,
             relax_type="backtracking",
-            tol_dU=1e-2,
+            newton_tol_dU=1e-2,
             continue_after_fail=1,
             write_qois_limited_precision=1)
 
@@ -177,7 +177,7 @@ for n_dim in n_dim_lst:
             regul_poisson=regul_poisson,
             normalize_energies=1,
             relax_type="backtracking",
-            tol_dU=1e-2,
+            newton_tol_dU=1e-2,
             continue_after_fail=1,
             write_qois_limited_precision=1)
                 

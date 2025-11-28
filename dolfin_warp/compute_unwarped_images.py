@@ -30,18 +30,18 @@ def compute_unwarped_images(
         suffix="unwarped",
         verbose=0):
 
-    images_series = dwarp.ImagesSeries(
+    image_series = dwarp.ImageSeries(
         folder=images_folder,
         basename=images_basename,
         ext=images_ext)
-    ref_image = images_series.get_image(k_frame=0)
+    ref_image = image_series.get_image(k_frame=0)
     image = myvtk.createImage(
         origin=ref_image.GetOrigin(),
         spacing=ref_image.GetSpacing(),
         extent=ref_image.GetExtent())
     scalars = image.GetPointData().GetScalars()
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)
@@ -54,7 +54,7 @@ def compute_unwarped_images(
     for k_frame in range(working_series.n_frames):
         mypy.my_print(verbose, "k_frame = "+str(k_frame))
 
-        def_image = images_series.get_image(k_frame=k_frame)
+        def_image = image_series.get_image(k_frame=k_frame)
 
         interpolator = myvtk.getImageInterpolator(
             image=def_image)
@@ -86,4 +86,4 @@ def compute_unwarped_images(
 
         myvtk.writeImage(
             image=image,
-            filename=images_series.get_mesh_filename(k_frame=k_frame, suffix=suffix))
+            filename=image_series.get_mesh_filename(k_frame=k_frame, suffix=suffix))

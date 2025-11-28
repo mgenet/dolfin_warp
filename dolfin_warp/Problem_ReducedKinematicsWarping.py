@@ -9,11 +9,8 @@
 ################################################################################
 
 import dolfin
-import os
 
 import myPythonLibrary as mypy
-
-import dolfin_warp as dwarp
 
 from .Problem_Warping import WarpingProblem
 
@@ -24,21 +21,25 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
 
 
     def __init__(self,
-            mesh=None,
-            mesh_folder=None,
-            mesh_basename=None,
-            model="translation+rotation+scaling+shear",
-            silent=False):
+            working_folder   : str                                               ,
+            working_basename : str                                               ,
+            mesh             : dolfin.Mesh = None                                ,
+            mesh_folder      : str         = None                                ,
+            mesh_basename    : str         = None                                ,
+            kinematics_model : str         = "translation+rotation+scaling+shear",
+            print_out        : bool        = True                                ):
 
-        self.printer = mypy.Printer(
-            silent=silent)
+        self.set_printer(
+            print_out=print_out,
+            working_folder=working_folder,
+            working_basename=working_basename)
 
         self.set_mesh(
             mesh=mesh,
             mesh_folder=mesh_folder,
             mesh_basename=mesh_basename)
         
-        self.model = model
+        self.kinematics_model = kinematics_model
         self.set_displacement()
 
         self.energies = []
@@ -50,12 +51,12 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.printer.print_str("Defining functions…")
 
         fe_lst = []; n_reduced_variables = 0
-        if ("translation" in self.model):
+        if ("translation" in self.kinematics_model):
             fe_lst += [dolfin.VectorElement(
                 family="R",
                 cell=self.mesh.ufl_cell(),
                 degree=0)]; n_reduced_variables += self.mesh_dimension
-        if ("rotation" in self.model):
+        if ("rotation" in self.kinematics_model):
             if   (self.mesh_dimension==2):
                 fe_lst += [dolfin.FiniteElement(
                     family="R",
@@ -66,12 +67,12 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                     family="R",
                     cell=self.mesh.ufl_cell(),
                     degree=0)]; n_reduced_variables += self.mesh_dimension
-        if ("scaling" in self.model):
+        if ("scaling" in self.kinematics_model):
             fe_lst += [dolfin.VectorElement(
                 family="R",
                 cell=self.mesh.ufl_cell(),
                 degree=0)]; n_reduced_variables += self.mesh_dimension
-        if ("shear" in self.model):
+        if ("shear" in self.kinematics_model):
             if   (self.mesh_dimension==2):
                 fe_lst += [dolfin.FiniteElement(
                     family="R",
@@ -103,7 +104,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
 
         self.reduced_displacement_splitted = dolfin.split(self.reduced_displacement)
         counter = 0
-        if ("translation" in self.model):
+        if ("translation" in self.kinematics_model):
             reduced_translation = self.reduced_displacement_splitted[counter]; counter += 1
             if (self.mesh_dimension==2):
                 T_X = reduced_translation[0]
@@ -120,7 +121,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                 T_X = dolfin.Constant(0)
                 T_Y = dolfin.Constant(0)
                 T_Z = dolfin.Constant(0)
-        if ("rotation" in self.model):
+        if ("rotation" in self.kinematics_model):
             reduced_rotation = self.reduced_displacement_splitted[counter]; counter += 1
             if (self.mesh_dimension==2):
                 R_Z = reduced_rotation
@@ -135,7 +136,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                 R_X = dolfin.Constant(0)
                 R_Y = dolfin.Constant(0)
                 R_Z = dolfin.Constant(0)
-        if ("scaling" in self.model):
+        if ("scaling" in self.kinematics_model):
             reduced_scaling = self.reduced_displacement_splitted[counter]; counter += 1
             if (self.mesh_dimension==2):
                 U_XX = 1+reduced_scaling[0]
@@ -152,7 +153,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                 U_XX = dolfin.Constant(1)
                 U_YY = dolfin.Constant(1)
                 U_ZZ = dolfin.Constant(1)
-        if ("shear" in self.model):
+        if ("shear" in self.kinematics_model):
             reduced_shear = self.reduced_displacement_splitted[counter]; counter += 1
             if (self.mesh_dimension==2):
                 U_XY = reduced_shear
@@ -230,27 +231,16 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
 
     def update_disp(self):
 
-        # self.U.interpolate(self.U_expr) #MG20241218: Cannot interpolate UFL expression, cf. https://fenicsproject.discourse.group/t/project-works-but-interpolate-does-not/10090/2
+        # self.U.interpolate(self.U_expr) # MG20241218: Cannot interpolate UFL expression, cf. https://fenicsproject.discourse.group/t/project-works-but-interpolate-does-not/10090/2
         dolfin.project(
             v=self.U_expr,
             V=self.U_fs,
-            function=self.U)
+            function=self.U) # MG20251007: Reuse the matrix?
         self.U_norm = self.U.vector().norm("l2")
 
 
 
     def update_displacement(self,
-            relax=1):
-
-        self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())
-        self.U_vec_cp[:] = self.U.vector()
-        self.update_disp()
-        self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
-        self.dU_norm = self.dU.vector().norm("l2")
-
-
-
-    def update_displacement_increment(self,
             relax=1):
 
         self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())

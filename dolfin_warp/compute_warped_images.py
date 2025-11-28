@@ -11,7 +11,6 @@
 ################################################################################
 
 import numpy
-import random
 import vtk
 
 import myPythonLibrary    as mypy
@@ -42,11 +41,11 @@ def compute_warped_images(
          and (ref_image_basename is not None))), "Must provide a ref_image or a ref_image_folder and a ref_image_basename. Aborting."
 
     if (ref_image is None):
-        ref_images_series = dwarp.ImagesSeries(
+        ref_image_series = dwarp.ImageSeries(
             folder=ref_image_folder,
             basename=ref_image_basename,
             ext=ref_image_ext)
-        ref_image = ref_images_series.get_image(k_frame=ref_frame)
+        ref_image = ref_image_series.get_image(k_frame=ref_frame)
 
     if (ref_image_model is None):
         ref_image_interpolator = myvtk.getImageInterpolator(
@@ -61,7 +60,7 @@ def compute_warped_images(
         extent=ref_image.GetExtent())
     scalars = image.GetPointData().GetScalars()
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

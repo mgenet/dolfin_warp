@@ -81,7 +81,7 @@ def compute_strains(
         n_part_ids = 0
         n_sector_ids = 0
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

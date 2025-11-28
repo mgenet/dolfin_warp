@@ -132,7 +132,7 @@ for n_dim in n_dim_lst:
             regul_level=regul_level,
             normalize_energies=1,
             relax_type="backtracking",
-            tol_dU=1e-2,
+            newton_tol_dU=1e-2,
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(

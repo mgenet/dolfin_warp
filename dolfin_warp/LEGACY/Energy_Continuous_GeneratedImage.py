@@ -12,99 +12,57 @@ import dolfin
 
 import dolfin_warp as dwarp
 
-from .Energy_Continuous  import ContinuousEnergy
-from .FilesSeries_Images import ImagesSeries
-from .Problem            import Problem
+from .Energy                 import Energy
+from .EnergyMixin_Continuous import ContinuousEnergyMixin
+from .EnergyMixin_Image      import ImageEnergyMixin
+from .FileSeries_Images      import ImageSeries
+from .Problem                import Problem
 
 ################################################################################
 
-class GeneratedImageContinuousEnergy(ContinuousEnergy):
+class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixin):
 
 
 
     def __init__(self,
-            problem          : Problem                ,
-            images_series    : ImagesSeries           ,
-            quadrature_degree: int                    ,
-            texture          : str                    ,
-            name             : str          = "gen_im",
-            w                : float        = 1.      ,
-            ref_frame        : int          = 0       ,
-            resample         : bool         = True    ,
-            compute_DIgen    : bool         = True    ,
-            n_resampling_Igen: int          = 1       ):
+            problem           : Problem               ,
+            image_series      : ImageSeries           ,
+            quadrature_degree : int                   ,
+            texture           : str                   ,
+            name              : str         = "gen_im",
+            w                 : float       = 1.      ,
+            ref_frame         : int         = 0       ,
+            resample          : bool        = True    ,
+            resampling_factor : float       = 1.      ,
+            compute_DIgen     : bool        = True    ):
 
         self.problem           = problem
         self.printer           = self.problem.printer
-        self.images_series     = images_series
+        self.image_series      = image_series
         self.quadrature_degree = quadrature_degree
         self.texture           = texture
         self.name              = name
         self.w                 = w
         self.ref_frame         = ref_frame
         self.resample          = resample
+        self.resampling_factor = resampling_factor
         self.compute_DIgen     = compute_DIgen
-        self.n_resampling_Igen = n_resampling_Igen
 
         self.printer.print_str("Defining generated image correlation energy…")
         self.printer.inc()
 
-        self.printer.print_str("Defining quadrature finite elements…")
+        self.set_quadrature_finite_elements()
 
-        # fe
-        self.fe = dolfin.FiniteElement(
-            family="Quadrature",
-            cell=self.problem.mesh.ufl_cell(),
-            degree=self.quadrature_degree,
-            quad_scheme="default")
-        self.fe._quad_scheme = "default"              # should not be needed
-        for sub_element in self.fe.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
+        self.set_measures()
 
-        # ve
-        self.ve = dolfin.VectorElement(
-            family="Quadrature",
-            cell=self.problem.mesh.ufl_cell(),
-            degree=self.quadrature_degree,
-            quad_scheme="default")
-        self.ve._quad_scheme = "default"              # should not be needed
-        for sub_element in self.ve.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
-
-        # te
-        self.te = dolfin.TensorElement(
-            family="Quadrature",
-            cell=self.problem.mesh.ufl_cell(),
-            degree=self.quadrature_degree,
-            quad_scheme="default")
-        self.te._quad_scheme = "default"              # should not be needed
-        for sub_element in self.te.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
-
-        self.printer.print_str("Defining measure…")
-
-        # dV
-        self.form_compiler_parameters = {
-            "quadrature_degree":self.quadrature_degree,
-            "quadrature_scheme":"default"}
-        self.dV = dolfin.Measure(
-            "dx",
-            domain=self.problem.mesh,
-            metadata=self.form_compiler_parameters)
+        self.set_reference_frame()
 
         self.printer.print_str("Defining generated image…")
         self.printer.inc()
 
-        # ref_frame
-        assert (abs(self.ref_frame) < self.images_series.n_frames),\
-            "abs(ref_frame) = "+str(abs(self.ref_frame))+" >= "+str(self.images_series.n_frames)+" = images_series.n_frames. Aborting."
-        self.ref_frame = self.ref_frame%self.images_series.n_frames
-        self.ref_image_filename = self.images_series.get_image_filename(k_frame=self.ref_frame)
-        self.printer.print_var("ref_frame",self.ref_frame)
-
         # Igen
         name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
-            im_dim=self.images_series.dimension,
+            im_dim=self.image_series.dimension,
             im_type="im",
             im_is_def=self.resample,
             im_texture=self.texture,
@@ -118,38 +76,38 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
             element=self.fe)
         self.Igen.init_image(
             filename=self.ref_image_filename,
-            n_up=self.n_resampling_Igen)
+            resampling_factor_=self.resampling_factor)
         self.Igen.init_ugrid(
             mesh_=self.problem.mesh,
             U_=self.problem.U.cpp_object())
-        self.Igen.generate_image(
-            n_down=self.n_resampling_Igen)
+        self.Igen.generate_image()
         self.Igen.write_image(
-            filename="run_gimic.vti")
+            filename="run_gimic_Igen.vti")
 
         self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Igen_int0",self.Igen_int0)
 
-        if (self.resample):
-            if (self.compute_DIgen):
-                # DIgen
-                name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
-                    im_dim=self.images_series.dimension,
-                    im_type="grad",
-                    im_is_def=1,
-                    im_texture=self.texture,
-                    verbose=0)
-                module = dolfin.compile_cpp_code(cpp)
-                expr = getattr(module, name)
-                self.DIgen = dolfin.CompiledExpression(
-                    expr(),
-                    element=self.ve)
-                self.DIgen.init_image(
-                    filename=self.ref_image_filename)
-                self.DIgen.init_ugrid(
-                    mesh_=self.problem.mesh,
-                    U_=self.problem.U.cpp_object())
-                self.DIgen.generate_image()
+        if (self.compute_DIgen):
+            # DIgen
+            name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
+                im_dim=self.image_series.dimension,
+                im_type="grad",
+                im_is_def=1,
+                im_texture=self.texture,
+                verbose=0)
+            module = dolfin.compile_cpp_code(cpp)
+            expr = getattr(module, name)
+            self.DIgen = dolfin.CompiledExpression(
+                expr(),
+                element=self.ve)
+            self.DIgen.init_image(
+                filename=self.ref_image_filename)
+            self.DIgen.init_ugrid(
+                mesh_=self.problem.mesh,
+                U_=self.problem.U.cpp_object())
+            self.DIgen.generate_image()
+            self.Igen.write_image(
+                filename="run_gimic_DIgen.vti")
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
@@ -157,7 +115,7 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # Idef
         name, cpp = dwarp.get_ExprIm_cpp_pybind(
-            im_dim=self.images_series.dimension,
+            im_dim=self.image_series.dimension,
             im_type="im",
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)
@@ -178,8 +136,8 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
 
         # DIdef
         name, cpp = dwarp.get_ExprIm_cpp_pybind(
-            im_dim=self.images_series.dimension,
-            im_type="grad" if (self.images_series.grad_basename is None) else "grad_no_deriv",
+            im_dim=self.image_series.dimension,
+            im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
             im_is_def=1)
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
@@ -192,48 +150,64 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
             U_=self.problem.U.cpp_object())
 
         self.printer.dec()
+
         self.printer.print_str("Defining characteristic functions…")
         self.printer.inc()
 
         # Phi_ref
-        name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-            im_dim=self.images_series.dimension,
-            im_is_def=0)
-        module = dolfin.compile_cpp_code(cpp)
-        expr = getattr(module, name)
-        self.Phi_ref = dolfin.CompiledExpression(
-            expr(),
-            element=self.fe)
-        self.Phi_ref.init_image(
-            filename=self.ref_image_filename)
+        if (int(dolfin.__version__.split('.')[0]) >= 2018):
+            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
+                im_dim=self.image_series.dimension,
+                im_is_def=0)
+            module = dolfin.compile_cpp_code(cpp)
+            expr = getattr(module, name)
+            self.Phi_ref = dolfin.CompiledExpression(
+                expr(),
+                element=self.fe)
+        else:
+            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
+                im_dim=self.image_series.dimension,
+                im_is_def=0)
+            self.Phi_ref = dolfin.Expression(
+                cppcode=cpp,
+                element=self.fe)
+        self.Phi_ref.init_image(self.ref_image_filename)
 
         self.Phi_ref_int = dolfin.assemble(self.Phi_ref * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Phi_ref_int",self.Phi_ref_int)
 
         # Phi_def
-        name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
-            im_dim=self.images_series.dimension,
-            im_is_def=1)
-        module = dolfin.compile_cpp_code(cpp)
-        expr = getattr(module, name)
-        self.Phi_def = dolfin.CompiledExpression(
-            expr(),
-            element=self.fe)
-        self.Phi_def.init_image(
-            filename=self.ref_image_filename)
-        self.Phi_def.init_disp(
-            U_=self.problem.U.cpp_object())
+        if (int(dolfin.__version__.split('.')[0]) >= 2018):
+            name, cpp = dwarp.get_ExprCharFuncIm_cpp_pybind(
+                im_dim=self.image_series.dimension,
+                im_is_def=1)
+            module = dolfin.compile_cpp_code(cpp)
+            expr = getattr(module, name)
+            self.Phi_def = dolfin.CompiledExpression(
+                expr(),
+                element=self.fe)
+            self.Phi_def.init_disp(self.problem.U.cpp_object())
+        else:
+            cpp = dwarp.get_ExprCharFuncIm_cpp_swig(
+                im_dim=self.image_series.dimension,
+                im_is_def=1)
+            self.Phi_def = dolfin.Expression(
+                cppcode=cpp,
+                element=self.fe)
+            self.Phi_def.init_disp(self.problem.U)
+        self.Phi_def.init_image(self.ref_image_filename)
 
         self.Phi_def_int = dolfin.assemble(self.Phi_def * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Phi_def_int",self.Phi_def_int)
 
         self.printer.dec()
+
         self.printer.print_str("Defining correlation energy…")
         self.printer.inc()
 
         # Psi_c
         self.Psi_c = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef)**2/2
-        if (self.resample) and (self.compute_DIgen):
+        if (self.compute_DIgen):
                 self.DPsi_c  = self.Phi_def * self.Phi_ref * (self.Igen - self.Idef) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
                 self.DDPsi_c = self.Phi_def * self.Phi_ref * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIgen - self.DIdef, self.problem.dU_test)
         else:
@@ -257,13 +231,13 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
         self.printer.print_str("Loading deformed image for correlation energy…")
 
         # Idef
-        self.def_image_filename = self.images_series.get_image_filename(k_frame=k_frame)
+        self.def_image_filename = self.image_series.get_image_filename(k_frame=k_frame)
 
         self.Idef.update_image(
             filename=self.def_image_filename)
 
         # DIdef
-        self.def_grad_image_filename = self.images_series.get_image_grad_filename(k_frame=k_frame)
+        self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame=k_frame)
         self.DIdef.update_image(
             filename=self.def_grad_image_filename)
 
@@ -272,20 +246,23 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
     def call_before_assembly(self,
             write_iterations=False,
             basename=None,
+            k_frame=None,
             k_iter=None,
             **kwargs):
 
         if (self.resample):
             self.Igen.update_disp()
-            self.Igen.generate_image(
-                n_down=self.n_resampling_Igen)
+            self.Igen.generate_image()
+            if (write_iterations):
+                self.Igen.write_image(
+                    filename=basename+"_Igen_"+str(k_frame).zfill(3)+"_"+str(k_iter-1).zfill(3)+".vti")
 
             if (self.compute_DIgen):
                 self.DIgen.update_disp()
                 self.DIgen.generate_image()
                 if (write_iterations):
                     self.DIgen.write_grad_image(
-                        filename=basename+"_"+str(k_iter-1).zfill(3)+".vti")
+                        filename=basename+"_DIgen_"+str(k_frame).zfill(3)+"_"+str(k_iter-1).zfill(3)+".vti")
 
 
 
@@ -294,13 +271,12 @@ class GeneratedImageContinuousEnergy(ContinuousEnergy):
             basename,
             **kwargs):
 
-        if (self.resample):
-            if (self.compute_DIgen):
-                self.DIgen.write_image(
-                    filename=basename+"_"+str(k_frame).zfill(3)+".vti")
+        self.Igen.write_image(
+            filename=basename+"_Igen_"+str(k_frame)+".vti")
 
-        # self.Igen.write_image(
-        #     filename="run_gimic_"+str(k_frame)+".vti")
+        if (self.compute_DIgen):
+            self.DIgen.write_image(
+                filename=basename+"_DIgen_"+str(k_frame).zfill(3)+".vti")
 
 
 

@@ -23,8 +23,6 @@ def warp(
         images_ext                                  : str         = "vti"                               , # vti, vtk
         images_n_frames                             : int         = None                                ,
         images_ref_frame                            : int         = 0                                   ,
-        images_quadrature                           : int         = None                                ,
-        images_quadrature_from                      : str         = "points_count"                      , # points_count, integral
         images_static_scaling                       : bool        = False                               ,
         images_dynamic_scaling                      : bool        = False                               ,
         images_char_func                            : bool        = True                                ,
@@ -35,7 +33,14 @@ def warp(
         mesh_degree                                 : int         = 1                                   ,
         kinematics_type                             : str         = "full"                              , # full, reduced
         reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
-        regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-tractions, discrete-linear-tractions-normal, discrete-linear-tractions-tangential, discrete-linear-tractions-normal-tangential, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
+        image_energy_type                           : str         = "warped"                            , # warped, generated 
+        image_energy_quadrature                     : int         = None                                ,
+        image_energy_quadrature_from                : str         = "points_count"                      , # points_count, integral
+        generated_image_energy_texture              : str         = "tagging"                           , # no, tagging
+        generated_image_energy_resample             : bool        = True                                ,
+        generated_image_energy_resampling_factor    : int         = 1                                   ,
+        generated_image_energy_type                 : str         = "image"                             , # image, fourier
+        regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-equilibrated-tractions, discrete-linear-equilibrated-tractions-normal, discrete-linear-equilibrated-tractions-tangential, discrete-linear-equilibrated-tractions-normal-tangential, discrete-equilibrated, discrete-equilibrated-tractions, discrete-equilibrated-tractions-normal, discrete-equilibrated-tractions-tangential, discrete-equilibrated-tractions-normal-tangential
         regul_types                                 : list        = None                                ,
         regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
         regul_models                                : list        = None                                ,
@@ -43,42 +48,98 @@ def warp(
         regul_level                                 : float       = 0.                                  ,
         regul_levels                                : list        = None                                ,
         regul_poisson                               : float       = 0.                                  ,
-        regul_b                                     : float       = None                                ,
+        regul_body_force                            : float       = None                                ,
         regul_volume_subdomain_data                               = None                                ,
         regul_volume_subdomain_id                                 = None                                ,
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
+        normalize_energies                          : bool        = False                               ,
+        nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma/CMA, gradient-free-cma, gradient-free-minimize, gradient-free-differential_evolution
+        nonlinear_solver_print_iterations           : bool        = False                               ,
+        newton_tol_res_rel                          : float       = None                                ,
+        newton_tol_dU                               : float       = None                                ,
+        newton_tol_dU_rel                           : float       = None                                ,
+        newton_n_iter_max                           : int         = 100                                 ,
         relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
         relax_backtracking_factor                   : float       = None                                ,
         relax_tol                                   : float       = None                                ,
         relax_n_iter_max                            : int         = None                                ,
         relax_must_advance                          : bool        = None                                ,
-        normalize_energies                          : bool        = False                               ,
-        initialize_reduced_U_from_file              : bool        = False                               ,
-        initialize_reduced_U_filename               : str         = None                                ,
+        register_ref_frame                          : bool        = False                               ,
         initialize_U_from_file                      : bool        = False                               ,
         initialize_U_folder                         : str         = None                                ,
         initialize_U_basename                       : str         = None                                ,
         initialize_U_ext                            : str         = "vtu"                               ,
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
-        register_ref_frame                          : bool        = False                               ,
-        iteration_mode                              : str         = "normal"                            , # normal, loop
-        gimic                                       : bool        = False                               ,
-        gimic_texture                               : str         = "no"                                ,
-        gimic_resample                              : int         = 1                                   ,
-        nonlinearsolver                             : str         = "newton"                            , # None, newton, CMA
-        tol_res_rel                                 : float       = None                                ,
-        tol_dU                                      : float       = None                                ,
-        tol_dU_rel                                  : float       = None                                ,
-        n_iter_max                                  : int         = 100                                 ,
-        continue_after_fail                         : bool        = False                               ,
+        initialize_reduced_U_from_file              : bool        = False                               ,
+        initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
         write_VTU_files                             : bool        = True                                ,
         write_VTU_files_with_preserved_connectivity : bool        = False                               ,
         write_XML_files                             : bool        = False                               ,
-        print_iterations                            : bool        = False                               ,
-        silent                                      : bool        = False                               ):
+        iteration_mode                              : str         = "normal"                            , # normal, loop
+        continue_after_fail                         : bool        = False                               ,
+        print_out                                   : bool        = True                                ):
+
+################################################################# kinematics ###
+
+    if (kinematics_type == "full"):
+        assert (initialize_reduced_U_from_file is False),\
+            "Should use \"initialize_U_from_file\", not \"initialize_reduced_U_from_file\". Aborting."
+        problem = dwarp.FullKinematicsWarpingProblem(
+            working_folder=working_folder,
+            working_basename=working_basename,
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            U_degree=mesh_degree,
+            print_out=print_out)
+    elif (kinematics_type == "reduced"):
+        assert (initialize_U_from_file is False),\
+            "Should use \"initialize_reduced_U_from_file\", not \"initialize_U_from_file\". Aborting."
+        problem = dwarp.ReducedKinematicsWarpingProblem(
+            working_folder=working_folder,
+            working_basename=working_basename,
+            mesh=mesh,
+            mesh_folder=mesh_folder,
+            mesh_basename=mesh_basename,
+            kinematics_model=reduced_kinematics_model,
+            print_out=print_out)
+    else:
+        assert (0), "\"kinematics_type\" (="+str(kinematics_type)+") must be \"full\" or \"reduced\". Aborting."
+
+############################################################### image series ###
+
+    image_series = dwarp.ImageSeries(
+        folder=images_folder,
+        basename=images_basename,
+        grad_basename=images_grad_basename,
+        n_frames=images_n_frames,
+        ext=images_ext,
+        printer=problem.printer)
+
+#################################################### image quadrature degree ###
+
+    if (image_energy_quadrature is None):
+        problem.printer.print_str("Computing quadrature degree…")
+        problem.printer.inc()
+        if (image_energy_quadrature_from == "points_count"):
+            image_energy_quadrature = dwarp.compute_quadrature_degree_from_points_count(
+                image_filename=image_series.get_image_filename(k_frame=images_ref_frame),
+                mesh=problem.mesh,
+                verbose=1)
+        elif (image_energy_quadrature_from == "integral"):
+            image_energy_quadrature = dwarp.compute_quadrature_degree_from_integral(
+                image_filename=image_series.get_image_filename(k_frame=images_ref_frame),
+                mesh=problem.mesh,
+                verbose=1)
+        else:
+            assert (0), "\"image_energy_quadrature_from\" (="+str(image_energy_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
+        problem.printer.print_var("image_energy_quadrature",image_energy_quadrature)
+        problem.printer.dec()
+
+############################################################### image weight ###
 
     if (regul_types is not None):
         if (regul_models is not None):
@@ -123,72 +184,17 @@ def warp(
     # print (regul_models)
     # print (regul_levels)
 
-    if (kinematics_type == "full"):
-        assert (initialize_reduced_U_from_file is False),\
-            "Should use \"initialize_U_from_file\", not \"initialize_reduced_U_from_file\". Aborting."
-        problem = dwarp.FullKinematicsWarpingProblem(
-            mesh=mesh,
-            mesh_folder=mesh_folder,
-            mesh_basename=mesh_basename,
-            U_degree=mesh_degree,
-            silent=silent)
-    elif (kinematics_type == "reduced"):
-        assert (initialize_U_from_file is False),\
-            "Not implemented. Aborting."
-        problem = dwarp.ReducedKinematicsWarpingProblem(
-            mesh=mesh,
-            mesh_folder=mesh_folder,
-            mesh_basename=mesh_basename,
-            model=reduced_kinematics_model,
-            silent=silent)
-    else:
-        assert (0), "\"kinematics_type\" (="+str(kinematics_type)+") must be \"full\" or \"reduced\". Aborting."
-
-    images_series = dwarp.ImagesSeries(
-        folder=images_folder,
-        basename=images_basename,
-        grad_basename=images_grad_basename,
-        n_frames=images_n_frames,
-        ext=images_ext,
-        printer=problem.printer)
-
-    if (images_quadrature is None):
-        problem.printer.print_str("Computing quadrature degree…")
-        problem.printer.inc()
-        if (images_quadrature_from == "points_count"):
-            images_quadrature = dwarp.compute_quadrature_degree_from_points_count(
-                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
-                mesh=problem.mesh,
-                verbose=1)
-        elif (images_quadrature_from == "integral"):
-            images_quadrature = dwarp.compute_quadrature_degree_from_integral(
-                image_filename=images_series.get_image_filename(k_frame=images_ref_frame),
-                mesh=problem.mesh,
-                verbose=1)
-        else:
-            assert (0), "\"images_quadrature_from\" (="+str(images_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
-        problem.printer.print_var("images_quadrature",images_quadrature)
-        problem.printer.dec()
-
     image_w = 1.-sum(regul_levels)
     assert (image_w > 0.),\
         "1.-sum(regul_levels) must be positive. Aborting."
 
-    if (gimic):
-        generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
-            problem=problem,
-            images_series=images_series,
-            quadrature_degree=images_quadrature,
-            texture=gimic_texture,
-            w=image_w,
-            ref_frame=images_ref_frame,
-            resample=gimic_resample)
-        problem.add_image_energy(generated_image_energy)
-    else:
+############################################################### image energy ###
+
+    if (image_energy_type == "warped"):
         warped_image_energy = dwarp.WarpedImageContinuousEnergy(
             problem=problem,
-            images_series=images_series,
-            quadrature_degree=images_quadrature,
+            image_series=image_series,
+            quadrature_degree=image_energy_quadrature,
             w=image_w,
             ref_frame=images_ref_frame,
             w_char_func=images_char_func,
@@ -196,6 +202,22 @@ def warp(
             static_scaling=images_static_scaling,
             dynamic_scaling=images_dynamic_scaling)
         problem.add_image_energy(warped_image_energy)
+    elif (image_energy_type == "generated"):
+        generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
+            problem=problem,
+            image_series=image_series,
+            quadrature_degree=image_energy_quadrature,
+            texture=generated_image_energy_texture,
+            w=image_w,
+            ref_frame=images_ref_frame,
+            resample=generated_image_energy_resample,
+            resampling_factor=generated_image_energy_resampling_factor,
+            ener_type=generated_image_energy_type)
+        problem.add_image_energy(generated_image_energy)
+    else:
+        assert (0), "\"image_energy_type\" (="+str(image_energy_type)+") must be \"warped\" or \"generated\". Aborting."
+
+############################################################# regularization ###
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
         if (regul_level>0):
@@ -203,7 +225,7 @@ def warp(
             name_suffix += ("_"+    regul_type  )*(len(regul_types )>1)
             name_suffix += ("_"+    regul_model )*(len(regul_models)>1)
             name_suffix += ("_"+str(regul_level))*(len(regul_levels)>1)
-            regul_b_ = None
+            regul_body_force_ = None
             if regul_type.startswith("continuous"):
                 regularization_energy_type = dwarp.RegularizationContinuousEnergy
                 if regul_type.startswith("continuous-linear"):
@@ -216,7 +238,7 @@ def warp(
             elif regul_type.startswith("discrete"):
                 if ("equilibrated" in regul_type):
                     regularization_energy_type = dwarp.VolumeRegularizationDiscreteEnergy
-                    regul_b_ = regul_b
+                    regul_body_force_ = regul_body_force
                 elif ("tractions" in regul_type):
                     regularization_energy_type = dwarp.SurfaceRegularizationDiscreteEnergy
                 else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
@@ -232,7 +254,7 @@ def warp(
                 type=regul_type_,
                 model=regul_model,
                 poisson=regul_poisson,
-                b_fin=regul_b_,
+                b_fin=regul_body_force_,
                 volume_subdomain_data=regul_volume_subdomain_data,
                 volume_subdomain_id=regul_volume_subdomain_id,
                 surface_subdomain_data=regul_surface_subdomain_data,
@@ -240,12 +262,16 @@ def warp(
                 quadrature_degree=regul_quadrature)
             problem.add_regul_energy(regularization_energy)
 
+####################################################### energy normalization ###
+
     if (normalize_energies):
         dwarp.compute_energies_normalization(
             problem=problem,
             verbose=1)
 
-    if (nonlinearsolver == "newton"):
+##################################################################### solver ###
+
+    if (nonlinear_solver_type == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
             problem=problem,
             parameters={
@@ -256,12 +282,12 @@ def warp(
                 "relax_tol":relax_tol,
                 "relax_n_iter_max":relax_n_iter_max,
                 "relax_must_advance":relax_must_advance,
-                "tol_res_rel":tol_res_rel,
-                "tol_dU":tol_dU,
-                "tol_dU_rel":tol_dU_rel,
-                "n_iter_max":n_iter_max,
-                "write_iterations":print_iterations})
-    elif (nonlinearsolver == "cma"):
+                "tol_res_rel":newton_tol_res_rel,
+                "tol_dU":newton_tol_dU,
+                "tol_dU_rel":newton_tol_dU_rel,
+                "n_iter_max":newton_n_iter_max,
+                "write_iterations":nonlinear_solver_print_iterations})
+    elif (nonlinear_solver_type in ["cma", "CMA"]):
         assert (relax_type is None),\
             "Not implemented. Aborting."
         solver = dwarp.CMANonlinearSolver(
@@ -269,7 +295,21 @@ def warp(
             parameters={
                 "working_folder":working_folder,
                 "working_basename":working_basename,
-                "write_iterations":print_iterations})
+                "write_iterations":nonlinear_solver_print_iterations})
+    elif (nonlinear_solver_type.startswith("gradient-free")):
+        assert (relax_type is None),\
+            "Not implemented. Aborting."
+        solver = dwarp.GradientFreeNonlinearSolver(
+            problem=problem,
+            parameters={
+                "working_folder":working_folder,
+                "working_basename":working_basename,
+                "solver_type":nonlinear_solver_type.split("-", 2)[2],
+                "write_iterations":nonlinear_solver_print_iterations})
+    else:
+        assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"CMA\" or \"gradient-free\". Aborting."
+
+############################################################# image iterator ###
 
     image_iterator = dwarp.ImageIterator(
         problem=problem,
@@ -295,13 +335,15 @@ def warp(
 
     success = image_iterator.iterate()
 
+######################################################################## end ###
+
     problem.close()
 
     return success
 
 fedic2 = warp
 
-########################################################################
+################################################################################
 
 if (__name__ == "__main__"):
     import fire

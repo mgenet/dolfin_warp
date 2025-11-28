@@ -26,18 +26,15 @@ def compute_displacement_error_with_fenics(
         working_disp_array_name : str  = "displacement"     ,
         ref_disp_array_name     : str  = "displacement"     ,
         suffix                  : str = "displacement_error",
-        sort_mesh               : bool = False              ,
         verbose                 : bool = True               ):
 
-    assert (sort_mesh == False), "Not implemented in compute_displacement_error_with_fenics, use compute_displacement_error_with_vtk instead. Aborting."
-
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder   = working_folder  ,
         basename = working_basename,
         ext      = working_ext     ,
         verbose  = verbose         )
 
-    ref_series = dwarp.MeshesSeries(
+    ref_series = dwarp.MeshSeries(
         folder   = ref_folder  ,
         basename = ref_basename,
         ext      = ref_ext     ,
@@ -152,18 +149,15 @@ def compute_displacement_error_with_numpy(
         working_disp_array_name : str  = "displacement"     ,
         ref_disp_array_name     : str  = "displacement"     ,
         suffix                  : str = "displacement_error",
-        sort_mesh               : bool = False              ,
         verbose                 : bool = True               ):
 
-    assert (sort_mesh == False), "Not implemented in compute_displacement_error_with_numpy, use compute_displacement_error_with_vtk instead. Aborting."
-
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder   = working_folder  ,
         basename = working_basename,
         ext      = working_ext     ,
         verbose  = verbose         )
 
-    ref_series = dwarp.MeshesSeries(
+    ref_series = dwarp.MeshSeries(
         folder   = ref_folder  ,
         basename = ref_basename,
         ext      = ref_ext     ,
@@ -230,16 +224,15 @@ def compute_displacement_error_with_vtk(
         ref_ext                 : str  = "vtu"         ,
         working_disp_array_name : str  = "displacement",
         ref_disp_array_name     : str  = "displacement",
-        sort_mesh               : bool = False         ,
         verbose                 : bool = True          ):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder   = working_folder  ,
         basename = working_basename,
         ext      = working_ext     ,
         verbose  = verbose         )
 
-    ref_series = dwarp.MeshesSeries(
+    ref_series = dwarp.MeshSeries(
         folder   = ref_folder  ,
         basename = ref_basename,
         ext      = ref_ext     ,
@@ -271,18 +264,7 @@ def compute_displacement_error_with_vtk(
         assert(sol.GetPointData().HasArray(working_disp_array_name))
         working_disp = sol.GetPointData().GetArray(working_disp_array_name)
 
-        if (sort_mesh):
-            # FA20200311: sort_ref and sort_working are created because enumeration is not the same in the meshes of ref and sol
-            import vtk
-            coords_ref     = vtk.util.numpy_support.vtk_to_numpy(ref.GetPoints().GetData())
-            coords_working = vtk.util.numpy_support.vtk_to_numpy(sol.GetPoints().GetData())
-
-            sort_ref     = [i_sort[0] for i_sort in sorted(enumerate(coords_ref.tolist()), key=lambda k: [k[1],k[0]])]
-            sort_working = [i_sort[0] for i_sort in sorted(enumerate(coords_working.tolist()), key=lambda k: [k[1],k[0]])]
-
-            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(working_disp.GetTuple(sort_working[k_point])[k_dim]-ref_disp.GetTuple(sort_ref[k_point])[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
-        else:
-            err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
+        err_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(working_disp.GetTuple(k_point)[k_dim]-ref_disp.GetTuple(k_point)[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
 
         ref_int[k_frame] = numpy.sqrt(numpy.mean([numpy.sum([numpy.square(ref_disp.GetTuple(k_point)[k_dim]) for k_dim in range(3)]) for k_point in range(n_points)]))
         ref_max = max(ref_max, numpy.max([numpy.sum([numpy.sqrt(numpy.square(ref_disp.GetTuple(k_point)[k_dim])) for k_dim in range(3)]) for k_point in range(n_points)]))

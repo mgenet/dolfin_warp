@@ -12,17 +12,13 @@ import math
 import numpy
 import os
 
-import dolfin_warp as dwarp
-
-from .NonlinearSolver import NonlinearSolver
-
 ################################################################################
 
-class RelaxationNonlinearSolver(NonlinearSolver):
+class RelaxationNonlinearSolverMixin():
 
 
 
-    def __init__(self,
+    def init_relax(self,
             parameters={}):
 
         self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "backtracking"

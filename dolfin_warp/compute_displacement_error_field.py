@@ -30,7 +30,7 @@ def compute_displacement_error_field(
         ref_ext="vtk",
         disp_array_name="displacement"):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)
@@ -38,7 +38,7 @@ def compute_displacement_error_field(
     working_mesh = working_series.get_mesh(k_frame=k_frame)
     n_points = working_mesh.GetNumberOfPoints()
 
-    ref_series = dwarp.MeshesSeries(
+    ref_series = dwarp.MeshSeries(
         folder=ref_folder,
         basename=ref_basename,
         ext=ref_ext)

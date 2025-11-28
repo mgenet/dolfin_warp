@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Felipe Álvarez Barrientos, 2020                               ###
+### Created by Felipe Álvarez Barrientos, 2020-2025                          ###
 ###                                                                          ###
 ### Pontificia Universidad Católica de Chile, Santiago, Chile                ###
 ###                                                                          ###

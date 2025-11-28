@@ -12,29 +12,30 @@ import dolfin
 import petsc4py
 import typing
 
-from .Energy_Discrete import DiscreteEnergy
-from .Problem         import Problem
+from .Energy               import Energy
+from .EnergyMixin_Discrete import DiscreteEnergyMixin
+from .Problem              import Problem
 
 ################################################################################
 
-class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
+class SimpleRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
     def __init__(self,
-            problem: Problem,
-            name: str = "reg",
-            w: float = 1.,
-            type: str = "equilibrated",
-            model: str = "hooke",
-            young: float = 1.,
-            poisson: float = 0.,
-            b_fin: typing.Optional["list[float]"] = None,
-            volume_subdomain_data = None,
-            volume_subdomain_id = None,
-            surface_subdomain_data = None,
-            surface_subdomain_id = None,
-            quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            problem                : Problem                                        ,
+            name                   : str                            = "reg"         ,
+            w                      : float                          = 1.            ,
+            type                   : str                            = "equilibrated",
+            model                  : str                            = "hooke"       ,
+            young                  : float                          = 1.            ,
+            poisson                : float                          = 0.            ,
+            b_fin                  : typing.Optional["list[float]"] = None          ,
+            quadrature_degree      : typing.Optional[int]           = None          , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            volume_subdomain_data                                   = None          ,
+            volume_subdomain_id                                     = None          ,
+            surface_subdomain_data                                  = None          ,
+            surface_subdomain_id                                    = None          ):
 
         self.problem = problem
         self.printer = problem.printer

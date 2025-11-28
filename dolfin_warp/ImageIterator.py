@@ -120,13 +120,13 @@ class ImageIterator():
         self.printer.print_str("Looping over frames…")
 
         if (self.initialize_U_from_file):
-            init_meshes_series = dwarp.MeshesSeries(
+            init_mesh_series = dwarp.MeshSeries(
                 folder=self.initialize_U_folder,
                 basename=self.initialize_U_basename,
                 ext=self.initialize_U_ext,
                 printer=self.problem.printer)
-            assert (init_meshes_series.n_frames <= self.problem.images_n_frames),\
-                "init_meshes_series.n_frames ("+str(init_meshes_series.n_frames)+") < self.problem.images_n_frames ("+str(self.problem.images_n_frames)+"). Aborting."
+            assert (init_mesh_series.n_frames <= self.problem.images_n_frames),\
+                "init_mesh_series.n_frames ("+str(init_mesh_series.n_frames)+") < self.problem.images_n_frames ("+str(self.problem.images_n_frames)+"). Aborting."
 
             init_mesh_filename  = self.initialize_U_folder
             init_mesh_filename += "/"+self.initialize_U_basename
@@ -191,7 +191,7 @@ class ImageIterator():
 
                 if (self.initialize_U_from_file):
                     self.printer.print_str("Initializing displacement…")
-                    init_mesh = init_meshes_series.get_mesh(k_frame=k_frame)
+                    init_mesh = init_mesh_series.get_mesh(k_frame=k_frame)
                     init_array_U = init_mesh.GetPointData().GetArray(self.initialize_U_array_name)
                     init_array_U = vtk.util.numpy_support.vtk_to_numpy(init_array_U)
                     init_array_U = init_array_U[:,:self.problem.mesh_dimension]

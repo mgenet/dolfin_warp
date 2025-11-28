@@ -12,11 +12,40 @@ import dolfin
 
 import dolfin_warp as dwarp
 
-from .Energy import Energy
-
 ################################################################################
 
-class ContinuousEnergy(Energy):
+class ContinuousEnergyMixin():
+
+
+
+    def set_measures(self):
+
+        self.printer.print_str("Defining measures…")
+        self.printer.inc()
+
+        self.form_compiler_parameters = {
+            "quadrature_scheme":"default",
+            "quadrature_degree":self.quadrature_degree}
+        self.dV = dolfin.Measure(
+            "dx",
+            domain=self.problem.mesh,
+            subdomain_data=self.volume_subdomain_data if hasattr(self, "volume_subdomain_data") else None,
+            subdomain_id=self.volume_subdomain_id if ((hasattr(self, "volume_subdomain_id")) and (self.volume_subdomain_id is not None)) else "everywhere",
+            metadata=self.form_compiler_parameters)
+        self.dF = dolfin.Measure(
+            "dS",
+            domain=self.problem.mesh,
+            subdomain_data=self.volume_subdomain_data if hasattr(self, "volume_subdomain_data") else None,
+            subdomain_id=self.volume_subdomain_id if ((hasattr(self, "volume_subdomain_id")) and (self.volume_subdomain_id is not None)) else "everywhere",
+            metadata=self.form_compiler_parameters)
+        self.dS = dolfin.Measure(
+            "ds",
+            domain=self.problem.mesh,
+            subdomain_data=self.surface_subdomain_data if hasattr(self, "surface_subdomain_data") else None,
+            subdomain_id=self.surface_subdomain_id if ((hasattr(self, "surface_subdomain_id")) and (self.surface_subdomain_id is not None)) else "everywhere",
+            metadata=self.form_compiler_parameters)
+
+        self.printer.dec()
 
 
 

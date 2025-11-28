@@ -26,7 +26,7 @@ def compute_displacement_infinity_norm(
         working_ext="vtk",
         disp_array_name="displacement"):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

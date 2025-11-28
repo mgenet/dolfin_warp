@@ -41,7 +41,7 @@ def compute_regularization_energies(
         plot_regularization_energy      : bool                         = True                            ,
         verbose                         : bool                         = True                            ):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext,
@@ -60,6 +60,8 @@ def compute_regularization_energies(
     # print (mesh.num_cells())
 
     problem = dwarp.FullKinematicsWarpingProblem(
+        working_folder=working_folder,
+        working_basename=working_basename,
         mesh=mesh,
         U_family="Lagrange",
         U_degree=1)
