@@ -42,5 +42,13 @@ conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=
 conda activate dolfin_warp
 conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2
 conda activate dolfin_warp
+```
+Now, if you only need to use the library, you can install it with:
+```
 pip install dolfin_warp
+```
+But if you need to develop within the library, you need to install an editable version of the sources:
+```
+git clone https://github.com/mgenet/dolfin_warp.git
+pip install -e dolfin_warp/.
 ```
