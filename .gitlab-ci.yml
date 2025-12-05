@@ -44,7 +44,7 @@ tests-on-ubuntu-20.04-with-apt: # MG20230608: This leads to seg fault while mani
 #     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20221201: This seems to fail in Ubuntu 20.04
     - apt update; apt install -y libvtk7-dev python3-vtk7; export CPATH="/usr/include/vtk-7.1":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
-    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.23.5 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
+    - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.23 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.24 does not work anymore with the old version of pandas (and probably other stuff) present in Ubuntu 20.04 apt repo, cf. https://stackoverflow.com/a/74975994
     - pip install .
     - cd Tests; make
 
@@ -60,7 +60,7 @@ tests-on-ubuntu-22.04-with-apt: # MG20230608: This leads to seg fault while mani
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
     - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
-    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
+    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.2":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install gmsh
     - apt update; apt install -y python3-h5py; pip install meshio; pip install numpy==1.24.4 # MG20220814: meshio needs updated numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
     - pip install .
@@ -78,7 +78,7 @@ tests-on-ubuntu-24.04-with-apt: # MG 20241017: apt python version is 3.12, which
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y build-essential git gnuplot python3-matplotlib python3-numpy python3-pandas python3-pip python-is-python3 # MG20220814: environment variables are needed to prevent tzdata installation hanging while waiting timezone info, cf. https://anonoz.github.io/tech/2020/04/24/docker-build-stuck-tzdata.html
     - apt update; apt install -y software-properties-common; add-apt-repository -y ppa:fenics-packages/fenics; apt update; apt install -y fenics; export DISPLAY=0:0
     # - apt update; apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
-    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.1":$CPATH
+    - apt update; apt install -y libvtk9-dev python3-vtk9; export CPATH="/usr/include/vtk-9.2":$CPATH
     - apt update; apt install -y libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxft-dev libxinerama1 gcc-multilib xvfb gmsh; pip install --break-system-packages gmsh
     - apt update; apt install -y python3-h5py; pip install --break-system-packages meshio; pip install --break-system-packages numpy==1.24.4 # MG20220814: meshio needs latest numpy apparently # MG20230103: apparently numpy >= 1.25 does not work with FEniCS
     - pip install .
@@ -99,8 +99,8 @@ tests-on-ubuntu-20.04:
     # - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20221201: This seems to fail in Ubuntu 20.04
     - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; bash Miniconda3-latest-Linux-x86_64.sh -b -p /root/miniconda; eval "$(/root/miniconda/bin/conda shell.bash hook)"; conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2 # MG20241020: expat > 2.5 seems to break vtkXMLDataParser, cf. https://gitlab.kitware.com/vtk/vtk/-/issues/19258
-    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
+    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues # MG20230608: need to install vtk9 because vtk7 seems to require python2 # MG20241020: expat > 2.5 seems to break vtkXMLDataParser, cf. https://gitlab.kitware.com/vtk/vtk/-/issues/19258
+    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2; conda deactivate; conda activate dolfin_warp
     - pip install .
     - cd Tests; make
 
@@ -119,8 +119,8 @@ tests-on-ubuntu-22.04:
     - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y libopenblas-base; export OMP_NUM_THREADS="1"
     - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; bash Miniconda3-latest-Linux-x86_64.sh -b -p /root/miniconda; eval "$(/root/miniconda/bin/conda shell.bash hook)"; conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
-    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
+    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
+    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2; conda deactivate; conda activate dolfin_warp
     - pip install .
     - cd Tests; make
 
@@ -139,8 +139,8 @@ tests-on-ubuntu-24.04:
     # - apt update; DEBIAN_FRONTEND=noninteractive TZ=Europe/Paris apt install -y libopenblas-base; export OMP_NUM_THREADS="1" # MG20241017: Not present in Ubuntu 24.04
     - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; bash Miniconda3-latest-Linux-x86_64.sh -b -p /root/miniconda;  eval "$(/root/miniconda/bin/conda shell.bash hook)"; conda init
     # - conda install conda-libmamba-solver; conda config --set solver libmamba # MG20241017: This is now the default solver, cf. https://conda.org/blog/2023-11-06-conda-23-10-0-release
-    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.8 vtk=9.1; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
-    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.1; conda deactivate; conda activate dolfin_warp
+    - conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2; conda activate dolfin_warp # MG20230608: need to install meshio via conda because pip install has h5py dependency issues
+    - conda activate dolfin_warp; conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2; conda deactivate; conda activate dolfin_warp
     - pip install .
     - cd Tests; make
 
