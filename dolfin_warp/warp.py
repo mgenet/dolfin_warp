@@ -251,12 +251,12 @@ def warp(
                         problem)
 
 
-
-                warped_energy = dwarp.BarycentricEnergy(
-                    mapping_series=mapping_series, 
-                    problem=problem,
-                    model = regul_model)
-                problem.add_barycenter_energy(warped_energy)
+            breakpoint()
+            warped_energy = dwarp.BarycentricEnergy(
+                mapping_series=mapping_series, 
+                problem=problem,
+                model = regul_model)
+            problem.add_barycenter_energy(warped_energy)
 
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):

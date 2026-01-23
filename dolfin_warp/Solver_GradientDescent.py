@@ -156,6 +156,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 self.res_vec    = self.res_vec_funct.vector()
 
             else:
+                print("********************* In the L2 norm gradient")
                 self.problem.assemble_res(
                     res_vec = self.res_vec) 
 
@@ -165,6 +166,9 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 self.problem.dU.vector()[:] = -self.res_vec[:]
             elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
                 self.problem.dreduced_displacement.vector()[:] = -self.res_vec[:]
+
+            print(f"valeur vect {self.res_vec[:]}")#DEBUG
+            print(f"Gradient type {self.gradient_type}")#DEBUG
 
             self.res_norm               = self.res_vec.norm("l2")
 

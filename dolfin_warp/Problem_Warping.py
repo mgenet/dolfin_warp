@@ -161,10 +161,8 @@ class WarpingProblem(Problem):
 
     def assemble_res(self,
             res_vec):
-
         if (res_vec.size() > 0): res_vec.zero()
         for energy in self.energies:
-            # print(energy.name)
             energy.assemble_res(
                 res_vec=res_vec,
                 add_values=True,            # Add values is true because the gradient is updated throughout the loop to account for each energy contribution
