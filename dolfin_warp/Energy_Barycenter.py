@@ -145,13 +145,14 @@ class BarycentricEnergy(ContinuousEnergy):
             self.Psi_V += self.Psi[i]
 
 
-
+        breakpoint()#DEBUG
         self.DPsi_m_V  = dolfin.derivative( self.Psi_V  , self.problem.U, self.problem.dU_test )
         self.DDPsi_m_V = dolfin.derivative(self.DPsi_m_V, self.problem.U, self.problem.dU_trial)
 
-        breakpoint()#DEBUG
+        #breakpoint()#DEBUG
         self.ener_form =   self.Psi_V   * self.dV 
         self.res_form  =  self.DPsi_m_V * self.dV 
         self.jac_form  = self.DDPsi_m_V * self.dV 
 
+        breakpoint()#DEBUG
         self.printer.dec()

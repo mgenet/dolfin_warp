@@ -159,6 +159,7 @@ class GradientDescentSolver(RelaxationNonlinearSolver):
                 print("********************* In the L2 norm gradient")
                 self.problem.assemble_res(
                     res_vec = self.res_vec) 
+                breakpoint()#DEBUG
 
 
 

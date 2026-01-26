@@ -251,7 +251,7 @@ def warp(
                         problem)
 
 
-            breakpoint()
+            #breakpoint()
             warped_energy = dwarp.BarycentricEnergy(
                 mapping_series=mapping_series, 
                 problem=problem,
