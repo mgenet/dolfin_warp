@@ -285,13 +285,12 @@ class ImageIterator():
         os.system(commandline)
 
 
-        # Add bool  to plot or not and check that in reduced mode and not full kinematics
-        if self.save_reduced_disp:
-            assert self.problem.kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
-            self.printer.print_str("Wrtiting reduced-disp vector")
-            print(f"self.problem.reduced_displacement.vector()[:] is: {self.problem.reduced_displacement.vector()[:]}") #DEBUG
-
-            numpy.savetxt(self.working_folder+"/"+self.working_basename+"_reduced_kinematics.dat", numpy.array([self.problem.reduced_displacement.vector()[:]]))                      # Save the reduced displacements
+#        # Add bool  to plot or not and check that in reduced mode and not full kinematics
+#        if self.save_reduced_disp:
+#            assert self.problem.kinematics_type=="reduced", "Not reduced displacement for full kinematics model"
+#            self.printer.print_str("Wrtiting reduced-disp vector")
+#            print(f"self.problem.reduced_displacement.vector()[:] is: {self.problem.reduced_displacement.vector()[:]}") #DEBUG
+#            numpy.savetxt(self.working_folder+"/"+self.working_basename+"_reduced_kinematics.dat", numpy.array([self.problem.reduced_displacement.vector()[:]]))                      # Save the reduced displacements
 
 
         return success
