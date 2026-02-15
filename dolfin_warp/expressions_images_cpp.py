@@ -14,7 +14,7 @@ import dolfin_warp as dwarp
 
 def get_ExprIm_cpp_pybind(
         im_dim, # 2, 3
-        im_type="im", # im, grad, grad_no_deriv
+        im_type="im", # im, grad, grad_direct, im+grad
         im_is_def=0,
         u_type="dolfin", # dolfin, vtk
         static_scaling_factor=0,
@@ -22,9 +22,9 @@ def get_ExprIm_cpp_pybind(
         verbose=0):
 
     assert (im_dim  in (2,3))
-    assert (im_type in ("im","grad","grad_no_deriv"))
+    assert (im_type in ("im","grad","grad_direct","im+grad"))
     if (im_is_def):
-        assert ( u_type in ("dolfin","vtk"))
+        assert (u_type in ("dolfin","vtk"))
     if (not im_is_def):
         assert (not dynamic_scaling)
 
@@ -32,8 +32,10 @@ def get_ExprIm_cpp_pybind(
     name += str(im_dim)
     if   (im_type == "im"):
         name += "Im"
-    elif (im_type in ("grad", "grad_no_deriv")):
+    elif (im_type in ("grad","grad_direct")):
         name += "Grad"
+    elif (im_type == "im+grad"):
+        name += "ImGrad"
     if   (im_is_def == 0):
         name += "Ref"
     elif (im_is_def == 1):
@@ -68,29 +70,32 @@ public:
 
     static constexpr unsigned int n_dim = '''+str(im_dim)+''';
 
-    vtkSmartPointer<vtkXMLImageDataReader>        reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
-    vtkSmartPointer<vtkImageData>                 image = nullptr;
-    double                                        static_scaling;'''+(('''
-    std::unique_ptr<Eigen::Ref<Eigen::Vector2d>>  dynamic_scaling;''')*(dynamic_scaling)+('''
-    std::shared_ptr<dolfin::Function>             U = nullptr;''')*(u_type=="dolfin")+('''
-    vtkSmartPointer<vtkXMLUnstructuredGridReader> ugrid_reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
-    vtkSmartPointer<vtkUnstructuredGrid>          ugrid = nullptr;
-    vtkSmartPointer<vtkPoints>                    probe_points = vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPolyData>                  probe_polydata = vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkProbeFilter>               probe_filter = vtkSmartPointer<vtkProbeFilter>::New();''')*(u_type=="vtk"))*(im_is_def)+('''
-    mutable Eigen::Vector3d                       X_3D;''')*(not im_is_def)*(im_dim==2)+('''
-    mutable Eigen::Vector3d                       x_3D;''')*(im_is_def)+('''
-    vtkSmartPointer<vtkImageGradient>             gradient_filter = vtkSmartPointer<vtkImageGradient>::New();
-    vtkSmartPointer<vtkImageData>                 gradient_image = nullptr;''')*(im_type=="grad")+'''
-    vtkSmartPointer<vtkImageInterpolator>         interpolator = vtkSmartPointer<vtkImageInterpolator>::New();'''+('''
-    mutable Eigen::Matrix<double, n_dim, 1>       UX;''')*(im_is_def)+'''
+    vtkSmartPointer<vtkXMLImageDataReader>        reader                = vtkSmartPointer<vtkXMLImageDataReader>::New()       ;
+    vtkSmartPointer<vtkImageData>                 image                 = nullptr                                             ;
+    double                                        static_scaling                                                              ;'''+(('''
+    std::unique_ptr<Eigen::Ref<Eigen::Vector2d>>  dynamic_scaling                                                             ;''')*(dynamic_scaling)+('''
+    std::shared_ptr<dolfin::Function>             U                     = nullptr                                             ;''')*(u_type=="dolfin")+('''
+    vtkSmartPointer<vtkXMLUnstructuredGridReader> ugrid_reader          = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+    vtkSmartPointer<vtkUnstructuredGrid>          ugrid                 = nullptr                                             ;
+    vtkSmartPointer<vtkPoints>                    probe_points          = vtkSmartPointer<vtkPoints>::New()                   ;
+    vtkSmartPointer<vtkPolyData>                  probe_polydata        = vtkSmartPointer<vtkPolyData>::New()                 ;
+    vtkSmartPointer<vtkProbeFilter>               probe_filter          = vtkSmartPointer<vtkProbeFilter>::New()              ;''')*(u_type=="vtk"))*(im_is_def)+('''
+    mutable Eigen::Vector3d                       X_3D                                                                        ;''')*(not im_is_def)*(im_dim==2)+('''
+    mutable Eigen::Vector3d                       x_3D                                                                        ;''')*(im_is_def)+('''
+    vtkSmartPointer<vtkImageGradient>             gradient_filter       = vtkSmartPointer<vtkImageGradient>::New()            ;
+    vtkSmartPointer<vtkImageData>                 gradient_image        = nullptr                                             ;''')*(im_type in ("grad","im+grad"))+'''
+    vtkSmartPointer<vtkImageInterpolator>         interpolator          = vtkSmartPointer<vtkImageInterpolator>::New()        ;'''+('''
+    vtkSmartPointer<vtkImageInterpolator>         gradient_interpolator = vtkSmartPointer<vtkImageInterpolator>::New()        ;''')*(im_type=="im+grad")+('''
+    mutable Eigen::Matrix<double, n_dim, 1>       UX                                                                          ;''')*(im_is_def)+'''
 
     '''+name+'''(
-        const char* image_interpol_mode="linear",
+        const char* image_interpol_mode="'''+('''linear''')*(im_type in ("im","im+grad"))+('''linear''')*(im_type in ("grad","grad_direct"))+'''",
         const double &image_interpol_out_value=0.'''+(''',
+        const char* gradient_interpol_mode="linear",
+        const double &gradient_interpol_out_value=0.''')*(im_type=="im+grad")+(''',
         const double &Z=0.''')*(im_dim==2)+'''
     ) :
-        dolfin::Expression('''+str(im_dim)*(im_type in ("grad", "grad_no_deriv"))+''')
+        dolfin::Expression('''+str(im_dim)*(im_type in ("grad","grad_direct"))+str(1+im_dim)*(im_type=="im+grad")+''')
     {'''+('''
         std::cout << "constructor" << std::endl;''')*(verbose)+'''
 
@@ -103,7 +108,7 @@ public:
         gradient_filter->SetDimensionality(n_dim);
         gradient_filter->SetInputDataObject(image);
         gradient_filter->UpdateDataObject();
-        gradient_image = gradient_filter->GetOutput();''')*(im_type=="grad")+'''
+        gradient_image = gradient_filter->GetOutput();''')*(im_type in ("grad","im+grad"))+('''
 
         if (strcmp(image_interpol_mode, "nearest") == 0)
         {
@@ -113,17 +118,28 @@ public:
         {
             interpolator->SetInterpolationModeToLinear();
         }
-        else if (strcmp(image_interpol_mode, "cubic") == 0)
-        {
-            interpolator->SetInterpolationModeToCubic();
-        }
         else
         {
-            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
+            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\" or \\"linear\\". Aborting." << std::endl;
             std::exit(0);
         }
         interpolator->SetOutValue(image_interpol_out_value);
-        // interpolator->Initialize('''+('''image''')*(im_type=="im")+('''gradient_image''')*(im_type=="grad")+'''); // MG20240524: Possible here? Nope! Apparently, after modifying the image content, the interpolator must be initialized again…
+        // interpolator->Initialize('''+('''image''')*(im_type=="im")+('''gradient_image''')*(im_type=="grad")+'''); // MG20240524: Possible here? Nope! Apparently, after modifying the image content, the interpolator must be initialized again…''')*(im_type in ("im", "grad", "grad_direct", "im+grad"))+('''
+
+        if (strcmp(gradient_interpol_mode, "nearest") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(gradient_interpol_mode, "linear") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToLinear();
+        }
+        else
+        {
+            std::cout << "Interpolator gradient_interpol_mode (" << gradient_interpol_mode << ") must be \\"nearest\\" or \\"linear\\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        gradient_interpolator->SetOutValue(gradient_interpol_out_value);''')*(im_type=="im+grad")+'''
     }
 
     void init_image
@@ -139,9 +155,10 @@ public:
         static_scaling = getStaticScalingFactor(image->GetScalarTypeAsString());''')*(not static_scaling_factor)+('''
         static_scaling = '''+str(static_scaling_factor)+''';''')*(static_scaling_factor)+('''
 
-        gradient_filter->Update();''')*(im_type=="grad")+'''
+        gradient_filter->Update();''')*(im_type in ("grad","im+grad"))+'''
 
-        interpolator->Initialize('''+('''image''')*(im_type in ("im", "grad_no_deriv"))+('''gradient_image''')*(im_type=="grad")+''');
+        interpolator->Initialize('''+('''image''')*(im_type in ("im","grad_direct","im+grad"))+('''gradient_image''')*(im_type=="grad")+''');'''+('''
+        gradient_interpolator->Initialize(gradient_image);''')*(im_type=="im+grad")+'''
     }
 
     void update_image
@@ -154,9 +171,10 @@ public:
         reader->SetFileName(filename);
         reader->Update();'''+('''
 
-        gradient_filter->Update();''')*(im_type=="grad")+'''
+        gradient_filter->Update();''')*(im_type in ("grad","im+grad"))+'''
 
-        interpolator->Initialize('''+('''image''')*(im_type in ("im", "grad_no_deriv"))+('''gradient_image''')*(im_type=="grad")+''');
+        interpolator->Initialize('''+('''image''')*(im_type in ("im","grad_direct","im+grad"))+('''gradient_image''')*(im_type=="grad")+''');'''+('''
+        gradient_interpolator->Initialize(gradient_image);''')*(im_type=="im+grad")+'''
     }'''+(('''
 
     void init_dynamic_scaling
@@ -207,9 +225,11 @@ public:
         X_3D.head<n_dim>() = X;'''+('''
         // std::cout << "X_3D = " << X_3D << std::endl;''')*(verbose)+'''
 
-        interpolator->Interpolate(X_3D.data(), expr.data());''')*(im_dim==2)+('''
+        interpolator->Interpolate(X_3D.data(), expr.data());'''+('''
+        gradient_interpolator->Interpolate(X_3D.data(), expr.data()+1);''')*(im_type=="im+grad"))*(im_dim==2)+('''
 
-        interpolator->Interpolate(X.data(), expr.data());''')*(im_dim==3))*(not im_is_def)+(('''
+        interpolator->Interpolate(X.data(), expr.data());'''+('''
+        gradient_interpolator->Interpolate(X.data(), expr.data()+1);''')*(im_type=="im+grad"))*(im_dim==3))*(not im_is_def)+(('''
 
         U->eval(UX, X);''')*(u_type=="dolfin")+('''
 
@@ -223,29 +243,20 @@ public:
         x_3D               = X + UX;''')*(im_dim==3)+('''
         // std::cout << "x_3D = " << x_3D << std::endl;''')*(verbose)+'''
 
-        interpolator->Interpolate(x_3D.data(), expr.data());''')*(im_is_def)+('''
-        // std::cout << "expr = " << expr << std::endl;''')*(verbose)+('''
+        interpolator->Interpolate(x_3D.data(), expr.data());'''+('''
+        gradient_interpolator->Interpolate(x_3D.data(), expr.data()+1);''')*(im_type=="im+grad"))*(im_is_def)+('''
+        // std::cout << "expr = " << expr << std::endl;''')*(verbose)+'''
 
-        expr[0] /= static_scaling;''')*(im_type=="im")+(('''
-
-        expr[0] /= static_scaling;
-        expr[1] /= static_scaling;''')*(im_dim==2)+('''
-
-        expr[0] /= static_scaling;
-        expr[1] /= static_scaling;
-        expr[2] /= static_scaling;''')*(im_dim==3))*(im_type=="grad")+('''
-
+        expr /= static_scaling;'''+('''
         // std::cout << "expr = " << expr << std::endl;''')*(verbose)+(('''
 
-        expr[0] *= (*dynamic_scaling)[0];
-        expr[0] += (*dynamic_scaling)[1];''')*(im_type=="im")+(('''
+        expr *= (*dynamic_scaling)[0];
+        expr += (*dynamic_scaling)[1];''')*(im_type=="im")+('''
 
-        expr[0] *= (*dynamic_scaling)[0];
-        expr[1] *= (*dynamic_scaling)[0];''')*(im_dim==2)+('''
+        expr *= (*dynamic_scaling)[0];''')*(im_type in ("grad", "grad_direct"))+('''
 
-        expr[0] *= (*dynamic_scaling)[0];
-        expr[1] *= (*dynamic_scaling)[0];
-        expr[2] *= (*dynamic_scaling)[0];''')*(im_dim==3))*(im_type=="grad")+('''
+        expr    *= (*dynamic_scaling)[0];
+        expr[0] += (*dynamic_scaling)[1];''')*(im_type=="im+grad")+('''
 
         // std::cout << "expr = " << expr << std::endl;''')*(verbose))*(dynamic_scaling)*(im_is_def)+'''
     }
@@ -254,7 +265,7 @@ public:
 PYBIND11_MODULE(SIGNATURE, m)
 {
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>(m, "'''+name+'''")
-    .def(pybind11::init<const char*, const double&'''+(''', const double&''')*(im_dim==2)+'''>(), pybind11::arg("interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.'''+(''', pybind11::arg("Z") = 0.''')*(im_dim==2)+''')
+    .def(pybind11::init<const char*, const double&'''+(''', const char*, const double&''')*(im_type=="im+grad")+(''', const double&''')*(im_dim==2)+'''>(), pybind11::arg("image_interpol_mode") = "'''+('''linear''')*(im_type in ("im","im+grad"))+('''linear''')*(im_type in ("grad","grad_direct"))+'''", pybind11::arg("image_interpol_out_value") = 0.'''+(''', pybind11::arg("gradient_interpol_mode") = "linear", pybind11::arg("gradient_interpol_out_value") = 0.''')*(im_type=="im+grad")+(''', pybind11::arg("Z") = 0.''')*(im_dim==2)+''')
     .def("init_image", &'''+name+'''::init_image, pybind11::arg("filename"))
     .def("update_image", &'''+name+'''::update_image, pybind11::arg("filename"))'''+(('''
     .def("init_dynamic_scaling", &'''+name+'''::init_dynamic_scaling, pybind11::arg("dynamic_scaling_"))''')*(dynamic_scaling)+('''
@@ -270,14 +281,14 @@ PYBIND11_MODULE(SIGNATURE, m)
 
 def get_ExprIm_cpp_swig(
         im_dim, # 2, 3
-        im_type="im", # im, grad, grad_no_deriv
+        im_type="im", # im, grad, grad_direct
         im_is_def=0,
         u_type="dolfin", # dolfin, vtk
         static_scaling_factor=0,
         verbose=0):
 
     assert (im_dim  in (2,3))
-    assert (im_type in ("im","grad","grad_no_deriv"))
+    assert (im_type in ("im","grad","grad_direct"))
     assert (u_type in ("dolfin","vtk"))
 
     ExprIm_cpp = '''\
@@ -322,7 +333,7 @@ public:
     MyExpr
     (
     ) :
-        Expression('''+str(im_dim)*(im_type in ("grad", "grad_no_deriv"))+''')'''+(''',
+        Expression('''+str(im_dim)*(im_type in ("grad", "grad_direct"))+''')'''+(''',
         dynamic_scaling_a(1.),
         dynamic_scaling_b(0.),
         UX('''+str(im_dim)+'''),
@@ -374,7 +385,7 @@ public:
             assert(0);
         }
         interpolator->SetOutValue(interpol_out_value);
-        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_no_deriv"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');
+        interpolator->Initialize('''+('''reader->GetOutput()''')*(im_type in ("im", "grad_direct"))+('''gradient->GetOutput()''')*(im_type=="grad")+''');
         //interpolator->Update();'''+(('''
 
         x[2] = Z;''')*(im_is_def)+('''

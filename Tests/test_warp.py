@@ -126,6 +126,7 @@ for n_dim in n_dim_lst:
             working_basename=res_basename,
             images_folder=res_folder,
             images_basename=images_basename,
+            images_is_combined=0,
             mesh=mesh,
             regul_type=regul_type,
             regul_model=regul_model,

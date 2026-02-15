@@ -26,6 +26,7 @@ def warp(
         images_static_scaling                       : bool        = False                               ,
         images_dynamic_scaling                      : bool        = False                               ,
         images_char_func                            : bool        = True                                ,
+        images_is_combined                          : bool        = False                               ,
         images_is_cone                              : bool        = False                               ,
         mesh                                        : dolfin.Mesh = None                                ,
         mesh_folder                                 : str         = None                                ,
@@ -198,6 +199,7 @@ def warp(
             w=image_w,
             ref_frame=images_ref_frame,
             w_char_func=images_char_func,
+            im_is_combined=images_is_combined,
             im_is_cone=images_is_cone,
             static_scaling=images_static_scaling,
             dynamic_scaling=images_dynamic_scaling)

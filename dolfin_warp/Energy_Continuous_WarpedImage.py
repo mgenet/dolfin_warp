@@ -33,6 +33,7 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
             w                 : float       = 1.   ,
             ref_frame         : int         = 0    ,
             w_char_func       : bool        = True ,
+            im_is_combined    : bool        = False,
             im_is_cone        : bool        = False,
             static_scaling    : bool        = False,
             dynamic_scaling   : bool        = False):
@@ -45,6 +46,7 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
         self.w                 = w
         self.ref_frame         = ref_frame
         self.w_char_func       = w_char_func
+        self.im_is_combined    = im_is_combined
         self.im_is_cone        = im_is_cone
         self.static_scaling    = static_scaling
         self.dynamic_scaling   = dynamic_scaling
@@ -61,61 +63,91 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
         self.printer.print_str("Defining reference image…")
         self.printer.inc()
 
-        # Iref
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
+        if (self.im_is_combined):
+            # Iref & DIref
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
-                im_type="im",
+                im_type="im+grad",
                 im_is_def=0,
                 static_scaling_factor=self.static_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
-            self.Iref = dolfin.CompiledExpression(
+            self.IDIref = dolfin.CompiledExpression(
                 expr(),
-                element=self.fe)
+                element=self.ve_im_grad)
+            self.ref_image_filename = self.image_series.get_image_filename(k_frame=self.ref_frame)
+            self.IDIref.init_image(self.ref_image_filename)
+
+            self.Iref  = self.IDIref[0]
+            self.DIref = dolfin.as_vector([self.IDIref[i] for i in range(1, 1+self.image_series.dimension)])
+
+            self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Iref_int",self.Iref_int)
+
+            self.Iref_norm = (dolfin.assemble(self.Iref**2 * self.dV)/self.problem.mesh_V0)**(1./2)
+            assert (self.Iref_norm > 0.),\
+                "Iref_norm = "+str(self.Iref_norm)+" <= 0. Aborting."
+            self.printer.print_sci("Iref_norm",self.Iref_norm)
+
+            # self.DIref_norm = (dolfin.assemble(dolfin.norm(self.DIref) * self.dV)/self.problem.mesh_V0)**(1./2) # MG20260214: norm does not work here…
+            self.DIref_norm = (dolfin.assemble(dolfin.sqrt(dolfin.inner(self.DIref,self.DIref)) * self.dV)/self.problem.mesh_V0)**(1./2)
+            self.printer.print_sci("DIref_norm",self.DIref_norm)
         else:
-            cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="im",
-                im_is_def=0,
-                static_scaling_factor=self.static_scaling)
-            self.Iref = dolfin.Expression(
-                cppcode=cpp,
-                element=self.fe)
-        self.ref_image_filename = self.image_series.get_image_filename(k_frame=self.ref_frame)
-        self.Iref.init_image(self.ref_image_filename)
+            # Iref
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_type="im",
+                    im_is_def=0,
+                    static_scaling_factor=self.static_scaling)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.Iref = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.fe)
+            else:
+                cpp = dwarp.get_ExprIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_type="im",
+                    im_is_def=0,
+                    static_scaling_factor=self.static_scaling)
+                self.Iref = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.fe)
+            self.ref_image_filename = self.image_series.get_image_filename(k_frame=self.ref_frame)
+            self.Iref.init_image(self.ref_image_filename)
 
-        self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
-        self.printer.print_sci("Iref_int",self.Iref_int)
+            self.Iref_int = dolfin.assemble(self.Iref * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Iref_int",self.Iref_int)
 
-        self.Iref_norm = (dolfin.assemble(self.Iref**2 * self.dV)/self.problem.mesh_V0)**(1./2)
-        assert (self.Iref_norm > 0.),\
-            "Iref_norm = "+str(self.Iref_norm)+" <= 0. Aborting."
-        self.printer.print_sci("Iref_norm",self.Iref_norm)
+            self.Iref_norm = (dolfin.assemble(self.Iref**2 * self.dV)/self.problem.mesh_V0)**(1./2)
+            assert (self.Iref_norm > 0.),\
+                "Iref_norm = "+str(self.Iref_norm)+" <= 0. Aborting."
+            self.printer.print_sci("Iref_norm",self.Iref_norm)
 
-        # DIref
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=0,
-                static_scaling_factor=self.static_scaling)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.DIref = dolfin.CompiledExpression(
-                expr(),
-                element=self.ve)
-        else:
-            cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=0,
-                static_scaling_factor=self.static_scaling)
-            self.DIref = dolfin.Expression(
-                cppcode=cpp,
-                element=self.ve)
-        self.ref_image_grad_filename = self.image_series.get_image_grad_filename(k_frame=self.ref_frame)
-        self.DIref.init_image(self.ref_image_grad_filename)
+            # DIref
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_type="grad" if (self.image_series.grad_basename is None) else "grad_direct",
+                    im_is_def=0,
+                    static_scaling_factor=self.static_scaling)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.DIref = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.ve)
+            else:
+                cpp = dwarp.get_ExprIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_type="grad" if (self.image_series.grad_basename is None) else "grad_direct",
+                    im_is_def=0,
+                    static_scaling_factor=self.static_scaling)
+                self.DIref = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.ve)
+            self.ref_image_grad_filename = self.image_series.get_image_grad_filename(k_frame=self.ref_frame)
+            self.DIref.init_image(self.ref_image_grad_filename)
 
         self.printer.dec()
         self.printer.print_str("Defining deformed image…")
@@ -126,64 +158,91 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
             self.p = numpy.empty((2,2))
             self.q = numpy.empty(2)
 
-        # Idef
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
+        if (self.im_is_combined):
+            # Idef & DIdef
             name, cpp = dwarp.get_ExprIm_cpp_pybind(
                 im_dim=self.image_series.dimension,
-                im_type="im",
+                im_type="im+grad",
                 im_is_def=1,
                 static_scaling_factor=self.static_scaling,
                 dynamic_scaling=self.dynamic_scaling)
             module = dolfin.compile_cpp_code(cpp)
             expr = getattr(module, name)
-            self.Idef = dolfin.CompiledExpression(
+            self.IDIdef = dolfin.CompiledExpression(
                 expr(),
-                element=self.fe)
-            self.Idef.init_disp(self.problem.U.cpp_object())
-        else:
-            cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="im",
-                im_is_def=1,
-                static_scaling_factor=self.static_scaling)
-            self.Idef = dolfin.Expression(
-                cppcode=cpp,
-                element=self.fe)
-            self.Idef.init_disp(self.problem.U)
-        self.Idef.init_image(self.ref_image_filename)
-        if (self.dynamic_scaling):
-            self.Idef.init_dynamic_scaling(self.dynamic_scaling)
+                element=self.ve_im_grad)
+            self.IDIdef.init_disp(self.problem.U.cpp_object())
+            self.IDIdef.init_image(self.ref_image_filename)
+            if (self.dynamic_scaling):
+                self.IDIdef.init_dynamic_scaling(self.dynamic_scaling)
 
-        self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
-        self.printer.print_sci("Idef_int",self.Idef_int)
+            self.Idef  = self.IDIdef[0]
+            self.DIdef = dolfin.as_vector([self.IDIdef[i] for i in range(1, 1+self.image_series.dimension)])
 
-        # DIdef
-        if (int(dolfin.__version__.split('.')[0]) >= 2018):
-            name, cpp = dwarp.get_ExprIm_cpp_pybind(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1,
-                static_scaling_factor=self.static_scaling,
-                dynamic_scaling=self.dynamic_scaling)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, name)
-            self.DIdef = dolfin.CompiledExpression(
-                expr(),
-                element=self.ve)
-            self.DIdef.init_disp(self.problem.U.cpp_object())
+            self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Idef_int",self.Idef_int)
+
+            self.DIdef_norm = (dolfin.assemble(dolfin.sqrt(dolfin.inner(self.DIdef,self.DIdef)) * self.dV)/self.problem.mesh_V0)**(1./2)
+            self.printer.print_sci("DIdef_norm",self.DIdef_norm)
         else:
-            cpp = dwarp.get_ExprIm_cpp_swig(
-                im_dim=self.image_series.dimension,
-                im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
-                im_is_def=1,
-                static_scaling_factor=self.static_scaling)
-            self.DIdef = dolfin.Expression(
-                cppcode=cpp,
-                element=self.ve)
-            self.DIdef.init_disp(self.problem.U)
-        self.DIdef.init_image(self.ref_image_filename)
-        if (self.dynamic_scaling):
-            self.DIdef.init_dynamic_scaling(self.dynamic_scaling)
+            # Idef
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_type="im",
+                    im_is_def=1,
+                    static_scaling_factor=self.static_scaling,
+                    dynamic_scaling=self.dynamic_scaling)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.Idef = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.fe)
+                self.Idef.init_disp(self.problem.U.cpp_object())
+            else:
+                cpp = dwarp.get_ExprIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_type="im",
+                    im_is_def=1,
+                    static_scaling_factor=self.static_scaling)
+                self.Idef = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.fe)
+                self.Idef.init_disp(self.problem.U)
+            self.Idef.init_image(self.ref_image_filename)
+            if (self.dynamic_scaling):
+                self.Idef.init_dynamic_scaling(self.dynamic_scaling)
+
+            self.Idef_int = dolfin.assemble(self.Idef * self.dV)/self.problem.mesh_V0
+            self.printer.print_sci("Idef_int",self.Idef_int)
+
+            # DIdef
+            if (int(dolfin.__version__.split('.')[0]) >= 2018):
+                name, cpp = dwarp.get_ExprIm_cpp_pybind(
+                    im_dim=self.image_series.dimension,
+                    im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                    im_is_def=1,
+                    static_scaling_factor=self.static_scaling,
+                    dynamic_scaling=self.dynamic_scaling)
+                module = dolfin.compile_cpp_code(cpp)
+                expr = getattr(module, name)
+                self.DIdef = dolfin.CompiledExpression(
+                    expr(),
+                    element=self.ve)
+                self.DIdef.init_disp(self.problem.U.cpp_object())
+            else:
+                cpp = dwarp.get_ExprIm_cpp_swig(
+                    im_dim=self.image_series.dimension,
+                    im_type="grad" if (self.image_series.grad_basename is None) else "grad_no_deriv",
+                    im_is_def=1,
+                    static_scaling_factor=self.static_scaling)
+                self.DIdef = dolfin.Expression(
+                    cppcode=cpp,
+                    element=self.ve)
+                self.DIdef.init_disp(self.problem.U)
+            self.DIdef.init_image(self.ref_image_filename)
+            if (self.dynamic_scaling):
+                self.DIdef.init_dynamic_scaling(self.dynamic_scaling)
 
         self.printer.dec()
 
@@ -282,16 +341,21 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
 
         self.printer.print_str("Loading deformed image for correlation energy…")
 
-        # Idef
-        self.def_image_filename = self.image_series.get_image_filename(k_frame=k_frame)
-        self.Idef.update_image(self.def_image_filename)
+        if (self.im_is_combined):
+            # Idef
+            self.def_image_filename = self.image_series.get_image_filename(k_frame=k_frame)
+            self.IDIdef.update_image(self.def_image_filename)
+        else:
+            # Idef
+            self.def_image_filename = self.image_series.get_image_filename(k_frame=k_frame)
+            self.Idef.update_image(self.def_image_filename)
+
+            # DIdef
+            self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame=k_frame)
+            self.DIdef.update_image(self.def_grad_image_filename)
 
         if (self.w_char_func):
             self.Phi_def.update_image(self.def_image_filename)
-
-        # DIdef
-        self.def_grad_image_filename = self.image_series.get_image_grad_filename(k_frame=k_frame)
-        self.DIdef.update_image(self.def_grad_image_filename)
 
 
 
@@ -315,7 +379,8 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
 
             if (int(dolfin.__version__.split('.')[0]) <= 2017):
                 self.Idef.update_dynamic_scaling(self.dynamic_scaling)  # should not be needed
-                self.DIdef.update_dynamic_scaling(self.dynamic_scaling) # should not be needed
+                if not (self.im_is_combined):
+                    self.DIdef.update_dynamic_scaling(self.dynamic_scaling) # should not be needed
 
             self.get_qoi_values()
 
