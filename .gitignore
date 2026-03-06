@@ -6,3 +6,6 @@ build
 dist
 *.egg-info
 .vscode
+run_warp/
+generate_images/
+plot*-sav*

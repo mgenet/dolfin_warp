@@ -232,15 +232,15 @@ set key outside right center box textcolor variable width -3
 set grid
 
 set xlabel "mesh size"
-set xrange [0.1/2**4:0.1]
+set xrange [0.1/2**4:0.2]
 # set format x "%g"
 set logscale x
 
 set ylabel "normalized displacement error (%)"
-set yrange [1e-1:1e+3]
+set yrange [1e-1:1e+2]
 set logscale y
 
-plot ''')
+plot "generate_images/heart-contractandtwist.dat" using ($1):(100*$2)  with lines linestyle -1            linewidth 3 notitle                            ,\\\n''')
         for k_noise_level,noise_level in enumerate(noise_level_lst):
          for k_regul_level,regul_level in enumerate(regul_level_lst):
             if   (noise_level == 0.0): lc = 1
@@ -254,11 +254,11 @@ plot ''')
             else: assert (0)
             # index_for_plot = k_regul_level*len(noise_level_lst)+k_noise_level+1
             index_for_data = k_noise_level*len(regul_level_lst)+k_regul_level
-            plotfile.write((('''     ''')*((k_noise_level>0)or(k_regul_level>0)))+'''datafile_name index '''+str(index_for_data)+''' using ($3):(100*$4)                        with lines        linestyle '''+str(lc)+''' dashtype '''+str(dt)+''' linewidth 3   title "noise = '''+"{:1.1f}".format(noise_level)+''', regul = '''+"{:1.2f}".format(regul_level)+'''"'''+''',\\\n''')
+            plotfile.write('''     datafile_name index '''+str(index_for_data)+''' using ($3):(100*$4)                        with lines linestyle '''+str(lc)+''' dashtype '''+str(dt)+''' linewidth 3   title "noise = '''+"{:1.1f}".format(noise_level)+''', regul = '''+"{:1.2f}".format(regul_level)+'''"'''+''',\\\n''')
             if (noise_level == 0): continue
             # plotfile.write(  '''     '''                                         +'''datafile_name index '''+str(index_for_data)+''' using ($3):(100*$4):(100*$5)               with errorbars    linestyle '''+str(lc)+'''             notitle'''                                   +''',\\\n''')
             # plotfile.write(  '''     '''                                         +'''datafile_name index '''+str(index_for_data)+''' using ($3):(100*$4-100*$5):(100*$4+100*$5) with filledcurves linestyle '''+str(lc)+'''             notitle'''                                   +((''',\\
-            plotfile.write(  '''     '''                    +'''poinfile_name index '''+str(index_for_data)+''' using ($3):(100*$4) with points linestyle '''+str(lc)+'''             notitle'''                                   +((''',\\
+            plotfile.write('''     poinfile_name index '''+str(index_for_data)+''' using ($3):(100*$4) with points linestyle '''+str(lc)+'''                                                notitle'''                                   +(('''                            ,\\
 ''')*((k_noise_level<len(noise_level_lst)-1)or(k_regul_level<len(regul_level_lst)-1))))
 
         plotfile.close()
@@ -268,7 +268,7 @@ plot ''')
     if (generate_plot):
 
         os.system("gnuplot "+datafile_basename+".plt")
-        os.system("convert -density 300 "+datafile_basename+".pdf"+" "+datafile_basename+".png")
+        os.system("magick -density 300 "+datafile_basename+".pdf"+" "+datafile_basename+".png")
 
 ########################################################################
 

@@ -54,6 +54,8 @@ def compute_energies_normalization(
     for energy in problem.energies:
         energy.ener0 = energy.assemble_ener(w_weight=0)
         if (verbose): printer.print_var(energy.name, energy.ener0)
+        assert (energy.ener0 > 0.),\
+            "Energy should be positive. Aborting."
 
     problem.U.vector().zero()
     problem.U_norm = 0
