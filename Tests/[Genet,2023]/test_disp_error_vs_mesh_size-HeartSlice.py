@@ -9,10 +9,11 @@ import dolfin_warp     as dwarp
 
 ################################################################################
 
-res_folder  = "plot_disp_error_vs_mesh_size"
+res_folder = "plot_disp_error_vs_mesh_size"
 
 test = mypy.Test(
     res_folder=res_folder,
+    clean_before_tests=1,
     perform_tests=1,
     stop_at_failure=1,
     clean_after_tests=1,
@@ -38,9 +39,10 @@ noise_level_lst += [0.1]
 
 n_runs_for_noisy_images = 10
 
-working_folder  = "run_warp"
+working_folder = "run_warp"
 
 mesh_size_lst  = [        ]
+mesh_size_lst += [0.2     ]
 mesh_size_lst += [0.1     ]
 mesh_size_lst += [0.1/2**1] # 0.05
 mesh_size_lst += [0.1/2**2] # 0.025
@@ -76,6 +78,7 @@ regul_level_lst += [0.1     ]
 
 do_generate_images                          = 1
 do_generate_meshes                          = 1
+do_compute_reference_error                  = 1
 do_run_warp                                 = 1
 do_run_warp_and_refine                      = 1
 do_plot_disp_error_vs_mesh_size             = 1
@@ -250,6 +253,47 @@ if (do_generate_meshes):
 
 if (use_subprocesses): subprocess_manager.wait_for_finished_processes()
 
+#################################################### compute reference error ###
+
+if (do_compute_reference_error):
+ for deformation_type in deformation_type_lst:
+
+    datafile_basename  = images_folder
+    datafile_basename += "/"+"heart"
+    datafile_basename += "-"+deformation_type
+    
+    data_printer = mypy.DataPrinter(
+        names=["mesh_size", "disp_err"],
+        filename=datafile_basename+".dat",
+        limited_precision=False)
+
+    for mesh_size in mesh_size_lst:
+
+        print("*** generate_meshes ***"            )
+        print("deformation_type:", deformation_type)
+        print("mesh_size:"       , mesh_size       )
+
+        working_basename  = "heart"
+        working_basename += "-"+deformation_type
+        working_basename += "-h="+str(mesh_size)
+
+        ref_basename  = "heart"
+        ref_basename += "-"+deformation_type
+
+        disp_err = dwarp.compute_displacement_error_with_fenics(
+            working_folder          = images_folder,
+            working_basename        = working_basename,
+            working_disp_array_name = "U",
+            ref_folder              = images_folder,
+            ref_basename            = ref_basename,
+            ref_disp_array_name     = "U",
+            verbose                 = 0)
+        print("disp_err:", disp_err)
+
+        data_printer.write_line([mesh_size, disp_err])
+
+    data_printer.close()
+
 ################################################################### run_warp ###
 
 if (do_run_warp):
@@ -419,7 +463,7 @@ if (do_run_warp_and_refine):
 
         if (use_subprocesses):
             command_lst  = []
-            command_lst += ["python", "../../dolfin_warp/warp.py"]
+            command_lst += ["python", "../../dolfin_warp/warp_and_refine.py"]
             command_lst += ["--working_folder"     , working_folder                      ]
             command_lst += ["--working_basename"   , working_basename                    ]
             command_lst += ["--images_folder"      , images_folder                       ]
@@ -479,7 +523,7 @@ if (do_plot_disp_error_vs_mesh_size) or (do_plot_disp_error_vs_mesh_size_with_re
        for regul_type       in regul_type_lst      :
 
         structure_type    = "heart"
-        error_for_nan     = 10
+        error_for_nan     = 1.
         generate_datafile = 1
         generate_plotfile = 1
         generate_plot     = 1
