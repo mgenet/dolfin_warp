@@ -31,7 +31,7 @@ The library has notably been used in:
 
 ### Tutorials
 
-Interactive tutorials can be found at [https://mgenet.gitlabpages.inria.fr/dolfin_warp-tutorials](https://mgenet.gitlabpages.inria.fr/dolfin_warp-tutorials).
+Interactive tutorials can be found at [https://mgenet.github.io/dolfin_warp-tutorials](https://mgenet.github.io/dolfin_warp-tutorials).
 
 ### Installation
 
