@@ -1,0 +1,9 @@
+x86
+Time: 338.05 s | User: 384.71 s | Syst: 101.45 s | CPU: 143% | Max RAM: 438400 KB
+Time: 102.27 s | User: 230.95 s | Syst:  83.15 s | CPU: 307% | Max RAM: 369824 KB
+x86 (OMP_NUM_THREADS=1)
+Time: 324.42 s | User: 232.62 s | Syst:  24.80 s | CPU:  79% | Max RAM: 434996 KB
+Time: 102.80 s | User:  87.73 s | Syst:  11.03 s | CPU:  96% | Max RAM: 370172 KB
+arm
+Time: 206.53 s | User: 130.98 s | Syst:  15.79 s | CPU:  71% | Max RAM: 469920 KB
+Time:  61.95 s | User:  54.17 s | Syst:   6.18 s | CPU:  97% | Max RAM: 386768 KB
