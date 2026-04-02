@@ -44,6 +44,7 @@ def warp(
         regul_level                                 : float       = 0.                                  ,
         regul_levels                                : list        = None                                ,
         regul_poisson                               : float       = 0.                                  ,
+        regul_volume_weight                         : float       = None                                ,
         regul_b                                     : float       = None                                ,
         regul_volume_subdomain_data                               = None                                ,
         regul_volume_subdomain_id                                 = None                                ,
@@ -200,6 +201,14 @@ def warp(
             dynamic_scaling=images_dynamic_scaling,
             porosity_correction=images_porosity_correction)
         problem.add_image_energy(warped_image_energy)
+
+    if (regul_volume_weight is not None) and (regul_volume_weight > 0.):
+        volume_energy = dwarp.MeshVolumeContinuousEnergy(
+            problem=problem,
+            w=regul_volume_weight)
+        problem.add_regul_energy(
+            energy=volume_energy,
+            order_by_type=0)
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
         if (regul_level>0):
