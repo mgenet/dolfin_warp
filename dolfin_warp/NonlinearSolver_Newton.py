@@ -112,7 +112,8 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
             self.problem.update_displacement(relax=self.relax)
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
-            self.problem.DU.vector()[:] = self.problem.U.vector() - self.problem.Uold.vector()
+            self.problem.DU.vector()[:] = self.problem.U.vector()
+            self.problem.DU.vector().axpy(-1., self.problem.Uold.vector())
             self.problem.DU_norm = self.problem.DU.vector().norm("l2")
             self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
@@ -278,6 +279,13 @@ class NewtonNonlinearSolver(RelaxationNonlinearSolver):
                 self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
                 self.problem.dreduced_displacement.vector().zero()
                 return False
+            self.problem.U_vec_cp[:] = self.problem.U.vector()
+            self.problem.update_displacement(relax=+1.)
+            self.problem.dU.vector()[:] = self.problem.U.vector()
+            self.problem.dU.vector().axpy(-1., self.problem.U_vec_cp)
+            self.problem.dU_norm = self.problem.dU.vector().norm("l2")
+            self.printer.print_sci("dU_norm",self.problem.dU_norm)
+            self.problem.update_displacement(relax=-1.)
 
         self.printer.dec()
 

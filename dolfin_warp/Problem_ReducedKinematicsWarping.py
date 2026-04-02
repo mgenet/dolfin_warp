@@ -191,6 +191,8 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                                   [U_ZX, U_YZ, U_ZZ]])
 
         F = dolfin.dot(R, U)
+        self.J = dolfin.det(F)
+
         self.U_expr = T + dolfin.dot(F - dolfin.Identity(self.mesh_dimension), self.X)
         # print(self.U_expr)
 
@@ -221,11 +223,6 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.dU_trial = dolfin.derivative(self.U_expr, self.reduced_displacement, self.reduced_displacement_trial)
         self.ddU_test_trial = dolfin.derivative(self.dU_test, self.reduced_displacement, self.reduced_displacement_trial)
 
-        # for mesh volume computation
-        self.I = dolfin.Identity(self.mesh_dimension)
-        self.F = self.I + dolfin.grad(self.U)
-        self.J = dolfin.det(self.F)
-
         # for displacement projection
         u_proj = dolfin.TrialFunction(self.U_fs)
         v_proj = dolfin.TestFunction(self.U_fs)
@@ -255,12 +252,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
             relax=1):
 
         self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())
-        self.U_vec_cp[:] = self.U.vector()
         self.update_disp()
-        # self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
-        self.dU.vector()[:] = self.U.vector()
-        self.dU.vector().axpy(-1., self.U_vec_cp)
-        self.dU_norm = self.dU.vector().norm("l2")
 
 
 
