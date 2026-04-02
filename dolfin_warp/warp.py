@@ -49,10 +49,12 @@ def warp(
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
         relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
-        relax_backtracking_factor                   : float       = None                                ,
-        relax_tol                                   : float       = None                                ,
-        relax_n_iter_max                            : int         = None                                ,
-        relax_must_advance                          : bool        = None                                ,
+        relax                                       : float       = None                                , # for constant
+        relax_init                                  : float       = None                                , # for backtracking, gss
+        relax_init_with_previous                    : bool        = None                                , # for backtracking, gss
+        relax_backtracking_factor                   : float       = None                                , # for backtracking
+        relax_tol                                   : float       = None                                , # for gss
+        relax_n_iter_max                            : int         = None                                , # for backtracking, gss
         normalize_energies                          : bool        = False                               ,
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
@@ -252,10 +254,11 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax_init":relax_init,
+                "relax_init_with_previous":relax_init_with_previous,
                 "relax_backtracking_factor":relax_backtracking_factor,
                 "relax_tol":relax_tol,
                 "relax_n_iter_max":relax_n_iter_max,
-                "relax_must_advance":relax_must_advance,
                 "tol_res_rel":tol_res_rel,
                 "tol_dU":tol_dU,
                 "tol_dU_rel":tol_dU_rel,

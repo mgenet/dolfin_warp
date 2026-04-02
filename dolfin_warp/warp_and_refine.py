@@ -39,8 +39,12 @@ def warp_and_refine(
         regul_surface_subdomain_data               = None                            ,
         regul_surface_subdomain_id                 = None                            ,
         relax_type                   : str         = None                            , # constant, aitken, backtracking, gss
-        relax_tol                    : float       = None                            ,
-        relax_n_iter_max             : int         = None                            ,
+        relax                        : float       = None                            , # for constant
+        relax_init                   : float       = None                            , # for backtracking, gss
+        relax_init_with_previous     : bool        = None                            , # for backtracking, gss
+        relax_backtracking_factor    : float       = None                            , # for backtracking
+        relax_tol                    : float       = None                            , # for gss
+        relax_n_iter_max             : int         = None                            , # for backtracking, gss
         normalize_energies           : bool        = False                           ,
         tol_dU                       : float       = None                            ,
         n_iter_max                   : int         = 100                             ,
@@ -111,6 +115,8 @@ def warp_and_refine(
             regul_surface_subdomain_data                = regul_surface_subdomain_data,
             regul_surface_subdomain_id                  = regul_surface_subdomain_id,
             relax_type                                  = relax_type,
+            relax_init                                  = relax_init,
+            relax_init_with_previous                    = relax_init_with_previous,
             relax_tol                                   = relax_tol,
             relax_n_iter_max                            = relax_n_iter_max,
             normalize_energies                          = normalize_energies,
