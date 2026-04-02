@@ -21,6 +21,7 @@ def warp_and_refine(
         images_basename              : str,
         images_quadrature            : int         = None                            ,
         images_quadrature_from       : str         = "points_count"                  , # points_count, integral
+        images_porosity_correction   : bool        = False                           ,
         mesh                         : dolfin.Mesh = None                            ,
         refinement_levels            : list        = [0]                             ,
         meshes                       : list        = None                            ,
@@ -101,6 +102,7 @@ def warp_and_refine(
             images_basename                             = images_basename,
             images_quadrature                           = images_quadrature,
             images_quadrature_from                      = images_quadrature_from,
+            images_porosity_correction                  = images_porosity_correction,
             mesh                                        = mesh_for_warp,
             regul_type                                  = regul_type,
             regul_types                                 = regul_types,

@@ -27,6 +27,7 @@ def warp(
         images_quadrature_from                      : str         = "points_count"                      , # points_count, integral
         images_static_scaling                       : bool        = False                               ,
         images_dynamic_scaling                      : bool        = False                               ,
+        images_porosity_correction                  : bool        = False                               ,
         images_char_func                            : bool        = True                                ,
         images_is_cone                              : bool        = False                               ,
         mesh                                        : dolfin.Mesh = None                                ,
@@ -196,7 +197,8 @@ def warp(
             w_char_func=images_char_func,
             im_is_cone=images_is_cone,
             static_scaling=images_static_scaling,
-            dynamic_scaling=images_dynamic_scaling)
+            dynamic_scaling=images_dynamic_scaling,
+            porosity_correction=images_porosity_correction)
         problem.add_image_energy(warped_image_energy)
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
