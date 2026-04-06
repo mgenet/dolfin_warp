@@ -192,6 +192,8 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                                   [U_ZX, U_YZ, U_ZZ]])
 
         F = dolfin.dot(R, U)
+        self.J = dolfin.det(F)
+
         self.U_expr = T + dolfin.dot(F - dolfin.Identity(self.mesh_dimension), self.X)
         # print(self.U_expr)
 
@@ -222,20 +224,27 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
         self.dU_trial = dolfin.derivative(self.U_expr, self.reduced_displacement, self.reduced_displacement_trial)
         self.ddU_test_trial = dolfin.derivative(self.dU_test, self.reduced_displacement, self.reduced_displacement_trial)
 
-        # for mesh volume computation
-        self.I = dolfin.Identity(self.mesh_dimension)
-        self.F = self.I + dolfin.grad(self.U)
-        self.J = dolfin.det(self.F)
+        # for displacement projection
+        u_proj = dolfin.TrialFunction(self.U_fs)
+        v_proj = dolfin.TestFunction(self.U_fs)
+        a_proj = dolfin.inner(u_proj, v_proj) * self.dV
+        self.L_proj = dolfin.inner(self.U_expr, v_proj) * self.dV
+        self.A_proj = dolfin.assemble(a_proj)
+        self.solver_proj = dolfin.LUSolver(self.A_proj)
+        self.solver_proj.parameters["symmetric"] = True
+        self.b_proj = dolfin.assemble(self.L_proj)
 
 
 
     def update_disp(self):
 
         # self.U.interpolate(self.U_expr) # MG20241218: Cannot interpolate UFL expression, cf. https://fenicsproject.discourse.group/t/project-works-but-interpolate-does-not/10090/2
-        dolfin.project(
-            v=self.U_expr,
-            V=self.U_fs,
-            function=self.U) # MG20251007: Reuse the matrix?
+        # dolfin.project(
+        #     v=self.U_expr,
+        #     V=self.U_fs,
+        #     function=self.U)
+        dolfin.assemble(self.L_proj, tensor=self.b_proj)
+        self.solver_proj.solve(self.U.vector(), self.b_proj)
         self.U_norm = self.U.vector().norm("l2")
 
 
@@ -244,10 +253,7 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
             relax=1):
 
         self.reduced_displacement.vector().axpy(relax, self.dreduced_displacement.vector())
-        self.U_vec_cp[:] = self.U.vector()
         self.update_disp()
-        self.dU.vector()[:] = self.U.vector() - self.U_vec_cp
-        self.dU_norm = self.dU.vector().norm("l2")
 
 
 

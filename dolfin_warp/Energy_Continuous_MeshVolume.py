@@ -11,6 +11,8 @@
 import dolfin
 import typing
 
+import dolfin_warp as dwarp
+
 from .Energy                 import Energy
 from .EnergyMixin_Continuous import ContinuousEnergyMixin
 from .Problem                import Problem
@@ -38,16 +40,20 @@ class MeshVolumeContinuousEnergy(Energy, ContinuousEnergyMixin):
 
         self.set_measures()
 
-        # J
-        self.I = dolfin.Identity(self.problem.mesh_dimension)
-        self.F = self.I + dolfin.grad(self.problem.U)
-        self.J = dolfin.det(self.F)
-
         # forms
         self.mesh_V0 = dolfin.assemble(dolfin.Constant(1.) * self.dV)
-        self.ener_form = -self.J/self.V0 * self.dV
-        self.res_form  = self.DPsi_c  * self.dV
-        self.jac_form  = self.DDPsi_c * self.dV
+        self.Psi = 1./self.problem.J/self.mesh_V0
+        # self.Psi = -self.problem.J/self.mesh_V0 # MG20260331: negative energies are kind of a mess…
+        if   (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+            self.DPsi  = dolfin.derivative(self.Psi , self.problem.U, self.problem.dU_test )
+            self.DDPsi = dolfin.derivative(self.DPsi, self.problem.U, self.problem.dU_trial)
+        elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.DPsi   = dolfin.dot(dolfin.diff(self.Psi, self.problem.U), self.problem.dU_test)
+            self.DDPsi  = dolfin.dot(dolfin.dot(dolfin.diff(dolfin.diff(self.Psi, self.problem.U), self.problem.U), self.problem.dU_test), self.problem.dU_trial)
+            # self.DDPsi += dolfin.dot(dolfin.diff(self.Psi, self.problem.U), self.problem.ddU_test_trial)
 
-        self.printer.dec()
+        self.ener_form = self.Psi   * self.dV
+        self.res_form  = self.DPsi  * self.dV
+        self.jac_form  = self.DDPsi * self.dV
+
         self.printer.dec()

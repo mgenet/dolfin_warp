@@ -26,6 +26,7 @@ def warp_and_refine(
         mesh_basenames                    : list        = None                            ,
         image_energy_quadrature           : int         = None                            ,
         image_energy_quadrature_from      : str         = "points_count"                  , # points_count, integral
+        images_porosity_correction        : bool        = False                           ,
         regul_type                        : str         = "continuous-equilibrated"       , # continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-linear-equilibrated, discrete-linear-elastic, discrete-equilibrated, discrete-tractions, discrete-tractions-normal, discrete-tractions-tangential, discrete-tractions-normal-tangential
         regul_types                       : list        = None                            ,
         regul_model                       : str         = "ogdenciarletgeymonatneohookean", # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
@@ -33,6 +34,7 @@ def warp_and_refine(
         regul_level                       : float       = 0.                              ,
         regul_levels                      : list        = None                            ,
         regul_poisson                     : float       = 0.                              ,
+        regul_volume_weight               : float       = None                            ,
         regul_body_force                  : float       = None                            ,
         regul_volume_subdomain_data                     = None                            ,
         regul_volume_subdomain_id                       = None                            ,
@@ -43,6 +45,10 @@ def warp_and_refine(
         newton_tol_dU                     : float       = None                            ,
         newton_n_iter_max                 : int         = 100                             ,
         relax_type                        : str         = None                            , # constant, aitken, backtracking, gss
+        relax                             : float       = None                            , # for constant
+        relax_init                        : float       = None                            , # for backtracking, gss
+        relax_init_with_previous          : bool        = None                            , # for backtracking, gss
+        relax_backtracking_factor         : float       = None                            , # for backtracking
         relax_tol                         : float       = None                            ,
         relax_n_iter_max                  : int         = None                            ,
         write_qois_limited_precision      : bool        = False                           ,
@@ -97,6 +103,7 @@ def warp_and_refine(
             mesh                                        = mesh_for_warp                    ,
             image_energy_quadrature                     = image_energy_quadrature          ,
             image_energy_quadrature_from                = image_energy_quadrature_from     ,
+            images_porosity_correction                  = images_porosity_correction       ,
             regul_type                                  = regul_type                       ,
             regul_types                                 = regul_types                      ,
             regul_model                                 = regul_model                      ,
@@ -104,6 +111,7 @@ def warp_and_refine(
             regul_level                                 = regul_level                      ,
             regul_levels                                = regul_levels                     ,
             regul_poisson                               = regul_poisson                    ,
+            regul_volume_weight                         = regul_volume_weight              ,
             regul_body_force                            = regul_body_force                 ,
             regul_volume_subdomain_data                 = regul_volume_subdomain_data      ,
             regul_volume_subdomain_id                   = regul_volume_subdomain_id        ,
@@ -114,6 +122,9 @@ def warp_and_refine(
             newton_tol_dU                               = newton_tol_dU                    ,
             newton_n_iter_max                           = newton_n_iter_max                ,
             relax_type                                  = relax_type                       ,
+            relax                                       = relax                            ,
+            relax_init                                  = relax_init                       ,
+            relax_init_with_previous                    = relax_init_with_previous         ,
             relax_tol                                   = relax_tol                        ,
             relax_n_iter_max                            = relax_n_iter_max                 ,
             initialize_U_from_file                      = initialize_U_from_file           ,

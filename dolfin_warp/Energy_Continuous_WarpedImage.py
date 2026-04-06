@@ -36,20 +36,22 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
             im_is_combined    : bool        = False,
             im_is_cone        : bool        = False,
             static_scaling    : bool        = False,
-            dynamic_scaling   : bool        = False):
+            dynamic_scaling   : bool        = False,
+            porosity_correction: bool       = False):
 
-        self.problem           = problem
-        self.printer           = self.problem.printer
-        self.image_series      = image_series
-        self.quadrature_degree = quadrature_degree
-        self.name              = name
-        self.w                 = w
-        self.ref_frame         = ref_frame
-        self.w_char_func       = w_char_func
-        self.im_is_combined    = im_is_combined
-        self.im_is_cone        = im_is_cone
-        self.static_scaling    = static_scaling
-        self.dynamic_scaling   = dynamic_scaling
+        self.problem             = problem
+        self.printer             = self.problem.printer
+        self.image_series        = image_series
+        self.quadrature_degree   = quadrature_degree
+        self.name                = name
+        self.w                   = w
+        self.ref_frame           = ref_frame
+        self.w_char_func         = w_char_func
+        self.im_is_combined      = im_is_combined
+        self.im_is_cone          = im_is_cone
+        self.static_scaling      = static_scaling
+        self.dynamic_scaling     = dynamic_scaling
+        self.porosity_correction = porosity_correction
 
         self.printer.print_str("Defining warped image correlation energy…")
         self.printer.inc()
@@ -307,11 +309,25 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
         self.printer.inc()
 
         # Psi_c
-        self.Psi_c   = (self.Idef - self.Iref)**2/2
-        self.DPsi_c  = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        self.DDPsi_c = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
-        if (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
-            self.DDPsi_c += (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.ddU_test_trial)
+        if (self.porosity_correction):
+            dJ_test = dolfin.derivative(self.problem.J, self.problem.U, self.problem.dU_test)
+            dJ_trial = dolfin.derivative(self.problem.J, self.problem.U, self.problem.dU_trial)
+
+            dIdef_test  = dolfin.dot(self.DIdef, self.problem.dU_test )
+            dIdef_trial = dolfin.dot(self.DIdef, self.problem.dU_trial)
+
+            dIdef_scaled_test  = dIdef_test  * self.problem.J + self.Idef * dJ_test
+            dIdef_scaled_trial = dIdef_trial * self.problem.J + self.Idef * dJ_trial
+
+            self.Psi_c   = (self.Idef * self.problem.J - self.Iref)**2/2
+            self.DPsi_c  = (self.Idef * self.problem.J - self.Iref) * dIdef_scaled_test
+            self.DDPsi_c = dIdef_scaled_trial * dIdef_scaled_test
+        else:
+            self.Psi_c   = (self.Idef - self.Iref)**2/2
+            self.DPsi_c  = (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.dU_test)
+            self.DDPsi_c = dolfin.dot(self.DIdef, self.problem.dU_trial) * dolfin.dot(self.DIdef, self.problem.dU_test)
+            if (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                self.DDPsi_c += (self.Idef - self.Iref) * dolfin.dot(self.DIdef, self.problem.ddU_test_trial)
 
         if (self.w_char_func):
             self.Psi_c   *= self.Phi_def * self.Phi_ref

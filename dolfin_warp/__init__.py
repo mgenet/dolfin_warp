@@ -4,6 +4,7 @@ from .Energy import *
 from .EnergyMixin_Continuous import *
 from .EnergyMixin_Discrete import *
 from .Energy_Continuous_Constraint import *
+from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_MeshVolume import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *

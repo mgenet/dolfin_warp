@@ -30,13 +30,15 @@ class RelaxationNonlinearSolverMixin():
             self.compute_relax = self.compute_relax_aitken
         elif (self.relax_type == "backtracking"):
             self.compute_relax = self.compute_relax_backtracking
+            self.relax_init = parameters["relax_init"] if ("relax_init" in parameters) and (parameters["relax_init"] is not None) else 1.
             self.relax_backtracking_factor = parameters["relax_backtracking_factor"] if ("relax_backtracking_factor" in parameters) and (parameters["relax_backtracking_factor"] is not None) else 2.
             self.relax_n_iter_max          = parameters["relax_n_iter_max"]          if ("relax_n_iter_max"          in parameters) and (parameters["relax_n_iter_max"]          is not None) else 8
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
+            self.relax_init = parameters["relax_init"] if ("relax_init" in parameters) and (parameters["relax_init"] is not None) else 1.
+            self.relax_init_with_previous = parameters["relax_init_with_previous"] if ("relax_init_with_previous" in parameters) and (parameters["relax_init_with_previous"] is not None) else False
             self.relax_n_iter_max   = parameters["relax_n_iter_max"]   if ("relax_n_iter_max"   in parameters) and (parameters["relax_n_iter_max"]   is not None) else 16
-            # self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 0
-            # self.relax_must_advance = parameters["relax_must_advance"] if ("relax_must_advance" in parameters) and (parameters["relax_must_advance"] is not None) else False
+            self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 1e-2
 
 
 
@@ -66,7 +68,7 @@ class RelaxationNonlinearSolverMixin():
         k_relax = 1
         while (True):
             self.printer.print_var("k_relax",k_relax,-1)
-            relax = 1./self.relax_backtracking_factor**(k_relax-1)
+            relax = self.relax_init/self.relax_backtracking_factor**(k_relax-1)
             self.printer.print_sci("relax",relax)
             self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
             ener = self.problem.assemble_ener()
@@ -88,8 +90,8 @@ class RelaxationNonlinearSolverMixin():
     def compute_relax_gss(self):
 
         phi = (1 + math.sqrt(5)) / 2
-        relax_a = (1-phi)/(2-phi)
-        relax_b = 1./(2-phi)
+        relax_a = self.relax_init * (1-phi) / (2-phi)
+        relax_b = self.relax_init *  1      / (2-phi)
         need_update_c = True
         need_update_d = True
         relax_cur = 0.
@@ -127,27 +129,16 @@ class RelaxationNonlinearSolverMixin():
                 ener_list.append(relax_fd)
             # self.printer.print_var("relax_list",relax_list)
             # self.printer.print_var("ener_list",ener_list)
-            # if (k_relax > 1):
-            #     ener_min_old = ener_min
-            # ener_min = min(ener_list)
-            # self.printer.print_sci("ener_min",ener_min)
-            relax_min = relax_list[numpy.argmin(ener_list)]
-            # self.printer.print_sci("relax_min",relax_min)
-            if (relax_min != 0.) or (k_relax == self.relax_n_iter_max):
-                break
-            # if (ener_list[0] > 0) and (k_relax > 1) and (ener_min < ener_min_old):
-            #     dener_min = ener_min-ener_min_old
-            #     self.printer.print_sci("dener_min",dener_min)
-            #     relax_err = dener_min/ener_list[0]
-            #     self.printer.print_sci("relax_err",relax_err)
-            #     if (abs(relax_err) < self.relax_tol):
-            #         break
-            # if (k_relax >= self.relax_n_iter_max):
-            #     if (self.relax_must_advance):
-            #         if (relax_min != 0.):
-            #             break
-            #     else:
-            #         break
+            
+            if (k_relax > 1):
+                dener = abs(relax_fc - relax_fd)
+                relax_err = dener / ener_list[0]
+                self.printer.print_sci("relax_err", relax_err)
+                if (relax_err < self.relax_tol):
+                    break
+
+            if (k_relax >= self.relax_n_iter_max):
+                    break
             if (relax_fc < relax_fd):
                 relax_b = relax_d
                 relax_d = relax_c
@@ -178,7 +169,8 @@ class RelaxationNonlinearSolverMixin():
             commandline += " plot '"+self.iter_filebasename+".dat' using 1:2 with points title 'psi_int', '"+self.iter_filebasename+".dat' using (\$2=='inf'?\$1:1/0):(GPVAL_Y_MIN+(0.8)*(GPVAL_Y_MAX-GPVAL_Y_MIN)):(0):((0.2)*(GPVAL_Y_MAX-GPVAL_Y_MIN)) with vectors notitle\""
             os.system(commandline)
 
-        self.relax = relax_list[numpy.argmin(ener_list)]
+        self.relax = relax_list[numpy.argmin(ener_list[1:])+1]
         self.printer.print_sci("relax",self.relax)
-        if (self.relax == 0.):
-            self.printer.print_str("Warning! Optimal relaxation is null…")
+
+        if (self.relax_init_with_previous):
+            self.relax_init = max(self.relax, 1.0)

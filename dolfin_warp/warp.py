@@ -25,6 +25,7 @@ def warp(
         images_ref_frame                            : int         = 0                                   ,
         images_static_scaling                       : bool        = False                               ,
         images_dynamic_scaling                      : bool        = False                               ,
+        images_porosity_correction                  : bool        = False                               ,
         images_char_func                            : bool        = True                                ,
         images_is_combined                          : bool        = False                               ,
         images_is_cone                              : bool        = False                               ,
@@ -49,6 +50,7 @@ def warp(
         regul_level                                 : float       = 0.                                  ,
         regul_levels                                : list        = None                                ,
         regul_poisson                               : float       = 0.                                  ,
+        regul_volume_weight                         : float       = None                                ,
         regul_body_force                            : float       = None                                ,
         regul_volume_subdomain_data                               = None                                ,
         regul_volume_subdomain_id                                 = None                                ,
@@ -62,11 +64,14 @@ def warp(
         newton_tol_dU_rel                           : float       = None                                ,
         newton_n_iter_max                           : int         = 100                                 ,
         relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
-        relax_backtracking_factor                   : float       = None                                ,
-        relax_tol                                   : float       = None                                ,
-        relax_n_iter_max                            : int         = None                                ,
-        relax_must_advance                          : bool        = None                                ,
-        register_ref_frame                          : bool        = False                               ,
+        relax                                       : float       = None                                , # for constant
+        relax_init                                  : float       = None                                , # for backtracking, gss
+        relax_init_with_previous                    : bool        = None                                , # for backtracking, gss
+        relax_backtracking_factor                   : float       = None                                , # for backtracking
+        relax_tol                                   : float       = None                                , # for gss
+        relax_n_iter_max                            : int         = None                                , # for backtracking, gss
+        initialize_reduced_U_from_file              : bool        = False                               ,
+        initialize_reduced_U_filename               : str         = None                                ,
         initialize_U_from_file                      : bool        = False                               ,
         initialize_U_folder                         : str         = None                                ,
         initialize_U_basename                       : str         = None                                ,
@@ -202,7 +207,8 @@ def warp(
             im_is_combined=images_is_combined,
             im_is_cone=images_is_cone,
             static_scaling=images_static_scaling,
-            dynamic_scaling=images_dynamic_scaling)
+            dynamic_scaling=images_dynamic_scaling,
+            porosity_correction=images_porosity_correction)
         problem.add_image_energy(warped_image_energy)
     elif (image_energy_type == "generated"):
         generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
@@ -220,6 +226,14 @@ def warp(
         assert (0), "\"image_energy_type\" (="+str(image_energy_type)+") must be \"warped\" or \"generated\". Aborting."
 
 ############################################################# regularization ###
+
+    if (regul_volume_weight is not None) and (regul_volume_weight > 0.):
+        volume_energy = dwarp.MeshVolumeContinuousEnergy(
+            problem=problem,
+            w=regul_volume_weight)
+        problem.add_regul_energy(
+            energy=volume_energy,
+            order_by_type=0)
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
         if (regul_level>0):
@@ -280,16 +294,18 @@ def warp(
                 "working_folder":working_folder,
                 "working_basename":working_basename,
                 "relax_type":relax_type,
+                "relax":relax,
+                "relax_init":relax_init,
+                "relax_init_with_previous":relax_init_with_previous,
                 "relax_backtracking_factor":relax_backtracking_factor,
                 "relax_tol":relax_tol,
                 "relax_n_iter_max":relax_n_iter_max,
-                "relax_must_advance":relax_must_advance,
                 "tol_res_rel":newton_tol_res_rel,
                 "tol_dU":newton_tol_dU,
                 "tol_dU_rel":newton_tol_dU_rel,
                 "n_iter_max":newton_n_iter_max,
                 "write_iterations":nonlinear_solver_print_iterations})
-    elif (nonlinear_solver_type in ["cma", "CMA"]):
+    elif (nonlinear_solver_type in ("cma", "CMA")):
         assert (relax_type is None),\
             "Not implemented. Aborting."
         solver = dwarp.CMANonlinearSolver(
