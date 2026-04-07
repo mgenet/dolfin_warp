@@ -78,13 +78,12 @@ def warp(
         initialize_U_ext                            : str         = "vtu"                               ,
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
-        initialize_reduced_U_from_file              : bool        = False                               ,
-        initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
         write_VTU_files                             : bool        = True                                ,
         write_VTU_files_with_preserved_connectivity : bool        = False                               ,
         write_XML_files                             : bool        = False                               ,
         iteration_mode                              : str         = "normal"                            , # normal, loop
+        register_ref_frame                          : bool        = False                               ,
         continue_after_fail                         : bool        = False                               ,
         print_out                                   : bool        = True                                ):
 

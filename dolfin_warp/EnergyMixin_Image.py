@@ -50,7 +50,7 @@ class ImageEnergyMixin():
             quad_scheme="default")
         self.ve_im_grad._quad_scheme = "default"              # should not be needed
         for sub_element in self.ve_im_grad.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"       # should not be needed
+            sub_element._quad_scheme = "default"              # should not be needed
 
         # te
         self.te = dolfin.TensorElement(

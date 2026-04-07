@@ -112,7 +112,6 @@ for n_dim in n_dim_lst:
 
         print (n_dim)
         print (deformation_type)
-        print (deformation_type)
 
         if (1): dwarp.warp(
             working_folder=res_folder,
