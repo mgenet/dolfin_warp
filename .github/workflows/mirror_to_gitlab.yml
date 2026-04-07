@@ -18,6 +18,7 @@ jobs:
         gitlab_url: https://gitlab.inria.fr/mgenet/dolfin_warp
         username: mgenet
         gitlab_pat: ${{secrets.GITLAB_TOKEN}}
+        force_push: true
 
     # - name: Sync repo
     #   uses: wangchucheng/git-repo-sync@v0.1.0
