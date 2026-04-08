@@ -111,12 +111,7 @@ public:
     vtkSmartPointer<vtkImageData>              generated_fft_image = vtkSmartPointer<vtkImageData>::New();
     vtkSmartPointer<vtkImageRFFT>              generated_rfft_filter = vtkSmartPointer<vtkImageRFFT>::New();
     vtkSmartPointer<vtkImageExtractComponents> generated_extract_filter = vtkSmartPointer<vtkImageExtractComponents>::New();
-    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+'''
-    vtkSmartPointer<vtkImageMathematics>       diff_subtract_filter = vtkSmartPointer<vtkImageMathematics>::New();
-    vtkSmartPointer<vtkImageData>              diff_image = nullptr;
-    vtkSmartPointer<vtkImageFFT>               diff_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
-    vtkSmartPointer<vtkImageData>              diff_fft = nullptr;
-    vtkSmartPointer<vtkImageInterpolator>      generated_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();'''+('''
+    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+('''
     mutable Eigen::Matrix<double, n_dim, 1>    UX;''')*(im_is_def)+'''
 
     '''+name+'''
@@ -176,17 +171,6 @@ public:
         generated_extract_filter->UpdateDataObject();
 
         generated_image = generated_extract_filter->GetOutput();''')*(im_resample)+'''
-
-        diff_subtract_filter->SetOperationToSubtract();
-        diff_subtract_filter->SetInput1Data(generated_image);
-        diff_subtract_filter->SetInput2Data(measured_image);
-        diff_subtract_filter->UpdateDataObject();
-        diff_image = diff_subtract_filter->GetOutput();
-
-        diff_fft_filter->SetDimensionality(n_dim);
-        diff_fft_filter->SetInputDataObject(diff_image);
-        diff_fft_filter->UpdateDataObject();
-        diff_fft = diff_fft_filter->GetOutput();
 
         if (strcmp(image_interpol_mode, "nearest") == 0)
         {
@@ -647,9 +631,6 @@ public:
         generate_upsampled_image();
         compute_downsampled_image();''')*(im_resample)+'''
 
-        diff_subtract_filter->Update();
-        diff_fft_filter->Update();
-
         generated_interpolator->Initialize(generated_image); // MG20240524: Not needed, right? Actually, it is! Apparently, after modifying the image content, the interpolator must be initialized again…
     }
 
@@ -691,14 +672,6 @@ public:
         {
             image = generated_image;
         }''')*(im_resample)+'''
-        else if (strcmp(image_name, "diff_image") == 0)
-        {
-            image = diff_image;
-        }
-        else if (strcmp(image_name, "diff_fft") == 0)
-        {
-            image = diff_fft;
-        }
         else if (strcmp(image_name, "probe") == 0)
         {
             image = probe_filter->GetImageDataOutput();
@@ -867,12 +840,6 @@ public:
             mes = measured_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
             ener += pow(gen - mes, 2.0);
             norm += pow(mes      , 2.0);
-
-            // dif = diff_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            // if (std::abs(gen-mes-dif) > 1e-3)
-            // {
-            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif = " << dif << std::endl;
-            // }
           }
          }
         }
@@ -896,42 +863,15 @@ public:
          {
           for (int k_x = 0; k_x < measured_image_dimensions[0]; ++k_x)
           {
-            // mes = pow(measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0), 2.0)
-            //     + pow(measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1), 2.0);
-            // mes = pow(mes, 0.5);
-            // gen = pow(generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0), 2.0)
-            //     + pow(generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1), 2.0);
-            // gen = pow(gen, 0.5);
-            // ener += pow(gen - mes, 2.0);
-            // norm += pow(mes      , 2.0);
-
             mes = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
             gen = generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
             ener += pow(gen - mes, 2.0);
             norm += pow(mes      , 2.0);
 
-            // dif = diff_fft->GetScalarComponentAsDouble(k_x, k_y, k_z, 0);
-            // ener += pow(dif, 2.0);
-            // norm += pow(mes , 2.0);
-
-            // if (std::abs(gen-mes-dif) > 1e-3)
-            // {
-            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; comp = " << 0 << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif1 = " << dif1 << "; dif2 = " << dif2 << std::endl;
-            // }
-
             mes = measured_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
             gen = generated_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
             ener += pow(gen - mes, 2.0);
             norm += pow(mes      , 2.0);
-
-            // dif = diff_fft->GetScalarComponentAsDouble(k_x, k_y, k_z, 1);
-            // ener += pow(dif, 2.0);
-            // norm += pow(mes , 2.0);
-
-            // if ((std::abs(gen-mes-dif1) > 1e-3) || (std::abs(gen-mes-dif2) > 1e-3))
-            // {
-            //     std::cout << "k_x = " << k_x << "; k_y = " << k_y << "; k_z = " << k_z << "; comp = " << 0 << "; gen = " << gen << "; mes = " << mes << "; gen-mes = " << gen-mes << "; dif1 = " << dif1 << "; dif2 = " << dif2 << std::endl;
-            // }
           }
          }
         }

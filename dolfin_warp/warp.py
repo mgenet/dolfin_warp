@@ -23,26 +23,27 @@ def warp(
         images_ext                                  : str         = "vti"                               , # vti, vtk
         images_n_frames                             : int         = None                                ,
         images_ref_frame                            : int         = 0                                   ,
-        images_static_scaling                       : bool        = False                               ,
-        images_dynamic_scaling                      : bool        = False                               ,
-        images_porosity_correction                  : bool        = False                               ,
-        images_char_func                            : bool        = True                                ,
-        images_is_combined                          : bool        = False                               ,
-        images_is_cone                              : bool        = False                               ,
         mesh                                        : dolfin.Mesh = None                                ,
         mesh_folder                                 : str         = None                                ,
         mesh_basename                               : str         = None                                ,
-        mesh_degree                                 : int         = 1                                   ,
         kinematics_type                             : str         = "full"                              , # full, reduced
+        full_kinematics_displacement_degree         : int         = 1                                   ,
         reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
         image_energy_type                           : str         = "warped"                            , # warped, generated 
         image_energy_quadrature                     : int         = None                                ,
         image_energy_quadrature_from                : str         = "points_count"                      , # points_count, integral
+        warped_image_energy_static_scaling          : bool        = False                               ,
+        warped_image_energy_dynamic_scaling         : bool        = False                               ,
+        warped_image_energy_porosity_correction     : bool        = False                               ,
+        warped_image_energy_char_func               : bool        = True                                ,
+        warped_image_energy_is_combined             : bool        = False                               ,
+        warped_image_energy_is_cone                 : bool        = False                               ,
         generated_image_energy_texture              : str         = "tagging"                           , # no, tagging
         generated_image_energy_resample             : bool        = True                                ,
         generated_image_energy_resampling_factor    : int         = 1                                   ,
         generated_image_energy_type                 : str         = "image"                             , # image, fourier
-        regul_type                                  : str         = "continuous-equilibrated"           , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-equilibrated-tractions, discrete-linear-equilibrated-tractions-normal, discrete-linear-equilibrated-tractions-tangential, discrete-linear-equilibrated-tractions-normal-tangential, discrete-equilibrated, discrete-equilibrated-tractions, discrete-equilibrated-tractions-normal, discrete-equilibrated-tractions-tangential, discrete-equilibrated-tractions-normal-tangential
+        volume_energy_level                         : float       = None                                ,
+        regul_type                                  : str         = None                                , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-equilibrated-tractions, discrete-linear-equilibrated-tractions-normal, discrete-linear-equilibrated-tractions-tangential, discrete-linear-equilibrated-tractions-normal-tangential, discrete-equilibrated, discrete-equilibrated-tractions, discrete-equilibrated-tractions-normal, discrete-equilibrated-tractions-tangential, discrete-equilibrated-tractions-normal-tangential
         regul_types                                 : list        = None                                ,
         regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
         regul_models                                : list        = None                                ,
@@ -50,7 +51,6 @@ def warp(
         regul_level                                 : float       = 0.                                  ,
         regul_levels                                : list        = None                                ,
         regul_poisson                               : float       = 0.                                  ,
-        regul_volume_weight                         : float       = None                                ,
         regul_body_force                            : float       = None                                ,
         regul_volume_subdomain_data                               = None                                ,
         regul_volume_subdomain_id                                 = None                                ,
@@ -70,14 +70,14 @@ def warp(
         relax_backtracking_factor                   : float       = None                                , # for backtracking
         relax_tol                                   : float       = None                                , # for gss
         relax_n_iter_max                            : int         = None                                , # for backtracking, gss
-        initialize_reduced_U_from_file              : bool        = False                               ,
-        initialize_reduced_U_filename               : str         = None                                ,
         initialize_U_from_file                      : bool        = False                               ,
         initialize_U_folder                         : str         = None                                ,
         initialize_U_basename                       : str         = None                                ,
         initialize_U_ext                            : str         = "vtu"                               ,
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
+        initialize_reduced_U_from_file              : bool        = False                               ,
+        initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
         write_VTU_files                             : bool        = True                                ,
         write_VTU_files_with_preserved_connectivity : bool        = False                               ,
@@ -98,7 +98,7 @@ def warp(
             mesh=mesh,
             mesh_folder=mesh_folder,
             mesh_basename=mesh_basename,
-            U_degree=mesh_degree,
+            U_degree=full_kinematics_displacement_degree,
             print_out=print_out)
     elif (kinematics_type == "reduced"):
         assert (initialize_U_from_file is False),\
@@ -155,8 +155,7 @@ def warp(
             assert (len(regul_levels) == len(regul_types))
         else:
             regul_levels = [regul_level]*len(regul_types)
-    else:
-        assert (regul_type is not None)
+    elif (regul_type is not None):
         if ("tractions" in regul_type):
             if (regul_type.startswith("discrete-linear-equilibrated-")):
                 regul_types = ["discrete-linear-equilibrated"]
@@ -185,6 +184,10 @@ def warp(
             regul_types  = [regul_type ]
             regul_models = [regul_model]
             regul_levels = [regul_level]
+    else:
+        regul_types  = []
+        regul_models = []
+        regul_levels = []
     # print (regul_types)
     # print (regul_models)
     # print (regul_levels)
@@ -202,12 +205,12 @@ def warp(
             quadrature_degree=image_energy_quadrature,
             w=image_w,
             ref_frame=images_ref_frame,
-            w_char_func=images_char_func,
-            im_is_combined=images_is_combined,
-            im_is_cone=images_is_cone,
-            static_scaling=images_static_scaling,
-            dynamic_scaling=images_dynamic_scaling,
-            porosity_correction=images_porosity_correction)
+            w_char_func=warped_image_energy_char_func,
+            im_is_combined=warped_image_energy_is_combined,
+            im_is_cone=warped_image_energy_is_cone,
+            static_scaling=warped_image_energy_static_scaling,
+            dynamic_scaling=warped_image_energy_dynamic_scaling,
+            porosity_correction=warped_image_energy_porosity_correction)
         problem.add_image_energy(warped_image_energy)
     elif (image_energy_type == "generated"):
         generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
@@ -224,15 +227,17 @@ def warp(
     else:
         assert (0), "\"image_energy_type\" (="+str(image_energy_type)+") must be \"warped\" or \"generated\". Aborting."
 
-############################################################# regularization ###
+############################################# volume maximization constraint ###
 
-    if (regul_volume_weight is not None) and (regul_volume_weight > 0.):
+    if (volume_energy_level is not None) and (volume_energy_level > 0.):
         volume_energy = dwarp.MeshVolumeContinuousEnergy(
             problem=problem,
-            w=regul_volume_weight)
+            w=volume_energy_level)
         problem.add_regul_energy(
             energy=volume_energy,
             order_by_type=0)
+
+############################################################# regularization ###
 
     for regul_type, regul_model, regul_level in zip(regul_types, regul_models, regul_levels):
         if (regul_level>0):

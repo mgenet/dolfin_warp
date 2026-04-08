@@ -26,18 +26,18 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
 
 
     def __init__(self,
-            problem           : Problem            ,
-            image_series      : ImageSeries        ,
-            quadrature_degree : int                ,
-            name              : str         = "im" ,
-            w                 : float       = 1.   ,
-            ref_frame         : int         = 0    ,
-            w_char_func       : bool        = True ,
-            im_is_combined    : bool        = False,
-            im_is_cone        : bool        = False,
-            static_scaling    : bool        = False,
-            dynamic_scaling   : bool        = False,
-            porosity_correction: bool       = False):
+            problem             : Problem             ,
+            image_series        : ImageSeries         ,
+            quadrature_degree   : int                 ,
+            name                : str         = "im"  ,
+            w                   : float       = 1.    ,
+            ref_frame           : int         = 0     ,
+            w_char_func         : bool        = True  ,
+            im_is_combined      : bool        = False ,
+            im_is_cone          : bool        = False ,
+            static_scaling      : bool        = False ,
+            dynamic_scaling     : bool        = False ,
+            porosity_correction : bool        = False ):
 
         self.problem             = problem
         self.printer             = self.problem.printer

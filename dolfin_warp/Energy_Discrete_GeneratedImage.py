@@ -35,7 +35,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
             ref_frame         : int         = 0       ,
             resample          : bool        = True    ,
             resampling_factor : float       = 1.      ,
-            compute_DIgen     : bool        = False   ,
             ener_type         : str         = "image" ): # image, fourier
 
         self.problem           = problem
@@ -48,7 +47,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.ref_frame         = ref_frame
         self.resample          = resample
         self.resampling_factor = resampling_factor
-        self.compute_DIgen     = compute_DIgen
         self.ener_type         = ener_type
 
         self.printer.print_str("Defining generated image correlation energy…")
@@ -57,17 +55,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.set_quadrature_finite_elements()
 
         self.set_reference_frame()
-
-        self.printer.print_str("Defining measure…")
-
-        # dV
-        self.form_compiler_parameters = {
-            "quadrature_degree":self.quadrature_degree,
-            "quadrature_scheme":"default"}
-        self.dV = dolfin.Measure(
-            "dx",
-            domain=self.problem.mesh,
-            metadata=self.form_compiler_parameters)
 
         self.printer.print_str("Defining generated image…")
         self.printer.inc()
@@ -116,9 +103,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
 
         self.printer.print_sci("self.Igen.compute_image_energy()", self.Igen.compute_image_energy())
         self.printer.print_sci("self.Igen.compute_fourier_energy()", self.Igen.compute_fourier_energy())
-
-        # self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
-        # self.printer.print_sci("Igen_int0", self.Igen_int0)
 
         self.printer.dec()
         self.printer.dec()
@@ -185,7 +169,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
 
         self.Igen.write_image(
             image_name="generated",
-            filename=basename+"-Igen_"+str(k_frame)+".vti")
+            filename=basename+"-Igen_"+str(k_frame).zfill(3)+".vti")
         # self.Igen.write_image(
         #     image_name="probe_filter",
         #     filename=basename+"-Probed"+str(k_frame)+".vti")
