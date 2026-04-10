@@ -2,11 +2,11 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Felipe Álvarez Barrientos, 2020-2025                                 ###
+### And Felipe Álvarez Barrientos, 2020-2026                                 ###
 ###                                                                          ###
 ### Pontificia Universidad Católica de Chile, Santiago, Chile                ###
 ### École Polytechnique, Palaiseau, France                                   ###
