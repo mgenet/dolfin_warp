@@ -60,7 +60,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.printer.inc()
 
         # Igen
-        name, cpp = dwarp.get_ExprGenIm_cpp_pybind(
+        name, cpp = dwarp.get_ExprGenIm_cpp(
             im_dim=self.image_series.dimension,
             im_is_def=1,
             im_texture=self.texture,

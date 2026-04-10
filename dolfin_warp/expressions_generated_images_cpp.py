@@ -10,7 +10,7 @@
 
 ################################################################################
 
-def get_ExprGenIm_cpp_pybind(
+def get_ExprGenIm_cpp(
         im_dim      : int        ,  # 2, 3
         im_is_def   : bool = 1   ,  #
         im_texture  : str  = "no",  # no, tagging
