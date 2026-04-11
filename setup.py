@@ -21,6 +21,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    # install_requires=["gnuplot", "jinja2", "matplotlib", "meshio", "numpy", "pandas", "scipy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
-    install_requires=["gnuplot~=5.4", "jinja2~=3.1", "matplotlib~=3.5", "meshio~=5.3", "numpy~=1.23", "pandas~=1.3", "scipy~=1.9", "vtk~=9.2", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
+    # install_requires=["jinja2", "matplotlib", "meshio", "numpy", "pandas", "scipy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
+    install_requires=["jinja2~=3.1", "matplotlib~=3.5", "meshio~=5.3", "numpy~=1.23", "pandas~=1.3", "scipy~=1.9", "vtk~=9.2", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
 )
