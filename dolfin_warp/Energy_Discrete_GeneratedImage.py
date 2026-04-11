@@ -123,10 +123,22 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
 
 
     def call_before_assembly(self,
+            write_iterations=False,
+            basename=None,
+            k_frame=None,
+            k_iter=None,
             **kwargs):
 
         self.Igen.update_disp()
         self.Igen.update_generated_image()
+
+        if (write_iterations):
+            self.IDIgen.write_image(
+                image_name="generated",
+                filename=basename+"_Igen_"+str(k_frame).zfill(3)+"_"+str(k_iter).zfill(3)+".vti")
+            self.IDIgen.write_image(
+                image_name="generated_gradient",
+                filename=basename+"_DIgen_"+str(k_frame).zfill(3)+"_"+str(k_iter).zfill(3)+".vti")
 
 
 
@@ -138,15 +150,15 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         # ener /= 2
 
         if (self.ener_type == "image"):
-            ener = self.Igen.compute_fourier_energy()
-            self.printer.print_sci("self.Igen.compute_fourier_energy()", ener)
+            # ener = self.Igen.compute_fourier_energy()
+            # self.printer.print_sci("self.Igen.compute_fourier_energy()", ener)
             ener = self.Igen.compute_image_energy()
-            self.printer.print_sci("self.Igen.compute_image_energy()", ener)
+            # self.printer.print_sci("self.Igen.compute_image_energy()", ener)
         elif (self.ener_type == "fourier"):
-            ener = self.Igen.compute_image_energy()
-            self.printer.print_sci("self.Igen.compute_image_energy()", ener)
+            # ener = self.Igen.compute_image_energy()
+            # self.printer.print_sci("self.Igen.compute_image_energy()", ener)
             ener = self.Igen.compute_fourier_energy()
-            self.printer.print_sci("self.Igen.compute_fourier_energy()", ener)
+            # self.printer.print_sci("self.Igen.compute_fourier_energy()", ener)
         else:
             assert (0),\
                 "ener_type (="+str(self.ener_type)+") should be \"image\" or \"fourier\". Aborting."

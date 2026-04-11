@@ -17,8 +17,9 @@ from .FileSeries_Meshes import *
 from .ImageIterator import *
 from .ModalAnalysis import *
 from .NonlinearSolver import *
-from .NonlinearSolver_GradientFree import *
+from .NonlinearSolver_CMA import *
 from .NonlinearSolver_Newton import *
+from .NonlinearSolver_Scipy import *
 from .NonlinearSolverMixin_Relaxation import *
 from .Problem import *
 from .Problem_FullKinematicsWarping import *

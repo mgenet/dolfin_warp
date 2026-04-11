@@ -57,8 +57,14 @@ def warp(
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
         normalize_energies                          : bool        = False                               ,
-        nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma/CMA, gradient-free-cma, gradient-free-minimize, gradient-free-differential_evolution
+        nonlinear_solver_type                       : str         = "newton"                            , # None, newton, scipy, cma
         nonlinear_solver_print_iterations           : bool        = False                               ,
+        scipy_method                                : str         = "Nelder-Mead"                       , # Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG
+        scipy_options                               : dict        = None                                ,
+        scipy_use_finite_difference                 : bool        = False                               ,
+        scipy_finite_difference_scheme              : str         = "2-point"                           , # 2-point, 3-point
+        scipy_use_combined_jac                      : bool        = False                               ,
+        scipy_use_exact_hvp                         : bool        = False                               ,
         newton_tol_res_rel                          : float       = None                                ,
         newton_tol_dU                               : float       = None                                ,
         newton_tol_dU_rel                           : float       = None                                ,
@@ -293,67 +299,72 @@ def warp(
 
     if (nonlinear_solver_type == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
-            problem=problem,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "relax_type":relax_type,
-                "relax":relax,
-                "relax_init":relax_init,
-                "relax_init_with_previous":relax_init_with_previous,
-                "relax_backtracking_factor":relax_backtracking_factor,
-                "relax_tol":relax_tol,
-                "relax_n_iter_max":relax_n_iter_max,
-                "tol_res_rel":newton_tol_res_rel,
-                "tol_dU":newton_tol_dU,
-                "tol_dU_rel":newton_tol_dU_rel,
-                "n_iter_max":newton_n_iter_max,
-                "write_iterations":nonlinear_solver_print_iterations})
-    elif (nonlinear_solver_type in ("cma", "CMA")):
+            problem    = problem                                                 ,
+            parameters = {
+                "working_folder"            : working_folder                    ,
+                "working_basename"          : working_basename                  ,
+                "relax_type"                : relax_type                        ,
+                "relax"                     : relax                             ,
+                "relax_init"                : relax_init                        ,
+                "relax_init_with_previous"  : relax_init_with_previous          ,
+                "relax_backtracking_factor" : relax_backtracking_factor         ,
+                "relax_tol"                 : relax_tol                         ,
+                "relax_n_iter_max"          : relax_n_iter_max                  ,
+                "tol_res_rel"               : newton_tol_res_rel                ,
+                "tol_dU"                    : newton_tol_dU                     ,
+                "tol_dU_rel"                : newton_tol_dU_rel                 ,
+                "n_iter_max"                : newton_n_iter_max                 ,
+                "write_iterations"          : nonlinear_solver_print_iterations })
+    elif (nonlinear_solver_type == "cma"):
         assert (relax_type is None),\
-            "Not implemented. Aborting."
+            "Relaxation not implemented for cma solver. Aborting."
         solver = dwarp.CMANonlinearSolver(
-            problem=problem,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "write_iterations":nonlinear_solver_print_iterations})
-    elif (nonlinear_solver_type.startswith("gradient-free")):
+            problem    = problem                                        ,
+            parameters = {
+                "working_folder"   : working_folder                    ,
+                "working_basename" : working_basename                  ,
+                "write_iterations" : nonlinear_solver_print_iterations })
+    elif (nonlinear_solver_type == "scipy"):
         assert (relax_type is None),\
-            "Not implemented. Aborting."
-        solver = dwarp.GradientFreeNonlinearSolver(
-            problem=problem,
-            parameters={
-                "working_folder":working_folder,
-                "working_basename":working_basename,
-                "solver_type":nonlinear_solver_type.split("-", 2)[2],
-                "write_iterations":nonlinear_solver_print_iterations})
+            "Relaxation not implemented for scipy solvers. Aborting."
+        solver = dwarp.ScipyNonlinearSolver(
+            problem    = problem                                                ,
+            parameters = {
+                "working_folder"           : working_folder                    ,
+                "working_basename"         : working_basename                  ,
+                "method"                   : scipy_method                      ,
+                "options"                  : scipy_options                     ,
+                "use_finite_difference"    : scipy_use_finite_difference       ,
+                "finite_difference_scheme" : scipy_finite_difference_scheme    ,
+                "use_combined_jac"         : scipy_use_combined_jac            ,
+                "use_exact_hvp"            : scipy_use_exact_hvp               ,
+                "write_iterations"         : nonlinear_solver_print_iterations })
     else:
-        assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"CMA\" or \"gradient-free\". Aborting."
+        assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"gradient-free\" or \"scipy\". Aborting."
 
 ############################################################# image iterator ###
 
     image_iterator = dwarp.ImageIterator(
-        problem=problem,
-        solver=solver,
+        problem=problem                                                                                  ,
+        solver=solver                                                                                    ,
         parameters={
-            "working_folder":working_folder,
-            "working_basename":working_basename,
-            "register_ref_frame":register_ref_frame,
-            "initialize_reduced_U_from_file":initialize_reduced_U_from_file,
-            "initialize_reduced_U_filename":initialize_reduced_U_filename,
-            "initialize_U_from_file":initialize_U_from_file,
-            "initialize_U_folder":initialize_U_folder,
-            "initialize_U_basename":initialize_U_basename,
-            "initialize_U_ext":initialize_U_ext,
-            "initialize_U_array_name":initialize_U_array_name,
-            "initialize_U_method":initialize_U_method,
-            "write_qois_limited_precision":write_qois_limited_precision,
-            "write_VTU_files":write_VTU_files,
-            "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
-            "write_XML_files":write_XML_files,
-            "iteration_mode":iteration_mode,
-            "continue_after_fail":continue_after_fail})
+            "working_folder"                              : working_folder                              ,
+            "working_basename"                            : working_basename                            ,
+            "register_ref_frame"                          : register_ref_frame                          ,
+            "initialize_reduced_U_from_file"              : initialize_reduced_U_from_file              ,
+            "initialize_reduced_U_filename"               : initialize_reduced_U_filename               ,
+            "initialize_U_from_file"                      : initialize_U_from_file                      ,
+            "initialize_U_folder"                         : initialize_U_folder                         ,
+            "initialize_U_basename"                       : initialize_U_basename                       ,
+            "initialize_U_ext"                            : initialize_U_ext                            ,
+            "initialize_U_array_name"                     : initialize_U_array_name                     ,
+            "initialize_U_method"                         : initialize_U_method                         ,
+            "write_qois_limited_precision"                : write_qois_limited_precision                ,
+            "write_VTU_files"                             : write_VTU_files                             ,
+            "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity ,
+            "write_XML_files"                             : write_XML_files                             ,
+            "iteration_mode"                              : iteration_mode                              ,
+            "continue_after_fail"                         : continue_after_fail                         })
 
     success = image_iterator.iterate()
 
@@ -362,8 +373,6 @@ def warp(
     problem.close()
 
     return success
-
-fedic2 = warp
 
 ################################################################################
 
