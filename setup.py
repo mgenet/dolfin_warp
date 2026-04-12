@@ -15,6 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/mgenet/dolfin_warp",
     packages=["dolfin_warp"],
+    package_data={"dolfin_warp": ["*.j2"]},
     license="GPLv3",
     classifiers=[
         "Programming Language :: Python :: 3",
