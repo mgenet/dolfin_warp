@@ -22,6 +22,73 @@ from .NonlinearSolver import NonlinearSolver
 
 ################################################################################
 
+def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
+        fun                   ,
+        x0                    ,
+        jac                   ,
+        args          = ()    ,
+        learning_rate = 0.001 ,
+        mass          = 0.9   ,
+        startiter     = 0     ,
+        maxiter       = 1000  ,
+        callback      = None  ,
+        **kwargs              ):
+
+    x = x0
+    velocity = numpy.zeros_like(x)
+    for i in range(startiter, startiter + maxiter):
+        g = jac(x)
+
+        if callback and callback(x):
+            break
+
+        velocity = mass * velocity - (1.0 - mass) * g
+        x = x + learning_rate * velocity
+    else:
+        i = startiter + maxiter - 1
+        g = jac(x)
+    i += 1
+
+    return scipy.optimize.OptimizeResult(x=x, fun=fun(x), jac=g, nit=i, nfev=i, success=True)
+
+
+def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
+        fun                   ,
+        x0                    ,
+        jac                   ,
+        args          = ()    ,
+        learning_rate = 0.001 ,
+        beta1         = 0.9   ,
+        beta2         = 0.999 ,
+        eps           = 1e-8  ,
+        startiter     = 0     ,
+        maxiter       = 1000  ,
+        callback      = None  ,
+        **kwargs              ):
+
+    x = x0
+    m = numpy.zeros_like(x)
+    v = numpy.zeros_like(x)
+    for i in range(startiter, startiter + maxiter):
+        g = jac(x)
+
+        if callback and callback(x):
+            break
+
+        m = (1 - beta1) * g + beta1 * m  # first  moment estimate.
+        v = (1 - beta2) * (g**2) + beta2 * v  # second moment estimate.
+        mhat = m / (1 - beta1**(i + 1 - startiter))  # bias correction.
+        vhat = v / (1 - beta2**(i + 1 - startiter))
+        x = x - learning_rate * mhat / (numpy.sqrt(vhat) + eps)
+    else:
+        i = startiter + maxiter - 1
+        g = jac(x)
+    i += 1
+
+    return scipy.optimize.OptimizeResult(x=x, fun=fun(x), jac=g, nit=i, nfev=i, success=True)
+
+################################################################################
+
 class ScipyNonlinearSolver(NonlinearSolver):
 
 
@@ -45,10 +112,23 @@ class ScipyNonlinearSolver(NonlinearSolver):
             default_options = {"disp": False, "maxiter": 100, "ftol": 1e-6, "gtol": 1e-6, "eps":1e-6}
         elif (method == "Newton-CG"):
             default_options = {"maxiter": 100, "xtol": 1e-6, "fatol": 1e-6, "eps":1e-6}
+        elif (method == "SGD"):
+            default_options = {"learning_rate": 0.001, "mass": 0.9, "maxiter": 100}
+        elif (method == "ADAM"):
+            default_options = {"learning_rate": 0.001, "beta1": 0.9, "beta2": 0.999, "eps": 1e-8, "maxiter": 100}
+        else:
+            assert (0), "method ("+str(method)+ ") should be Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG, SGD or ADAM. Aborting."
         options = parameters.get("options", default_options)
 
+        if method == "SGD":
+            custom_method = sgd
+        elif method == "ADAM":
+            custom_method = adam
+        else:
+            custom_method = method
+
         self.scipy_kwargs = {
-            "method"   : method               ,
+            "method"   : custom_method        ,
             "options"  : options              ,
             "callback" : self._scipy_callback }
 
@@ -59,7 +139,7 @@ class ScipyNonlinearSolver(NonlinearSolver):
         use_exact_hvp            = parameters.get("use_exact_hvp"           , False    )
         
         zero_order_methods   = ["Nelder-Mead"]
-        first_order_methods  = ["CG", "BFGS", "L-BFGS-B"]
+        first_order_methods  = ["CG", "BFGS", "L-BFGS-B", "SGD", "ADAM"]
         second_order_methods = ["Newton-CG"]
 
         assert (method in zero_order_methods + first_order_methods + second_order_methods),\
@@ -94,11 +174,15 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         if (method in first_order_methods + second_order_methods):
             if (use_finite_difference):
-                self.scipy_kwargs["jac"] = finite_difference_scheme
+                if method in ["SGD", "ADAM"]:
+                    self.scipy_kwargs["jac"] = self._jac_numdiff
+                    self.finite_difference_scheme = finite_difference_scheme
+                else:
+                    self.scipy_kwargs["jac"] = finite_difference_scheme
             elif (use_combined_jac):
                 self.scipy_kwargs["jac"] = True
             else:
-                self.scipy_kwargs["jac"] = self.jac
+                self.scipy_kwargs["jac"] = self._jac
 
             if   (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
                 self.res_vec = self.problem.U.vector().copy()
@@ -107,12 +191,12 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         if (method in second_order_methods):
             if (use_exact_hvp):
-                self.scipy_kwargs["hessp"] = self.hessp_exact
+                self.scipy_kwargs["hessp"] = self._hessp_exact
             else:
-                self.scipy_kwargs["hessp"] = self.hessp_approx
+                self.scipy_kwargs["hessp"] = self._hessp_approx
 
             self.p_func = dolfin.Function(self.problem.U.function_space())
-                
+
         # State & cache trackers
         self._cached_x   = None
         self._cached_fun = None
@@ -173,6 +257,21 @@ class ScipyNonlinearSolver(NonlinearSolver):
         if (self._cached_jac is None):
             self.problem.assemble_res(res_vec=self.res_vec)
             self._cached_jac = self.res_vec.get_local()
+
+        return self._cached_jac
+
+
+
+    def _jac_numdiff(self, x):
+
+        self._update_state(x)
+            
+        if (self._cached_jac is None):
+            import scipy.optimize._numdiff
+            self._cached_jac = scipy.optimize._numdiff.approx_derivative(
+                fun=self._fun,
+                x0=x,
+                method=self.finite_difference_scheme).flatten()
 
         return self._cached_jac
 
@@ -266,14 +365,14 @@ class ScipyNonlinearSolver(NonlinearSolver):
             fun = self.scipy_fun,
             x0  = x0            ,
             **self.scipy_kwargs )
-        self.printer.print_var("success", res.success)
-        self.printer.print_var("message", res.message)
-        self.printer.print_var("nit"    , res.nit    )
-        self.printer.print_var("nfev"   , res.nfev   )
-        if hasattr(res, "njev"): self.printer.print_var("njev", res.njev)
-        if hasattr(res, "nhev"): self.printer.print_var("nhev", res.nhev)
-        self.printer.print_var("x"      , res.x      )
-        self.printer.print_var("fun"    , res.fun    )
+        if hasattr(res, "success"): self.printer.print_var("success", res.success)
+        if hasattr(res, "message"): self.printer.print_var("message", res.message)
+        if hasattr(res, "nit"    ): self.printer.print_var("nit"    , res.nit    )
+        if hasattr(res, "nfev"   ): self.printer.print_var("nfev"   , res.nfev   )
+        if hasattr(res, "njev"   ): self.printer.print_var("njev"   , res.njev   )
+        if hasattr(res, "nhev"   ): self.printer.print_var("nhev"   , res.nhev   )
+        if hasattr(res, "x"      ): self.printer.print_var("x"      , res.x      )
+        if hasattr(res, "fun"    ): self.printer.print_var("fun"    , res.fun    )
 
         if (res.success):
             self.printer.print_str("Nonlinear solver converged…")
