@@ -115,18 +115,17 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             self.Sigma = self.material.Sigma
             self.P     = self.material.P
 
-        self.N = dolfin.FacetNormal(self.problem.mesh)
-        self.F = dolfin.dot(self.P, self.N)
-        self.Fn = dolfin.inner(self.N, self.F)
+        self.F = dolfin.dot(self.P, self.problem.N)
+        self.Fn = dolfin.inner(self.problem.N, self.F)
 
         if (self.dim == 2):
             ez = dolfin.as_vector([0, 0, 1])
-            N3D = dolfin.as_vector([self.N[0], self.N[1], 0])
+            N3D = dolfin.as_vector([self.problem.N[0], self.problem.N[1], 0])
             T3D = dolfin.cross(ez, N3D)
             self.T = dolfin.as_vector([T3D[0], T3D[1]])
             self.Ft = dolfin.inner(self.T, self.F)
         elif (self.dim == 3):
-            self.Ft = self.F - self.Fn * self.N
+            self.Ft = self.F - self.Fn * self.problem.N
             self.Ft = dolfin.inner(self.Ft, self.Ft)
             self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.) # MG20221013: To bypass the derivative singularity at 0
             # self.Ft = dolfin.sqrt(self.Ft)
@@ -163,7 +162,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
         self.R_tria = dolfin.TrialFunction(self.R_fs)
         self.R_test = dolfin.TestFunction(self.R_fs)
-        self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.N, self.N)
+        self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.problem.N, self.problem.N)
 
         if (self.type == "tractions"):
             # vi = self.R_test[0,:]
@@ -373,7 +372,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         # print(self.R_vec.norm("l2"))
         # dmech.write_VTU_file("R", self.R, self.k_frame)
 
-        # l = dolfin.inner(dolfin.inner(self.N, self.R), self.v_sca) * self.problem.dS
+        # l = dolfin.inner(dolfin.inner(self.problem.N, self.R), self.v_sca) * self.problem.dS
         # L = dolfin.assemble(l)
         # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
         # print(self.f_Fn.vector().norm("l2"))
@@ -394,7 +393,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         # print(self.MR_vec.norm("l2"))
         # dmech.write_VTU_file("MR", self.MR, self.k_frame)
 
-        # l = dolfin.inner(dolfin.inner(self.N, self.MR), self.v_sca) * self.problem.dS
+        # l = dolfin.inner(dolfin.inner(self.problem.N, self.MR), self.v_sca) * self.problem.dS
         # L = dolfin.assemble(l)
         # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
         # print(self.f_Fn.vector().norm("l2"))

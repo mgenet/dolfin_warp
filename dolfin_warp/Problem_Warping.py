@@ -100,6 +100,7 @@ class WarpingProblem(Problem):
         self.mesh_h0 = dolfin.Constant(self.mesh_h0)
 
         self.X = dolfin.SpatialCoordinate(self.mesh)
+        self.N = dolfin.FacetNormal(self.mesh)
 
         self.printer.dec()
 

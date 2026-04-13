@@ -113,13 +113,12 @@ class RegularizationContinuousEnergy(Energy, ContinuousEnergyMixin):
         elif (self.type == "equilibrated"):
             self.Div_P = dolfin.div(self.P)
             self.Psi_V = dolfin.inner(self.Div_P, self.Div_P)
-            self.N = dolfin.FacetNormal(self.problem.mesh)
-            self.Jump_P_N = dolfin.jump(self.P, self.N)
+            self.Jump_P_N = dolfin.jump(self.P, self.problem.N)
             self.cell_h = dolfin.Constant(self.problem.mesh.hmin())
             self.Psi_F = dolfin.inner(self.Jump_P_N, self.Jump_P_N)/self.cell_h
-            # self.P_N = dolfin.dot(self.P, self.N)
-            # self.P_N_N = dolfin.inner(self.N, self.P_N)
-            # self.P_N_T = self.P_N - self.P_N_N * self.N
+            # self.P_N = dolfin.dot(self.P, self.problem.N)
+            # self.P_N_N = dolfin.inner(self.problem.N, self.P_N)
+            # self.P_N_T = self.P_N - self.P_N_N * self.problem.N
             # self.Psi_S = dolfin.inner(self.P_N_T, self.P_N_T)/self.cell_h
             # self.Psi_S = dolfin.inner(self.P_N, self.P_N)/self.cell_h
             self.Psi_S = dolfin.Constant(0)
