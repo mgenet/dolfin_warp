@@ -57,6 +57,7 @@ def warp(
         relax_backtracking_factor                   : float       = None                                , # for backtracking
         relax_tol                                   : float       = None                                , # for gss
         relax_n_iter_max                            : int         = None                                , # for backtracking, gss
+        save_reduced_disp                           : bool        = False                               , # To extract reduced displacement vector
         normalize_energies                          : bool        = False                               ,
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
@@ -305,6 +306,7 @@ def warp(
             "write_VTU_files_with_preserved_connectivity":write_VTU_files_with_preserved_connectivity,
             "write_XML_files":write_XML_files,
             "iteration_mode":iteration_mode,
+            "save_reduced_disp":save_reduced_disp,
             "continue_after_fail":continue_after_fail})
 
     success = image_iterator.iterate()
