@@ -50,7 +50,7 @@ class ImageIterator():
         self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
         self.write_XML_files                             = parameters.get("write_XML_files"                            , False         )
         self.iteration_mode                              = parameters.get("iteration_mode"                             , "normal"      ) # MG20200616: This should be a bool
-        self.continue_after_fail                         = parameters.get("continue_after_fail"                        , False
+        self.continue_after_fail                         = parameters.get("continue_after_fail"                        , False         )
         self.save_reduced_disp                           = parameters.get("save_reduced_disp"                          , False         )
 
 
