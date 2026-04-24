@@ -56,7 +56,18 @@ class WarpedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyMixi
         self.printer.print_str("Defining warped image correlation energy…")
         self.printer.inc()
 
-        self.set_quadrature_finite_elements()
+        if (self.im_is_combined):
+            self.ve_im_grad = dolfin.VectorElement(
+                family="Quadrature",
+                cell=self.problem.mesh.ufl_cell(),
+                degree=self.quadrature_degree,
+                dim=1+self.image_series.dimension,
+                quad_scheme="default")
+            self.ve_im_grad._quad_scheme = "default"           # should not be needed
+            for sub_element in self.ve_im_grad.sub_elements(): # should not be needed
+                sub_element._quad_scheme = "default"           # should not be needed
+        else:
+            self.set_quadrature_finite_elements()
 
         self.set_measures()
 

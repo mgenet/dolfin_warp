@@ -27,9 +27,9 @@ class ImageEnergyMixin():
             cell=self.problem.mesh.ufl_cell(),
             degree=self.quadrature_degree,
             quad_scheme="default")
-        self.fe._quad_scheme = "default"              # should not be needed
-        for sub_element in self.fe.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
+        self.fe._quad_scheme = "default"           # should not be needed
+        for sub_element in self.fe.sub_elements(): # should not be needed
+            sub_element._quad_scheme = "default"   # should not be needed
 
         # ve
         self.ve = dolfin.VectorElement(
@@ -37,20 +37,9 @@ class ImageEnergyMixin():
             cell=self.problem.mesh.ufl_cell(),
             degree=self.quadrature_degree,
             quad_scheme="default")
-        self.ve._quad_scheme = "default"              # should not be needed
-        for sub_element in self.ve.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
-
-        # ve_im_grad
-        self.ve_im_grad = dolfin.VectorElement(
-            family="Quadrature",
-            cell=self.problem.mesh.ufl_cell(),
-            degree=self.quadrature_degree,
-            dim=1+self.image_series.dimension,
-            quad_scheme="default")
-        self.ve_im_grad._quad_scheme = "default"              # should not be needed
-        for sub_element in self.ve_im_grad.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"              # should not be needed
+        self.ve._quad_scheme = "default"           # should not be needed
+        for sub_element in self.ve.sub_elements(): # should not be needed
+            sub_element._quad_scheme = "default"   # should not be needed
 
         # te
         self.te = dolfin.TensorElement(
@@ -58,9 +47,9 @@ class ImageEnergyMixin():
             cell=self.problem.mesh.ufl_cell(),
             degree=self.quadrature_degree,
             quad_scheme="default")
-        self.te._quad_scheme = "default"              # should not be needed
-        for sub_element in self.te.sub_elements():    # should not be needed
-            sub_element._quad_scheme = "default"      # should not be needed
+        self.te._quad_scheme = "default"           # should not be needed
+        for sub_element in self.te.sub_elements(): # should not be needed
+            sub_element._quad_scheme = "default"   # should not be needed
 
         self.printer.dec()
 

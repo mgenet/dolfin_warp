@@ -178,6 +178,9 @@ def compute_projected_image(
             cell=mesh.ufl_cell(),
             degree=image_quadrature,
             quad_scheme="default")
+        fe._quad_scheme = "default"              # should not be needed
+        for sub_element in fe.sub_elements():    # should not be needed
+            sub_element._quad_scheme = "default" # should not be needed
 
         fs = dolfin.FunctionSpace(
             mesh,
@@ -189,6 +192,9 @@ def compute_projected_image(
             cell=mesh.ufl_cell(),
             degree=image_quadrature,
             quad_scheme="default")
+        fe._quad_scheme = "default"              # should not be needed
+        for sub_element in fe.sub_elements():    # should not be needed
+            sub_element._quad_scheme = "default" # should not be needed
 
         fs = dolfin.VectorFunctionSpace(
             mesh=mesh,
