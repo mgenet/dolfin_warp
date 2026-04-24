@@ -29,7 +29,7 @@ def warp(
         kinematics_type                             : str         = "full"                              , # full, reduced
         full_kinematics_displacement_degree         : int         = 1                                   ,
         reduced_kinematics_model                    : str         = "translation+rotation+scaling+shear", # translation, rotation, scaling, shear, translation+rotation+scaling+shear, etc.
-        image_energy_type                           : str         = "warped"                            , # warped, generated 
+        image_energy_type                           : str         = "warped"                            , # warped, generated
         image_energy_quadrature                     : int         = None                                ,
         image_energy_quadrature_from                : str         = "points_count"                      , # points_count, integral
         warped_image_energy_static_scaling          : bool        = False                               ,
@@ -218,17 +218,28 @@ def warp(
             dynamic_scaling=warped_image_energy_dynamic_scaling,
             porosity_correction=warped_image_energy_porosity_correction)
         problem.add_image_energy(warped_image_energy)
-    elif (image_energy_type == "generated"):
-        generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
-            problem=problem,
-            image_series=image_series,
-            quadrature_degree=image_energy_quadrature,
-            texture=generated_image_energy_texture,
-            w=image_w,
-            ref_frame=images_ref_frame,
-            resample=generated_image_energy_resample,
-            resampling_factor=generated_image_energy_resampling_factor,
-            ener_type=generated_image_energy_type)
+    elif (image_energy_type.startswith("generated")):
+        if   (image_energy_type == "generated-discrete"):
+            generated_image_energy = dwarp.GeneratedImageDiscreteEnergy(
+                problem=problem,
+                image_series=image_series,
+                texture=generated_image_energy_texture,
+                w=image_w,
+                ref_frame=images_ref_frame,
+                resample=generated_image_energy_resample,
+                resampling_factor=generated_image_energy_resampling_factor,
+                ener_type=generated_image_energy_type)
+        elif (image_energy_type in ("generated", "generated-continuous")):
+            generated_image_energy = dwarp.GeneratedImageContinuousEnergy(
+                problem=problem,
+                image_series=image_series,
+                quadrature_degree=image_energy_quadrature,
+                texture=generated_image_energy_texture,
+                w=image_w,
+                ref_frame=images_ref_frame,
+                resampling_factor=generated_image_energy_resampling_factor)
+        else:
+            assert (0), "\"image_energy_type\" (="+str(image_energy_type)+") must be \"generated\", \"generated-continuous\", \"generated-discrete\". Aborting."
         problem.add_image_energy(generated_image_energy)
     else:
         assert (0), "\"image_energy_type\" (="+str(image_energy_type)+") must be \"warped\" or \"generated\". Aborting."

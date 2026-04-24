@@ -28,7 +28,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
     def __init__(self,
             problem           : Problem               ,
             image_series      : ImageSeries           ,
-            quadrature_degree : int                   ,
             texture           : str                   ,
             name              : str         = "gen_im",
             w                 : float       = 1.      ,
@@ -40,7 +39,6 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.problem           = problem
         self.printer           = self.problem.printer
         self.image_series      = image_series
-        self.quadrature_degree = quadrature_degree
         self.texture           = texture
         self.name              = name
         self.w                 = w
@@ -52,6 +50,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.printer.print_str("Defining generated image correlation energy…")
         self.printer.inc()
 
+        self.quadrature_degree = 1
         self.set_quadrature_finite_elements()
 
         self.set_reference_frame()
@@ -60,7 +59,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
         self.printer.inc()
 
         # Igen
-        name, cpp = dwarp.get_ExprGenIm_cpp(
+        name, cpp = dwarp.get_ExprGenDiscIm_cpp(
             im_dim=self.image_series.dimension,
             im_is_def=1,
             im_texture=self.texture,

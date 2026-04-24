@@ -10,7 +10,7 @@
 
 ################################################################################
 
-def get_ExprGenIm_cpp(
+def get_ExprGenDiscIm_cpp(
         im_dim      : int        ,  # 2, 3
         im_is_def   : bool = 1   ,  #
         im_texture  : str  = "no",  # no, tagging
@@ -22,7 +22,7 @@ def get_ExprGenIm_cpp(
 
     name  = "Expr"
     name += str(im_dim)
-    name += "GenIm"
+    name += "GenDiscIm"
     if   (im_is_def == 0):
         name += "Ref"
     elif (im_is_def == 1):
@@ -111,7 +111,8 @@ public:
     vtkSmartPointer<vtkImageData>              generated_fft_image = vtkSmartPointer<vtkImageData>::New();
     vtkSmartPointer<vtkImageRFFT>              generated_rfft_filter = vtkSmartPointer<vtkImageRFFT>::New();
     vtkSmartPointer<vtkImageExtractComponents> generated_extract_filter = vtkSmartPointer<vtkImageExtractComponents>::New();
-    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+('''
+    vtkSmartPointer<vtkImageData>              generated_image = nullptr;''')*(im_resample)+'''
+    vtkSmartPointer<vtkImageInterpolator>      generated_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();'''+('''
     mutable Eigen::Matrix<double, n_dim, 1>    UX;''')*(im_is_def)+'''
 
     '''+name+'''
@@ -477,6 +478,24 @@ public:
         ugrid->Modified();
     }''')*(im_is_def)+'''
 
+    // ========================================================================
+    // ANALYTICAL PURE IMAGE METHODS
+    // ========================================================================
+    inline double get_pure_image(const double* X) const
+    {'''+('''
+        return 1.0;''')*(im_texture=="no")+('''
+        double val = 1.0;
+        for (unsigned int d=0;
+                         d<n_dim;
+                       ++d)
+        {
+            val *= std::abs(sin(M_PI*(X[d]-X0[d])/s));
+        }
+        val = pow(val, 1./n_dim);
+        return val;''')*(im_texture=="tagging")+'''
+    }
+    // ========================================================================
+    
     void '''+('''generate_image''')*(not im_resample)+('''generate_upsampled_image''')*(im_resample)+'''()
     {'''+('''
         std::cout << "'''+('''generate_image''')*(not im_resample)+('''generate_upsampled_image''')*(im_resample)+'''" << std::endl;''')*(verbose)+('''
@@ -507,14 +526,9 @@ public:
                 ima->GetPoint(k_point, X_3D.data());''')*(not im_is_def)+('''
                 ima->GetPoint(k_point, x_3D.data());
                 probe_filter_disp->GetTuple(k_point, ux_3D.data());
-                X_3D = x_3D - ux_3D;''')*(im_is_def)+('''
+                X_3D = x_3D - ux_3D;''')*(im_is_def)+'''
 
-                I[0] = 1.;''')*(im_texture=="no")+(('''
-                I[0] = pow(abs(sin(M_PI*(X_3D[0]-X0[0])/s))
-                         * abs(sin(M_PI*(X_3D[1]-X0[1])/s)), 1./2);''')*(im_dim==2)+('''
-                I[0] = pow(abs(sin(M_PI*(X_3D[0]-X0[0])/s))
-                         * abs(sin(M_PI*(X_3D[1]-X0[1])/s))
-                         * abs(sin(M_PI*(X_3D[2]-X0[2])/s)), 1./3);''')*(im_dim==3))*(im_texture=="tagging")+'''
+                I[0] = get_pure_image(X_3D.data());
             }
             sca->SetTuple(k_point, I);
         }
@@ -523,7 +537,7 @@ public:
 
     void compute_downsampled_image()
     {'''+('''
-        std::cout << "compute_downsampled_images" << std::endl;''')*(verbose)+'''
+        std::cout << "compute_downsampled_image" << std::endl;''')*(verbose)+'''
 
         generated_upsampled_fft_filter->Update();
 
@@ -539,15 +553,13 @@ public:
         int N_hy = generated_upsampled_image_dimensions[1];
         int N_hz = generated_upsampled_image_dimensions[2];
 
-        // Loop over the COARSE grid
+        // Loop over the coarse grid
         for (int k_z = 0; k_z < N_lz; ++k_z)
         {
-            // Z-Dimension Setup
             bool is_nyq_z = has_nyq_z && (k_z == N_lz / 2);
             int base_k_z = (k_z <= N_lz / 2) ? k_z : k_z + (N_hz - N_lz);
             int alias_k_z = (N_hz - base_k_z) % N_hz;
 
-            // Define Iteration Set for Z: [Base] or [Base, Alias]
             int z_indices[2] = {base_k_z, alias_k_z};
             int z_count = is_nyq_z ? 2 : 1;
                         
@@ -572,9 +584,7 @@ public:
                     double sum_r = 0.0;
                     double sum_i = 0.0;
 
-                    // === COMBINATORIAL SUMMATION ===
                     // Explicitly iterate over the valid source indices for each dimension
-                                        
                     for (int iz = 0; iz < z_count; ++iz)
                     {
                         int curr_z = z_indices[iz];
@@ -748,7 +758,12 @@ public:
           }
          }
         }
-        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];'''+('''
+        // int N_voxels = image_dimensions[0] * image_dimensions[1] * image_dimensions[2];
+        // sum /= N_voxels;
+
+        double* image_spacing = image->GetSpacing();
+        double voxel_volume = image_spacing[0] * image_spacing[1] * image_spacing[2];
+        sum *= voxel_volume;'''+('''
         std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
 
         return sum;
@@ -783,7 +798,8 @@ public:
           }
          }
         }
-        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
+        int N_voxels = image_dimensions[0] * image_dimensions[1] * image_dimensions[2];
+        sum /= N_voxels;
         sum = pow(sum, 0.5);'''+('''
         std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
 
@@ -816,8 +832,9 @@ public:
           }
          }
         }
-        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
-        sum /= image_dimensions[2]*image_dimensions[1]*image_dimensions[0];
+        int N_voxels = image_dimensions[0] * image_dimensions[1] * image_dimensions[2];
+        sum /= N_voxels;
+        sum /= N_voxels;
         sum = pow(sum, 0.5);'''+('''
         std::cout << "sum = " << sum << std::endl;''')*(verbose)+'''
 
@@ -829,7 +846,7 @@ public:
         std::cout << "compute_image_energy" << std::endl;''')*(verbose)+'''
 
         double ener = 0., norm = 0.;
-        double gen, mes, dif;
+        double gen, mes;
         for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z)
         {
          for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y)
@@ -843,9 +860,13 @@ public:
           }
          }
         }
-        ener /= norm;
+        // ener /= norm;
+
         // ener /= 2;
-        // ener = pow(ener, 0.5);'''+('''
+        // ener = pow(ener, 0.5);
+
+        double voxel_volume = measured_image_spacing[0] * measured_image_spacing[1] * measured_image_spacing[2];
+        ener *= voxel_volume/2;'''+('''
         std::cout << "ener = " << ener << std::endl;''')*(verbose)+'''
 
         return ener;
@@ -856,7 +877,7 @@ public:
         std::cout << "compute_fourier_energy" << std::endl;''')*(verbose)+'''
 
         double ener = 0., norm = 0.;
-        double gen, mes, dif1, dif2;
+        double gen, mes;
         for (int k_z = 0; k_z < measured_image_dimensions[2]; ++k_z)
         {
          for (int k_y = 0; k_y < measured_image_dimensions[1]; ++k_y)
@@ -875,9 +896,14 @@ public:
           }
          }
         }
-        ener /= norm;
+        // ener /= norm;
+
         // ener /= 2;
-        // ener = pow(ener, 0.5);'''+('''
+        // ener = pow(ener, 0.5);
+
+        double voxel_volume = measured_image_spacing[0] * measured_image_spacing[1] * measured_image_spacing[2];
+        double N_voxels = measured_image_dimensions[0] * measured_image_dimensions[1] * measured_image_dimensions[2];
+        ener *= voxel_volume / 2 / N_voxels;'''+('''
         std::cout << "ener = " << ener << std::endl;''')*(verbose)+'''
 
         return ener;
@@ -887,7 +913,7 @@ public:
     (
         Eigen::Ref<      Eigen::VectorXd> expr,
         Eigen::Ref<const Eigen::VectorXd> X
-    ) const
+    ) const override
     {'''+('''
         // std::cout << "X = " << X << std::endl;''')*(verbose)+(('''
         X_3D.head<n_dim>() = X;'''+('''
@@ -918,9 +944,9 @@ PYBIND11_MODULE(SIGNATURE, m)
     .def("update_measured_image", &'''+name+'''::update_measured_image, pybind11::arg("filename"))
     .def("init_mesh_and_disp", &'''+name+'''::init_mesh_and_disp, pybind11::arg("mesh_"), pybind11::arg("U_"))'''+('''
     .def("update_disp", &'''+name+'''::update_disp)''')*(im_is_def)+('''
-    .def("generate_image", &'''+name+'''::generate_image)''')*(not im_resample)+('''
-    .def("generate_upsampled_image", &'''+name+'''::generate_upsampled_image)
-    .def("compute_downsampled_image", &'''+name+'''::compute_downsampled_image)''')*(im_resample)+'''
+    //.def("generate_image", &'''+name+'''::generate_image)''')*(not im_resample)+('''
+    //.def("generate_upsampled_image", &'''+name+'''::generate_upsampled_image)
+    //.def("compute_downsampled_image", &'''+name+'''::compute_downsampled_image)''')*(im_resample)+'''
     .def("update_generated_image", &'''+name+'''::update_generated_image)
     .def("write_image", &'''+name+'''::write_image, pybind11::arg("image_name"), pybind11::arg("filename"))
     .def("write_ugrid", &'''+name+'''::write_ugrid, pybind11::arg("filename"))'''+('''

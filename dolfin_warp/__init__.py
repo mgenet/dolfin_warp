@@ -4,6 +4,7 @@ from .Energy import *
 from .EnergyMixin_Continuous import *
 from .EnergyMixin_Discrete import *
 from .Energy_Continuous_Constraint import *
+from .Energy_Continuous_GeneratedImage import *
 from .Energy_Continuous_MeshVolume import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
@@ -44,9 +45,9 @@ from .compute_unwarped_images import *
 from .compute_warped_images import *
 from .compute_warped_mesh import *
 from .expressions_char_func_cpp import *
-from .expressions_generated_images_cpp import *
+from .expressions_generated_images_cont_cpp import *
+from .expressions_generated_images_disc_cpp import *
 from .expressions_images_cpp import *
-from .expressions_images_py import *
 from .expressions_static_scaling_cpp import *
 from .generate_images import *
 from .generate_images_Image import *

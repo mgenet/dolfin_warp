@@ -23,7 +23,7 @@ def get_ExprIm_cpp(
         u_type="dolfin", # dolfin, vtk
         static_scaling_factor=0,
         dynamic_scaling=0,
-        use_jinja2=1,
+        use_jinja2=0,
         verbose=0):
 
     assert (im_dim  in (2,3))
@@ -141,9 +141,13 @@ public:
         {
             interpolator->SetInterpolationModeToLinear();
         }
+        else if (strcmp(image_interpol_mode, "cubic") == 0)
+        {
+            interpolator->SetInterpolationModeToCubic();
+        }
         else
         {
-            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\" or \\"linear\\". Aborting." << std::endl;
+            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
             std::exit(0);
         }
         interpolator->SetOutValue(image_interpol_out_value);
@@ -157,9 +161,13 @@ public:
         {
             gradient_interpolator->SetInterpolationModeToLinear();
         }
+        else if (strcmp(gradient_interpol_mode, "cubic") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToCubic();
+        }
         else
         {
-            std::cout << "Interpolator gradient_interpol_mode (" << gradient_interpol_mode << ") must be \\"nearest\\" or \\"linear\\". Aborting." << std::endl;
+            std::cout << "Interpolator gradient_interpol_mode (" << gradient_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
             std::exit(0);
         }
         gradient_interpolator->SetOutValue(gradient_interpol_out_value);''')*(im_type=="im+grad")+'''
