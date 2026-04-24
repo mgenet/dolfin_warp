@@ -191,10 +191,10 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
                                   [U_XY, U_YY, U_YZ],
                                   [U_ZX, U_YZ, U_ZZ]])
 
-        F = dolfin.dot(R, U)
-        self.J = dolfin.det(F)
+        self.F = dolfin.dot(R, U)
+        self.J = dolfin.det(self.F)
 
-        self.U_expr = T + dolfin.dot(F - dolfin.Identity(self.mesh_dimension), self.X)
+        self.U_expr = T + dolfin.dot(self.F - dolfin.Identity(self.mesh_dimension), self.X)
         # print(self.U_expr)
 
         # for compatibility with image expressions and nonlinear solver

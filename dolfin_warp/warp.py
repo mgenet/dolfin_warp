@@ -57,25 +57,10 @@ def warp(
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
         normalize_energies                          : bool        = False                               ,
-        nonlinear_solver_type                       : str         = "newton"                            , # None, newton, scipy, cma
+        nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma, scipy
         nonlinear_solver_print_iterations           : bool        = False                               ,
-        scipy_method                                : str         = "Nelder-Mead"                       , # Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG
+        newton_options                              : dict        = None                                ,
         scipy_options                               : dict        = None                                ,
-        scipy_use_finite_difference                 : bool        = False                               ,
-        scipy_finite_difference_scheme              : str         = "2-point"                           , # 2-point, 3-point
-        scipy_use_combined_jac                      : bool        = False                               ,
-        scipy_use_exact_hvp                         : bool        = False                               ,
-        newton_tol_res_rel                          : float       = None                                ,
-        newton_tol_dU                               : float       = None                                ,
-        newton_tol_dU_rel                           : float       = None                                ,
-        newton_n_iter_max                           : int         = 100                                 ,
-        relax_type                                  : str         = None                                , # None, constant, aitken, backtracking, gss
-        relax                                       : float       = None                                , # for constant
-        relax_init                                  : float       = None                                , # for backtracking, gss
-        relax_init_with_previous                    : bool        = None                                , # for backtracking, gss
-        relax_backtracking_factor                   : float       = None                                , # for backtracking
-        relax_tol                                   : float       = None                                , # for gss
-        relax_n_iter_max                            : int         = None                                , # for backtracking, gss
         initialize_U_from_file                      : bool        = False                               ,
         initialize_U_folder                         : str         = None                                ,
         initialize_U_basename                       : str         = None                                ,
@@ -310,25 +295,13 @@ def warp(
 
     if (nonlinear_solver_type == "newton"):
         solver = dwarp.NewtonNonlinearSolver(
-            problem    = problem                                                 ,
+            problem    = problem                                        ,
             parameters = {
-                "working_folder"            : working_folder                    ,
-                "working_basename"          : working_basename                  ,
-                "relax_type"                : relax_type                        ,
-                "relax"                     : relax                             ,
-                "relax_init"                : relax_init                        ,
-                "relax_init_with_previous"  : relax_init_with_previous          ,
-                "relax_backtracking_factor" : relax_backtracking_factor         ,
-                "relax_tol"                 : relax_tol                         ,
-                "relax_n_iter_max"          : relax_n_iter_max                  ,
-                "tol_res_rel"               : newton_tol_res_rel                ,
-                "tol_dU"                    : newton_tol_dU                     ,
-                "tol_dU_rel"                : newton_tol_dU_rel                 ,
-                "n_iter_max"                : newton_n_iter_max                 ,
-                "write_iterations"          : nonlinear_solver_print_iterations })
+                "working_folder"   : working_folder                    ,
+                "working_basename" : working_basename                  ,
+                "options"          : newton_options                    ,
+                "write_iterations" : nonlinear_solver_print_iterations })
     elif (nonlinear_solver_type == "cma"):
-        assert (relax_type is None),\
-            "Relaxation not implemented for cma solver. Aborting."
         solver = dwarp.CMANonlinearSolver(
             problem    = problem                                        ,
             parameters = {
@@ -336,22 +309,15 @@ def warp(
                 "working_basename" : working_basename                  ,
                 "write_iterations" : nonlinear_solver_print_iterations })
     elif (nonlinear_solver_type == "scipy"):
-        assert (relax_type is None),\
-            "Relaxation not implemented for scipy solvers. Aborting."
         solver = dwarp.ScipyNonlinearSolver(
-            problem    = problem                                                ,
+            problem    = problem                                        ,
             parameters = {
-                "working_folder"           : working_folder                    ,
-                "working_basename"         : working_basename                  ,
-                "method"                   : scipy_method                      ,
-                "options"                  : scipy_options                     ,
-                "use_finite_difference"    : scipy_use_finite_difference       ,
-                "finite_difference_scheme" : scipy_finite_difference_scheme    ,
-                "use_combined_jac"         : scipy_use_combined_jac            ,
-                "use_exact_hvp"            : scipy_use_exact_hvp               ,
-                "write_iterations"         : nonlinear_solver_print_iterations })
+                "working_folder"   : working_folder                    ,
+                "working_basename" : working_basename                  ,
+                "options"          : scipy_options                     ,
+                "write_iterations" : nonlinear_solver_print_iterations })
     else:
-        assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"gradient-free\" or \"scipy\". Aborting."
+        assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"cma\" or \"scipy\". Aborting."
 
 ############################################################# image iterator ###
 

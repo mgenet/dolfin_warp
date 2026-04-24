@@ -52,14 +52,17 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
         self.linear_solver.parameters['symmetric']            = bool(1)
         self.linear_solver.parameters['verbose']              = bool(0)
 
+        options = parameters.get("options")
+        if options is None: options = {}
+
         # relaxation
-        self.init_relax(parameters=parameters)
+        self.init_relax(parameters=options)
 
         # iterations control
-        self.tol_dU      = parameters.get("tol_dU"     , None)
-        self.tol_dU_rel  = parameters.get("tol_dU_rel" , None)
-        self.tol_res_rel = parameters.get("tol_res_rel", None)
-        self.n_iter_max  = parameters.get("n_iter_max" , 32  )
+        self.tol_dU      = options.get("tol_dU"     , None)
+        self.tol_dU_rel  = options.get("tol_dU_rel" , None)
+        self.tol_res_rel = options.get("tol_res_rel", None)
+        self.n_iter_max  = options.get("n_iter_max" , 32  )
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False

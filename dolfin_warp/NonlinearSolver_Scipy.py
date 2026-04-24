@@ -32,25 +32,73 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
         startiter     = 0     ,
         maxiter       = 1000  ,
         callback      = None  ,
+        gtol          = None  ,
+        ftol          = None  ,
+        fatol         = None  ,
+        xtol          = None  ,
+        xatol         = None  ,
         **kwargs              ):
 
     x = x0
     velocity = numpy.zeros_like(x)
+    f_prev = None
     for i in range(startiter, startiter + maxiter):
         g = jac(x)
+        f_curr = fun(x)
 
-        if callback and callback(x):
+        if (callback is not None) and callback(x):
+            break
+            
+        if (gtol is not None) and (numpy.linalg.norm(g, numpy.inf) <= gtol):
+            break
+            
+        if (ftol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= ftol * max(1.0, abs(f_curr))):
+            break
+            
+        if (fatol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= fatol):
             break
 
-        velocity = mass * velocity - (1.0 - mass) * g
-        x = x + learning_rate * velocity
+        f_prev = f_curr
+        x_prev = x.copy()
+
+        step_dir = mass * velocity - (1.0 - mass) * g
+        
+        lr = learning_rate
+        lr_failed = False
+        while True:
+            x_new = x + lr * step_dir
+            f_new = fun(x_new)
+            if numpy.isnan(f_new) or f_new > f_curr:
+                lr *= 0.5
+                if lr < 1e-12: 
+                    lr_failed = True
+                    break
+            else:
+                break
+                
+        if lr_failed:
+            break
+                
+        if lr == learning_rate:
+            learning_rate *= 2.0
+        else:
+            learning_rate = lr
+            
+        x = x_new
+        velocity = step_dir
+        
+        if (xtol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+            break
+            
+        if (xatol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xatol):
+            break
     else:
         i = startiter + maxiter - 1
         g = jac(x)
+        f_curr = fun(x)
     i += 1
 
-    return scipy.optimize.OptimizeResult(x=x, fun=fun(x), jac=g, nit=i, nfev=i, success=True)
-
+    return scipy.optimize.OptimizeResult(x=x, fun=f_curr, jac=g, nit=i, nfev=i, success=True)
 
 def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
         fun                   ,
@@ -64,28 +112,79 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
         startiter     = 0     ,
         maxiter       = 1000  ,
         callback      = None  ,
+        gtol          = None  ,
+        ftol          = None  ,
+        fatol         = None  ,
+        xtol          = None  ,
+        xatol         = None  ,
         **kwargs              ):
 
     x = x0
     m = numpy.zeros_like(x)
     v = numpy.zeros_like(x)
+    f_prev = None
     for i in range(startiter, startiter + maxiter):
         g = jac(x)
+        f_curr = fun(x)
 
-        if callback and callback(x):
+        if (callback is not None) and callback(x):
+            break
+            
+        if (gtol is not None) and (numpy.linalg.norm(g, numpy.inf) <= gtol):
+            break
+            
+        if (ftol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= ftol * max(1.0, abs(f_curr))):
+            break
+            
+        if (fatol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= fatol):
             break
 
-        m = (1 - beta1) * g + beta1 * m  # first  moment estimate.
-        v = (1 - beta2) * (g**2) + beta2 * v  # second moment estimate.
-        mhat = m / (1 - beta1**(i + 1 - startiter))  # bias correction.
-        vhat = v / (1 - beta2**(i + 1 - startiter))
-        x = x - learning_rate * mhat / (numpy.sqrt(vhat) + eps)
+        f_prev = f_curr
+        x_prev = x.copy()
+
+        m_new = (1 - beta1) * g + beta1 * m  # first  moment estimate.
+        v_new = (1 - beta2) * (g**2) + beta2 * v  # second moment estimate.
+        mhat = m_new / (1 - beta1**(i + 1 - startiter))  # bias correction.
+        vhat = v_new / (1 - beta2**(i + 1 - startiter))
+        step_dir = - mhat / (numpy.sqrt(vhat) + eps)
+        
+        lr = learning_rate
+        lr_failed = False
+        while True:
+            x_new = x + lr * step_dir
+            f_new = fun(x_new)
+            if numpy.isnan(f_new) or f_new > f_curr:
+                lr *= 0.5
+                if lr < 1e-12: 
+                    lr_failed = True
+                    break
+            else:
+                break
+                
+        if lr_failed:
+            break
+                
+        if lr == learning_rate:
+            learning_rate *= 1.1
+        else:
+            learning_rate = lr
+            
+        x = x_new
+        m = m_new
+        v = v_new
+        
+        if (xtol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+            break
+            
+        if (xatol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xatol):
+            break
     else:
         i = startiter + maxiter - 1
         g = jac(x)
+        f_curr = fun(x)
     i += 1
 
-    return scipy.optimize.OptimizeResult(x=x, fun=fun(x), jac=g, nit=i, nfev=i, success=True)
+    return scipy.optimize.OptimizeResult(x=x, fun=f_curr, jac=g, nit=i, nfev=i, success=True)
 
 ################################################################################
 
@@ -100,29 +199,35 @@ class ScipyNonlinearSolver(NonlinearSolver):
         self.problem = problem
         self.printer = self.problem.printer
         
-        method = parameters.get("method", "Nelder-Mead")
+        self.working_folder   = parameters["working_folder"]
+        self.working_basename = parameters["working_basename"]
+
+        user_options = parameters.get("options", {})
+        method = user_options.pop("method", "Nelder-Mead")
 
         if   (method == "Nelder-Mead"):
-            default_options = {"disp": False, "maxiter": 100, "xatol": 1e-6, "fatol": 1e-6}
+            default_options = {"xatol": 1e-6, "fatol": 1e-6, "maxiter": 100}
         elif (method == "CG"):
-            default_options = {"disp": False, "maxiter": 100, "gtol": 1e-6, "eps":1e-6}
+            default_options = {"gtol": 1e-6, "maxiter": 100, "eps":1e-6}
         elif (method == "BFGS"):
-            default_options = {"disp": False, "maxiter": 100, "gtol": 1e-6, "eps":1e-6}
+            default_options = {"gtol": 1e-6, "maxiter": 100, "eps":1e-6}
         elif (method == "L-BFGS-B"):
-            default_options = {"disp": False, "maxiter": 100, "ftol": 1e-6, "gtol": 1e-6, "eps":1e-6}
+            default_options = {"ftol": 1e-6, "gtol": 1e-6, "maxiter": 100, "eps":1e-6}
         elif (method == "Newton-CG"):
-            default_options = {"maxiter": 100, "xtol": 1e-6, "fatol": 1e-6, "eps":1e-6}
+            default_options = {"xtol": 1e-6, "fatol": 1e-6, "maxiter": 100, "eps":1e-6}
         elif (method == "SGD"):
-            default_options = {"learning_rate": 0.001, "mass": 0.9, "maxiter": 100}
+            default_options = {"learning_rate": 0.001, "mass": 0.9, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "abs_step":1e-6}
         elif (method == "ADAM"):
-            default_options = {"learning_rate": 0.001, "beta1": 0.9, "beta2": 0.999, "eps": 1e-8, "maxiter": 100}
+            default_options = {"learning_rate": 0.001, "beta1": 0.9, "beta2": 0.999, "eps": 1e-8, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "abs_step":1e-6}
         else:
             assert (0), "method ("+str(method)+ ") should be Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG, SGD or ADAM. Aborting."
-        options = parameters.get("options", default_options)
 
-        if method == "SGD":
+        options = default_options.copy()
+        options.update(user_options)
+
+        if   (method == "SGD"):
             custom_method = sgd
-        elif method == "ADAM":
+        elif (method == "ADAM"):
             custom_method = adam
         else:
             custom_method = method
@@ -131,12 +236,15 @@ class ScipyNonlinearSolver(NonlinearSolver):
             "method"   : custom_method        ,
             "options"  : options              ,
             "callback" : self._scipy_callback }
+            
+        bounds = options.pop("bounds", None)
+        if (bounds is not None):
+            self.scipy_kwargs["bounds"] = bounds
 
-        # Bake the SciPy configuration
-        use_finite_difference    = parameters.get("use_finite_difference"   , False    )
-        finite_difference_scheme = parameters.get("finite_difference_scheme", "2-point")
-        use_combined_jac         = parameters.get("use_combined_jac"        , False    )
-        use_exact_hvp            = parameters.get("use_exact_hvp"           , False    )
+        use_finite_difference    = options.pop("use_finite_difference"   , False    )
+        finite_difference_scheme = options.pop("finite_difference_scheme", "3-point")
+        use_combined_jac         = options.pop("use_combined_jac"        , False    )
+        use_exact_hvp            = options.pop("use_exact_hvp"           , False    )
         
         zero_order_methods   = ["Nelder-Mead"]
         first_order_methods  = ["CG", "BFGS", "L-BFGS-B", "SGD", "ADAM"]
@@ -175,7 +283,8 @@ class ScipyNonlinearSolver(NonlinearSolver):
         if (method in first_order_methods + second_order_methods):
             if (use_finite_difference):
                 if method in ["SGD", "ADAM"]:
-                    self.scipy_kwargs["jac"] = self._jac_numdiff
+                    abs_step = options.get("abs_step", None)
+                    self.scipy_kwargs["jac"] = lambda x: self._jac_numdiff(x, abs_step=abs_step)
                     self.finite_difference_scheme = finite_difference_scheme
                 else:
                     self.scipy_kwargs["jac"] = finite_difference_scheme
@@ -206,9 +315,6 @@ class ScipyNonlinearSolver(NonlinearSolver):
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
 
         if (self.write_iterations):
-            self.working_folder   = parameters["working_folder"]
-            self.working_basename = parameters["working_basename"]
-
             for filename in glob.glob(self.working_folder+"/"+self.working_basename+"-frame=[0-9]*.*"):
                 os.remove(filename)
 
@@ -262,7 +368,7 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
 
 
-    def _jac_numdiff(self, x):
+    def _jac_numdiff(self, x, rel_step=None, abs_step=None):
 
         self._update_state(x)
             
@@ -271,7 +377,9 @@ class ScipyNonlinearSolver(NonlinearSolver):
             self._cached_jac = scipy.optimize._numdiff.approx_derivative(
                 fun=self._fun,
                 x0=x,
-                method=self.finite_difference_scheme).flatten()
+                method=self.finite_difference_scheme,
+                rel_step=rel_step,
+                abs_step=abs_step).flatten()
 
         return self._cached_jac
 
@@ -327,9 +435,6 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
     def _scipy_callback(self, res):
         
-        self.k_iter += 1
-        self.printer.print_var("k_iter",self.k_iter)
-
         if (self.write_iterations):
             x = res.x if hasattr(res, "x") else res # MG20260411: res can be x or a scipy.optimize.OptimizeResult object…
             self._update_state(x)
@@ -342,6 +447,10 @@ class ScipyNonlinearSolver(NonlinearSolver):
             for energy in self.problem.energies:
                 if hasattr(energy, "IDIgen"):
                     energy.IDIgen.write_image("generated", f"{self.frame_filebasename}-iter={str(self.k_iter).zfill(3)}.vti")
+                    break
+
+        self.k_iter += 1
+        self.printer.print_var("k_iter",self.k_iter)
 
 
 
@@ -350,7 +459,6 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         # Update run-specific parameters for the callback
         self.k_frame = k_frame
-        self.k_iter  = 0
         self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(self.k_frame).zfill(len(str(self.problem.images_n_frames)))
 
         # Initialize Scipy state
@@ -361,6 +469,8 @@ class ScipyNonlinearSolver(NonlinearSolver):
         self._cached_x = numpy.zeros_like(x0) * numpy.nan # Force initial update
 
         # Run optimizer with pre-baked kwargs
+        self.k_iter = 1
+        self.printer.print_var("k_iter",self.k_iter,-1)
         res = scipy.optimize.minimize(
             fun = self.scipy_fun,
             x0  = x0            ,
