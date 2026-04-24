@@ -52,6 +52,7 @@ def compute_energies_normalization(
     problem.U.vector()[:] /= problem.U_norm
 
     for energy in problem.energies:
+        energy.call_before_assembly()
         energy.ener0 = energy.assemble_ener(w_weight=0)
         if (verbose): printer.print_var(energy.name, energy.ener0)
         assert (energy.ener0 > 0.),\
