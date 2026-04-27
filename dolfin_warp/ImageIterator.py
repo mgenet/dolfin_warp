@@ -213,7 +213,7 @@ class ImageIterator():
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_reduced_U_from_file):
-                    self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[:, k_frame-1]
+                    self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[k_frame-1, :]
 
                 self.problem.call_before_solve(
                     k_frame=k_frame,
