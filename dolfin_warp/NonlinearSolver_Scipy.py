@@ -39,23 +39,34 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
         xatol         = None  ,
         **kwargs              ):
 
+    printer = kwargs.get("printer", None)
+
     x = x0
     velocity = numpy.zeros_like(x)
     f_prev = None
     for i in range(startiter, startiter + maxiter):
         g = jac(x)
         f_curr = fun(x)
+        # printer.print_sci("f_curr", f_curr)
 
         if (callback is not None) and callback(x):
             break
             
+        # printer.print_sci("numpy.linalg.norm(g) = ", numpy.linalg.norm(g))
+        # printer.print_sci("numpy.linalg.norm(g, numpy.inf) = ", numpy.linalg.norm(g, numpy.inf))
         if (gtol is not None) and (numpy.linalg.norm(g, numpy.inf) <= gtol):
+            # printer.print_str("gtol reached")
             break
-            
+
+        # printer.print_sci("abs(f_curr - f_prev) = ", abs(f_curr - f_prev))
+        # printer.print_sci("ftol * max(1.0, abs(f_curr)) = ", ftol * max(1.0, abs(f_curr)))
         if (ftol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= ftol * max(1.0, abs(f_curr))):
+            # printer.print_str("ftol reached")
             break
             
+        # if (f_prev is not None): printer.print_sci("abs(f_curr - f_prev) = ", abs(f_curr - f_prev))
         if (fatol is not None) and (f_prev is not None) and (abs(f_curr - f_prev) <= fatol):
+            # printer.print_str("fatol reached")
             break
 
         f_prev = f_curr
@@ -68,29 +79,37 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
         while True:
             x_new = x + lr * step_dir
             f_new = fun(x_new)
-            if numpy.isnan(f_new) or f_new > f_curr:
-                lr *= 0.5
-                if lr < 1e-12: 
+            # printer.print_sci("lr", lr)
+            # printer.print_sci("f_new", f_new)
+            if numpy.isnan(f_new) or (f_new >= f_curr):
+                lr /= 2.0
+                if lr < 1e-6:
                     lr_failed = True
                     break
             else:
                 break
                 
-        if lr_failed:
+        if (lr_failed):
+            # printer.print_str("minimum learning rate reached")
             break
-                
-        if lr == learning_rate:
+
+        if (lr == learning_rate):
             learning_rate *= 2.0
         else:
             learning_rate = lr
-            
+
         x = x_new
         velocity = step_dir
-        
+
+        # printer.print_sci("numpy.linalg.norm(x - x_prev, numpy.inf) = ", numpy.linalg.norm(x - x_prev, numpy.inf))
+        # printer.print_sci("xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)) = ", xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)))
         if (xtol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+            # printer.print_str("xtol reached")
             break
             
+        # printer.print_sci("numpy.linalg.norm(x - x_prev, numpy.inf) = ", numpy.linalg.norm(x - x_prev, numpy.inf))
         if (xatol is not None) and (numpy.linalg.norm(x - x_prev, numpy.inf) <= xatol):
+            # printer.print_str("xatol reached")
             break
     else:
         i = startiter + maxiter - 1
@@ -119,6 +138,8 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
         xatol         = None  ,
         **kwargs              ):
 
+    printer = kwargs.get("printer", None)
+
     x = x0
     m = numpy.zeros_like(x)
     v = numpy.zeros_like(x)
@@ -126,6 +147,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
     for i in range(startiter, startiter + maxiter):
         g = jac(x)
         f_curr = fun(x)
+        # printer.print_sci("f_curr", f_curr)
 
         if (callback is not None) and callback(x):
             break
@@ -153,9 +175,11 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
         while True:
             x_new = x + lr * step_dir
             f_new = fun(x_new)
-            if numpy.isnan(f_new) or f_new > f_curr:
-                lr *= 0.5
-                if lr < 1e-12: 
+            # printer.print_sci("lr", lr)
+            # printer.print_sci("f_new", f_new)
+            if numpy.isnan(f_new) or (f_new >= f_curr):
+                lr /= 2.0
+                if lr < 1e-6:
                     lr_failed = True
                     break
             else:
@@ -165,7 +189,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
             break
                 
         if lr == learning_rate:
-            learning_rate *= 1.1
+            learning_rate *= 2.0
         else:
             learning_rate = lr
             
@@ -216,14 +240,15 @@ class ScipyNonlinearSolver(NonlinearSolver):
         elif (method == "Newton-CG"):
             default_options = {"xtol": 1e-6, "fatol": 1e-6, "maxiter": 100, "eps":1e-6}
         elif (method == "SGD"):
-            default_options = {"learning_rate": 0.001, "mass": 0.9, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "abs_step":1e-6}
+            default_options = {"learning_rate": 0.001, "mass": 0.9, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "finite_difference_step":1e-6}
         elif (method == "ADAM"):
-            default_options = {"learning_rate": 0.001, "beta1": 0.9, "beta2": 0.999, "eps": 1e-8, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "abs_step":1e-6}
+            default_options = {"learning_rate": 0.001, "beta1": 0.9, "beta2": 0.999, "eps": 1e-8, "gtol": 1e-6, "fatol": 1e-6, "xatol": 1e-6, "maxiter": 100, "finite_difference_step":1e-6}
         else:
             assert (0), "method ("+str(method)+ ") should be Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG, SGD or ADAM. Aborting."
 
         options = default_options.copy()
         options.update(user_options)
+        options["printer"] = self.printer
 
         if   (method == "SGD"):
             custom_method = sgd
@@ -282,9 +307,9 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         if (method in first_order_methods + second_order_methods):
             if (use_finite_difference):
-                if method in ["SGD", "ADAM"]:
-                    abs_step = options.get("abs_step", None)
-                    self.scipy_kwargs["jac"] = lambda x: self._jac_numdiff(x, abs_step=abs_step)
+                if (method in ["SGD", "ADAM"]):
+                    finite_difference_step = options.get("finite_difference_step", None)
+                    self.scipy_kwargs["jac"] = lambda x: self._jac_numdiff(x, abs_step=finite_difference_step)
                     self.finite_difference_scheme = finite_difference_scheme
                 else:
                     self.scipy_kwargs["jac"] = finite_difference_scheme
@@ -450,7 +475,7 @@ class ScipyNonlinearSolver(NonlinearSolver):
                     break
 
         self.k_iter += 1
-        self.printer.print_var("k_iter",self.k_iter)
+        self.printer.print_var("k_iter",self.k_iter,-1)
 
 
 
@@ -470,11 +495,13 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         # Run optimizer with pre-baked kwargs
         self.k_iter = 1
-        self.printer.print_var("k_iter",self.k_iter,-1)
+        self.printer.print_var("k_iter",self.k_iter)
+        self.printer.inc()
         res = scipy.optimize.minimize(
             fun = self.scipy_fun,
             x0  = x0            ,
             **self.scipy_kwargs )
+        self.printer.dec()
         if hasattr(res, "success"): self.printer.print_var("success", res.success)
         if hasattr(res, "message"): self.printer.print_var("message", res.message)
         if hasattr(res, "nit"    ): self.printer.print_var("nit"    , res.nit    )

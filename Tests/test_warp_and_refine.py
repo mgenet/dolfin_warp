@@ -121,7 +121,7 @@ for n_dim in n_dim_lst:
             regul_level=regul_level,
             regul_poisson=regul_poisson,
             normalize_energies=1,
-            newton_options={
+            nonlinear_solver_options={
                 "relax_type":"backtracking",
                 "tol_dU":1e-2},
             continue_after_fail=1,
@@ -177,7 +177,7 @@ for n_dim in n_dim_lst:
             regul_level=regul_level,
             regul_poisson=regul_poisson,
             normalize_energies=1,
-            newton_options={
+            nonlinear_solver_options={
                 "relax_type":"backtracking",
                 "tol_dU":1e-2},
             continue_after_fail=1,

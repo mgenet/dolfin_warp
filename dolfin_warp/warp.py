@@ -59,8 +59,7 @@ def warp(
         normalize_energies                          : bool        = False                               ,
         nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma, scipy
         nonlinear_solver_print_iterations           : bool        = False                               ,
-        newton_options                              : dict        = None                                ,
-        scipy_options                               : dict        = None                                ,
+        nonlinear_solver_options                    : dict        = None                                ,
         initialize_U_from_file                      : bool        = False                               ,
         initialize_U_folder                         : str         = None                                ,
         initialize_U_basename                       : str         = None                                ,
@@ -299,7 +298,7 @@ def warp(
             parameters = {
                 "working_folder"   : working_folder                    ,
                 "working_basename" : working_basename                  ,
-                "options"          : newton_options                    ,
+                "options"          : nonlinear_solver_options          ,
                 "write_iterations" : nonlinear_solver_print_iterations })
     elif (nonlinear_solver_type == "cma"):
         solver = dwarp.CMANonlinearSolver(
@@ -314,7 +313,7 @@ def warp(
             parameters = {
                 "working_folder"   : working_folder                    ,
                 "working_basename" : working_basename                  ,
-                "options"          : scipy_options                     ,
+                "options"          : nonlinear_solver_options          ,
                 "write_iterations" : nonlinear_solver_print_iterations })
     else:
         assert (0), "\"nonlinear_solver_type\" (="+str(nonlinear_solver_type)+") must be \"newton\", \"cma\" or \"scipy\". Aborting."

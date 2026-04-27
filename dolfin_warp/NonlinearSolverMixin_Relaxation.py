@@ -30,15 +30,15 @@ class RelaxationNonlinearSolverMixin():
             self.compute_relax = self.compute_relax_aitken
         elif (self.relax_type == "backtracking"):
             self.compute_relax = self.compute_relax_backtracking
-            self.relax_init = parameters["relax_init"] if ("relax_init" in parameters) and (parameters["relax_init"] is not None) else 1.
+            self.relax_init                = parameters["relax_init"]                if ("relax_init"                in parameters) and (parameters["relax_init"]                is not None) else 1.
             self.relax_backtracking_factor = parameters["relax_backtracking_factor"] if ("relax_backtracking_factor" in parameters) and (parameters["relax_backtracking_factor"] is not None) else 2.
             self.relax_n_iter_max          = parameters["relax_n_iter_max"]          if ("relax_n_iter_max"          in parameters) and (parameters["relax_n_iter_max"]          is not None) else 8
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
-            self.relax_init = parameters["relax_init"] if ("relax_init" in parameters) and (parameters["relax_init"] is not None) else 1.
+            self.relax_init               = parameters["relax_init"]               if ("relax_init"               in parameters) and (parameters["relax_init"]               is not None) else 1.
             self.relax_init_with_previous = parameters["relax_init_with_previous"] if ("relax_init_with_previous" in parameters) and (parameters["relax_init_with_previous"] is not None) else False
-            self.relax_n_iter_max   = parameters["relax_n_iter_max"]   if ("relax_n_iter_max"   in parameters) and (parameters["relax_n_iter_max"]   is not None) else 16
-            self.relax_tol          = parameters["relax_tol"]          if ("relax_tol"          in parameters) and (parameters["relax_tol"]          is not None) else 1e-2
+            self.relax_n_iter_max         = parameters["relax_n_iter_max"]         if ("relax_n_iter_max"         in parameters) and (parameters["relax_n_iter_max"]         is not None) else 16
+            self.relax_tol                = parameters["relax_tol"]                if ("relax_tol"                in parameters) and (parameters["relax_tol"]                is not None) else 1e-2
 
 
 

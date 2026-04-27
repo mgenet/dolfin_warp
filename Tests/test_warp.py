@@ -132,7 +132,7 @@ for n_dim in n_dim_lst:
             regul_model=regul_model,
             regul_level=regul_level,
             normalize_energies=1,
-            newton_options={
+            nonlinear_solver_options={
                 "relax_type":"backtracking",
                 "tol_dU":1e-2},
             write_qois_limited_precision=1)
