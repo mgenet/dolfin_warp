@@ -306,6 +306,7 @@ def warp(
             parameters = {
                 "working_folder"   : working_folder                    ,
                 "working_basename" : working_basename                  ,
+                "options"          : nonlinear_solver_options          ,
                 "write_iterations" : nonlinear_solver_print_iterations })
     elif (nonlinear_solver_type == "scipy"):
         solver = dwarp.ScipyNonlinearSolver(

@@ -140,7 +140,7 @@ def generate_images(
         mapping.init_t(t)
         for k_point in range(n_points_upsampled):
             vtk_image.GetPoint(k_point, x)
-            #print("x0 = "+str(x))
+            #print("x = "+str(x))
             mapping.X(x, X, Finv)
             #print("X = "+str(X))
             set_I(image, X, I, vtk_scalars, k_point, G, Finv, vtk_vectors)

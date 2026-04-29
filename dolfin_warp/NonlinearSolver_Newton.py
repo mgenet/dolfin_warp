@@ -40,7 +40,13 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
 
         # self.res_vec = dolfin.PETScVector()
         # self.jac_mat = dolfin.PETScMatrix()
-        self.res_vec = dolfin.Vector()
+        # self.res_vec = dolfin.Vector()
+        if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+            self.res_vec = self.problem.U.vector().copy()
+        elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+            self.res_vec = self.problem.reduced_displacement.vector().copy()
+        self.res_vec.zero()
+        self.res_norm = 0.
         self.jac_mat = dolfin.Matrix()
 
         self.linear_solver = dolfin.LUSolver(
@@ -59,10 +65,12 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
         self.init_relax(parameters=options)
 
         # iterations control
-        self.tol_dU      = options.get("tol_dU"     , None)
-        self.tol_dU_rel  = options.get("tol_dU_rel" , None)
-        self.tol_res_rel = options.get("tol_res_rel", None)
-        self.n_iter_max  = options.get("n_iter_max" , 32  )
+        self.tol_dU           = options.get("tol_dU"          , None)
+        self.tol_dU_rel_U     = options.get("tol_dU_rel_U"    , None)
+        self.tol_dU_rel_DU    = options.get("tol_dU_rel_DU"   , None)
+        self.tol_res          = options.get("tol_res"         , None)
+        self.tol_dres_rel_res = options.get("tol_dres_rel_res", None)
+        self.n_iter_max       = options.get("n_iter_max"      , 32  )
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
@@ -85,7 +93,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
             self.frame_filebasename = self.working_folder+"/"+self.working_basename+"-frame="+str(self.k_frame).zfill(len(str(self.problem.images_n_frames)))
 
             self.frame_printer = mypy.DataPrinter(
-                names=["k_iter", "res_norm", "res_err_rel", "relax", "dU_norm", "U_norm", "dU_err"],
+                names=["k_iter", "res_norm", "err_dres_rel_res", "relax", "dU_norm", "U_norm", "err_dU_rel_U"],
                 filename=self.frame_filebasename+".dat")
 
             dmech.write_VTU_file(
@@ -127,31 +135,39 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
                     time=self.k_iter)
 
             # displacement error
+            self.problem.err_dU = abs(self.relax)*self.problem.dU_norm
+            self.printer.print_sci("err_dU",self.problem.err_dU)
+   
             if (self.problem.U_norm == 0.):
                 if (self.problem.Uold_norm == 0.):
-                    self.problem.dU_err = 0.
+                    self.problem.err_dU_rel_U = 0.
                 else:
-                    self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.Uold_norm
+                    self.problem.err_dU_rel_U = abs(self.relax)*self.problem.dU_norm/self.problem.Uold_norm
             else:
-                self.problem.dU_err = abs(self.relax)*self.problem.dU_norm/self.problem.U_norm
-            self.printer.print_sci("dU_err",self.problem.dU_err)
+                self.problem.err_dU_rel_U = abs(self.relax)*self.problem.dU_norm/self.problem.U_norm
+            self.printer.print_sci("err_dU_rel_U",self.problem.err_dU_rel_U)
 
             if (self.problem.DU_norm == 0.):
-                self.problem.dU_err_rel = 1.
+                self.problem.err_dU_rel_DU = 1.
             else:
-                self.problem.dU_err_rel = abs(self.relax)*self.problem.dU_norm/self.problem.DU_norm
-            self.printer.print_sci("dU_err_rel",self.problem.dU_err_rel)
+                self.problem.err_dU_rel_DU = abs(self.relax)*self.problem.dU_norm/self.problem.DU_norm
+            self.printer.print_sci("err_dU_rel_DU",self.problem.err_dU_rel_DU)
 
+            # write iteration data
             if (self.write_iterations):
-                self.frame_printer.write_line([self.k_iter, self.res_norm, self.res_err_rel, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.dU_err])
+                self.frame_printer.write_line([self.k_iter, self.res_norm, self.err_dres_rel_res, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.err_dU_rel_U])
 
             # exit test
             self.success = True
-            if (self.tol_res_rel is not None) and (self.res_err_rel        > self.tol_res_rel):
+            if (self.tol_res          is not None) and (self.res_norm              > self.tol_res         ):
                 self.success = False
-            if (self.tol_dU      is not None) and (self.problem.dU_err     > self.tol_dU     ):
+            if (self.tol_dres_rel_res is not None) and (self.err_dres_rel_res      > self.tol_dres_rel_res):
                 self.success = False
-            if (self.tol_dU_rel  is not None) and (self.problem.dU_err_rel > self.tol_dU_rel ):
+            if (self.tol_dU           is not None) and (self.problem.err_dU        > self.tol_dU          ):
+                self.success = False
+            if (self.tol_dU_rel_U     is not None) and (self.problem.err_dU_rel_U  > self.tol_dU_rel_U    ):
+                self.success = False
+            if (self.tol_dU_rel_DU    is not None) and (self.problem.err_dU_rel_DU > self.tol_dU_rel_DU   ):
                 self.success = False
 
             # exit
@@ -173,7 +189,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
             commandline += " set grid;"
             commandline += " set logscale y;"
             commandline += " set yrange [1e-3:1e0];"
-            commandline += " plot '"+self.frame_filebasename+".dat' u 1:7 pt 1 lw 3 title 'dU_err', "+str(self.tol_dU)+" lt -1 notitle;"
+            commandline += " plot '"+self.frame_filebasename+".dat' u 1:7 pt 1 lw 3 title 'err_dU_rel_U', "+str(self.tol_dU_rel_DU_U)+" lt -1 notitle;"
             commandline += " unset logscale y;"
             commandline += " set yrange [*:*];"
             commandline += " plot '' u 1:4 pt 1 lw 3 title 'relax'\""
@@ -186,12 +202,11 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
     def linear_solve(self):
 
         # res_old
-        if (self.k_iter > 1):
-            if (hasattr(self, "res_old_vec")):
-                self.res_old_vec[:] = self.res_vec[:]
-            else:
-                self.res_old_vec = self.res_vec.copy()
-            self.res_old_norm = self.res_norm
+        if (hasattr(self, "res_old_vec")):
+            self.res_old_vec[:] = self.res_vec
+        else:
+            self.res_old_vec = self.res_vec.copy()
+        self.res_old_norm = self.res_norm
 
         self.problem.call_before_assembly(
             write_iterations=self.write_iterations,
@@ -217,20 +232,21 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
             return False
 
         # dres
-        if (self.k_iter > 1):
-            if (hasattr(self, "dres_vec")):
-                self.dres_vec[:] = self.res_vec[:] - self.res_old_vec[:]
-            else:
-                self.dres_vec = self.res_vec - self.res_old_vec
-            self.dres_norm = self.dres_vec.norm("l2")
-            self.printer.print_sci("dres_norm",self.dres_norm)
-
-        # res_err_rel
-        if (self.k_iter == 1):
-            self.res_err_rel = 1.
+        if (hasattr(self, "dres_vec")):
+            self.dres_vec[:] = self.res_vec[:] - self.res_old_vec[:]
         else:
-            self.res_err_rel = self.dres_norm / self.res_old_norm
-            self.printer.print_sci("res_err_rel",self.res_err_rel)
+            self.dres_vec = self.res_vec - self.res_old_vec
+        self.dres_norm = self.dres_vec.norm("l2")
+        self.printer.print_sci("dres_norm",self.dres_norm)
+
+        # err_dres_rel_res
+        if (self.res_norm == 0.) and (self.res_old_norm == 0.):
+            self.err_dres_rel_res = 0.
+        elif (self.res_norm == 0.):
+            self.err_dres_rel_res = self.dres_norm / self.res_old_norm
+        else:
+            self.err_dres_rel_res = self.dres_norm / self.res_norm
+        self.printer.print_sci("err_dres_rel_res",self.err_dres_rel_res)
 
         self.printer.dec()
 

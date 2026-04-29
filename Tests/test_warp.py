@@ -134,7 +134,7 @@ for n_dim in n_dim_lst:
             normalize_energies=1,
             nonlinear_solver_options={
                 "relax_type":"backtracking",
-                "tol_dU":1e-2},
+                "tol_dU_rel_U":1e-2},
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(

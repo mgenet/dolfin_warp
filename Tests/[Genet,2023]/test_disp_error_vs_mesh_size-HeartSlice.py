@@ -346,7 +346,7 @@ if (do_run_warp):
         working_basename += "-regul="+str(regul_level)
 
         relax_type                                  = "backtracking"
-        tol_dU                                      = 1e-2
+        tol_dU_rel_U                                      = 1e-2
         n_iter_max                                  = 100
         normalize_energies                          = 1
         continue_after_fail                         = 1
@@ -368,7 +368,7 @@ if (do_run_warp):
             command_lst += ["--regul_poisson"                              , str(regul_poisson)                              ]
             command_lst += ["--relax_type"                                 , relax_type                                      ]
             command_lst += ["--normalize_energies"                         , str(normalize_energies)                         ]
-            command_lst += ["--tol_dU"                                     , str(tol_dU)                                     ]
+            command_lst += ["--tol_dU_rel_U"                                     , str(tol_dU_rel_U)                                     ]
             command_lst += ["--n_iter_max"                                 , str(n_iter_max)                                 ]
             command_lst += ["--continue_after_fail"                        , str(continue_after_fail)                        ]
             command_lst += ["--write_VTU_files"                            , str(write_VTU_files)                            ]
@@ -397,7 +397,7 @@ if (do_run_warp):
                 regul_poisson                               = regul_poisson                              ,
                 relax_type                                  = relax_type                                 ,
                 normalize_energies                          = normalize_energies                         ,
-                tol_dU                                      = tol_dU                                     ,
+                tol_dU_rel_U                                      = tol_dU_rel_U                                     ,
                 n_iter_max                                  = n_iter_max                                 ,
                 continue_after_fail                         = continue_after_fail                        ,
                 write_VTU_files                             = write_VTU_files                            ,
@@ -456,7 +456,7 @@ if (do_run_warp_and_refine):
         working_basename += "-regul="+str(regul_level)
 
         relax_type          = "backtracking"
-        tol_dU              = 1e-2
+        tol_dU_rel_U              = 1e-2
         n_iter_max          = 100
         normalize_energies  = 1
         continue_after_fail = 1
@@ -476,7 +476,7 @@ if (do_run_warp_and_refine):
             command_lst += ["--regul_poisson"      , str(regul_poisson)                  ]
             command_lst += ["--relax_type"         , relax_type                          ]
             command_lst += ["--normalize_energies" , str(normalize_energies)             ]
-            command_lst += ["--tol_dU"             , str(tol_dU)                         ]
+            command_lst += ["--tol_dU_rel_U"             , str(tol_dU_rel_U)                         ]
             command_lst += ["--n_iter_max"         , str(n_iter_max)                     ]
             command_lst += ["--continue_after_fail", str(continue_after_fail)            ]
 
@@ -503,7 +503,7 @@ if (do_run_warp_and_refine):
                 regul_poisson       = regul_poisson      ,
                 relax_type          = relax_type         ,
                 normalize_energies  = normalize_energies ,
-                tol_dU              = tol_dU             ,
+                tol_dU_rel_U              = tol_dU_rel_U             ,
                 n_iter_max          = n_iter_max         ,
                 continue_after_fail = continue_after_fail)
 
