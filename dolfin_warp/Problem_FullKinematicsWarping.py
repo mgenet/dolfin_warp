@@ -111,5 +111,5 @@ class FullKinematicsWarpingProblem(WarpingProblem):
             *kargs,
             **kwargs):
 
-        self.Uold.vector()[:] = self.U.vector()
+        self.Uold.vector().zero(); self.Uold.vector().axpy(1.0, self.U.vector())
         self.Uold_norm = self.U_norm

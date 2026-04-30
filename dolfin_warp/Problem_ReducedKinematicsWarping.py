@@ -272,6 +272,6 @@ class ReducedKinematicsWarpingProblem(WarpingProblem):
             *kargs,
             **kwargs):
 
-        self.reduced_displacement_old.vector()[:] = self.reduced_displacement.vector()
-        self.Uold.vector()[:] = self.U.vector()
+        self.reduced_displacement_old.vector().zero(); self.reduced_displacement_old.vector().axpy(1.0, self.reduced_displacement.vector())
+        self.Uold.vector().zero(); self.Uold.vector().axpy(1.0, self.U.vector())
         self.Uold_norm = self.U_norm

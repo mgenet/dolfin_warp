@@ -43,7 +43,7 @@ class CMANonlinearSolver(NonlinearSolver):
         self.x_real_min = numpy.asarray(self.parameters.get("x_real_min", [-0.1] * len(self.problem.reduced_displacement.vector().get_local())))
         self.x_real_max = numpy.asarray(self.parameters.get("x_real_max", [+0.3] * len(self.problem.reduced_displacement.vector().get_local())))
 
-        self.problem.reduced_displacement.vector()[:] = self.x_real_ini
+        self.problem.reduced_displacement.vector().set_local(self.x_real_ini); self.problem.reduced_displacement.vector().apply("insert")
 
         self.x_norm_min = self.parameters.get("x_norm_min",  0.)
         self.x_norm_max = self.parameters.get("x_norm_max", 10.)
@@ -87,7 +87,7 @@ class CMANonlinearSolver(NonlinearSolver):
         n_iter  = res[4]
 
         x_real = self.norm2real(x_norm)
-        self.problem.reduced_displacement.vector()[:] = x_real
+        self.problem.reduced_displacement.vector().set_local(x_real); self.problem.reduced_displacement.vector().apply("insert")
         self.problem.update_disp()
 
         return success, n_iter
@@ -98,7 +98,7 @@ class CMANonlinearSolver(NonlinearSolver):
             x_norm):
 
         x_real = self.norm2real(x_norm)
-        self.problem.reduced_displacement.vector()[:] = x_real
+        self.problem.reduced_displacement.vector().set_local(x_real); self.problem.reduced_displacement.vector().apply("insert")
         self.problem.call_before_assembly()
         ener = self.problem.assemble_ener()
         return ener

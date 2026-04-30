@@ -97,7 +97,7 @@ def compute_displacement_error_with_fenics(
         working_array_U = vtk.util.numpy_support.vtk_to_numpy(working_array_U)
         working_array_U = working_array_U[:,:ref_mesh_dimension]
         working_array_U = numpy.reshape(working_array_U, working_array_U.size)
-        working_U.vector()[:] = working_array_U
+        working_U.vector().set_local(working_array_U); working_U.vector().apply("insert")
 
         sol_int[k_frame] = (dolfin.assemble(dolfin.inner(working_U, working_U) * ref_mesh_dV)/ref_mesh_V0)**(0.5)
         if (verbose): print("sol_int[k_frame] = " + str(sol_int[k_frame]))
@@ -107,7 +107,7 @@ def compute_displacement_error_with_fenics(
         ref_array_U = vtk.util.numpy_support.vtk_to_numpy(ref_array_U)
         ref_array_U = ref_array_U[:,:ref_mesh_dimension]
         ref_array_U = numpy.reshape(ref_array_U, ref_array_U.size)
-        ref_U.vector()[:] = ref_array_U
+        ref_U.vector().set_local(ref_array_U); ref_U.vector().apply("insert")
 
         ref_int[k_frame] = (dolfin.assemble(dolfin.inner(ref_U, ref_U) * ref_mesh_dV)/ref_mesh_V0)**(0.5)
         if (verbose): print("ref_int[k_frame] = " + str(ref_int[k_frame]))

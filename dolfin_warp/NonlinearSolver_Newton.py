@@ -123,8 +123,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
             self.problem.update_displacement(relax=self.relax)
             self.printer.print_sci("U_norm",self.problem.U_norm)
 
-            self.problem.DU.vector()[:] = self.problem.U.vector()
-            self.problem.DU.vector().axpy(-1., self.problem.Uold.vector())
+            self.problem.DU.vector().zero(); self.problem.DU.vector().axpy(+1.0, self.problem.U.vector()); self.problem.DU.vector().axpy(-1.0, self.problem.Uold.vector())
             self.problem.DU_norm = self.problem.DU.vector().norm("l2")
             self.printer.print_sci("DU_norm",self.problem.DU_norm)
 
@@ -203,7 +202,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
 
         # res_old
         if (hasattr(self, "res_old_vec")):
-            self.res_old_vec[:] = self.res_vec
+            self.res_old_vec.zero(); self.res_old_vec.axpy(1.0, self.res_vec)
         else:
             self.res_old_vec = self.res_vec.copy()
         self.res_old_norm = self.res_norm
@@ -233,7 +232,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
 
         # dres
         if (hasattr(self, "dres_vec")):
-            self.dres_vec[:] = self.res_vec[:] - self.res_old_vec[:]
+            self.dres_vec.zero(); self.dres_vec.axpy(1.0, self.res_vec); self.dres_vec.axpy(-1.0, self.res_old_vec)
         else:
             self.dres_vec = self.res_vec - self.res_old_vec
         self.dres_norm = self.dres_vec.norm("l2")
@@ -298,10 +297,9 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
                 self.printer.print_str("Warning! Solution increment is NaN! Setting it to 0.",tab=False)
                 self.problem.dreduced_displacement.vector().zero()
                 return False
-            self.problem.U_vec_cp[:] = self.problem.U.vector()
+            self.problem.U_vec_cp.zero(); self.problem.U_vec_cp.axpy(1.0, self.problem.U.vector())
             self.problem.update_displacement(relax=+1.)
-            self.problem.dU.vector()[:] = self.problem.U.vector()
-            self.problem.dU.vector().axpy(-1., self.problem.U_vec_cp)
+            self.problem.dU.vector().zero(); self.problem.dU.vector().axpy(+1.0, self.problem.U.vector()); self.problem.dU.vector().axpy(-1.0, self.problem.U_vec_cp)
             self.problem.dU_norm = self.problem.dU.vector().norm("l2")
             self.printer.print_sci("dU_norm",self.problem.dU_norm)
             self.problem.update_displacement(relax=-1.)
