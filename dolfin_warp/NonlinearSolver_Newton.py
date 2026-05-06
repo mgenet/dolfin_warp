@@ -20,11 +20,12 @@ import dolfin_mech as dmech
 import dolfin_warp as dwarp
 
 from .NonlinearSolver                 import NonlinearSolver
+from .NonlinearSolverMixin_BFGS       import BFGSNonlinearSolverMixin
 from .NonlinearSolverMixin_Relaxation import RelaxationNonlinearSolverMixin
 
 ################################################################################
 
-class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
+class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFGSNonlinearSolverMixin):
 
 
 
@@ -60,6 +61,9 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
 
         options = parameters.get("options")
         if options is None: options = {}
+
+        # bfgs
+        self.init_bfgs(parameters=options)
 
         # relaxation
         self.init_relax(parameters=options)
@@ -156,6 +160,21 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
             if (self.write_iterations):
                 self.frame_printer.write_line([self.k_iter, self.res_norm, self.err_dres_rel_res, self.relax, self.problem.dU_norm, self.problem.U_norm, self.problem.err_dU_rel_U])
 
+            # store s vector for BFGS
+            if (self.use_bfgs):
+                if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                    if not hasattr(self, "s_vec_cur") or self.s_vec_cur is None:
+                        self.s_vec_cur = self.problem.dU.vector().copy()
+                    else:
+                        self.s_vec_cur.zero(); self.s_vec_cur.axpy(1.0, self.problem.dU.vector())
+                    self.s_vec_cur *= self.relax
+                elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                    if not hasattr(self, "s_vec_cur") or self.s_vec_cur is None:
+                        self.s_vec_cur = self.problem.dreduced_displacement.vector().copy()
+                    else:
+                        self.s_vec_cur.zero(); self.s_vec_cur.axpy(1.0, self.problem.dreduced_displacement.vector())
+                    self.s_vec_cur *= self.relax
+
             # exit test
             self.success = True
             if (self.tol_res          is not None) and (self.res_norm              > self.tol_res         ):
@@ -238,6 +257,9 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
         self.dres_norm = self.dres_vec.norm("l2")
         self.printer.print_sci("dres_norm",self.dres_norm)
 
+        if self.use_bfgs and self.s_vec_cur is not None:
+            self.update_bfgs_history(self.s_vec_cur, self.dres_vec)
+
         # err_dres_rel_res
         if (self.res_norm == 0.) and (self.res_old_norm == 0.):
             self.err_dres_rel_res = 0.
@@ -250,36 +272,57 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin):
         self.printer.dec()
 
         # linear system: matrix assembly
-        self.printer.print_str("Jacobian assembly…",newline=False)
-        timer = time.time()
-        self.problem.assemble_jac(
-            jac_mat=self.jac_mat)
-        timer = time.time() - timer
-        self.printer.print_str(" "+str(timer)+" s",tab=False)
-        # self.printer.print_var("jac_mat",self.jac_mat.array())
+        if self.use_bfgs and self.k_iter > 1 and ((self.k_iter - 1) % self.bfgs_restart_iter != 0):
+            assemble_new_jacobian = False
+        else:
+            assemble_new_jacobian = True
 
-        # linear system: solve
-        try:
-            self.printer.print_str("Solve…",newline=False)
+        if (assemble_new_jacobian):
+            self.printer.print_str("Jacobian assembly…",newline=False)
             timer = time.time()
-            if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
-                self.linear_solver.solve(
-                    self.problem.dU.vector(),
-                    -self.res_vec)
-                # self.printer.print_var("dU",dU.vector().get_local())
-            elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
-                self.linear_solver.solve(
-                    self.problem.dreduced_displacement.vector(),
-                    -self.res_vec)
+            self.problem.assemble_jac(
+                jac_mat=self.jac_mat)
+            timer = time.time() - timer
+            self.printer.print_str(" "+str(timer)+" s",tab=False)
+            # self.printer.print_var("jac_mat",self.jac_mat.array())
+            if self.use_bfgs:
+                self.reset_bfgs_history()
+
+            # linear system: solve
+            try:
+                self.printer.print_str("Solve…",newline=False)
+                timer = time.time()
+                if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                    self.linear_solver.solve(
+                        self.problem.dU.vector(),
+                        -self.res_vec)
+                    # self.printer.print_var("dU",dU.vector().get_local())
+                elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                    self.linear_solver.solve(
+                        self.problem.dreduced_displacement.vector(),
+                        -self.res_vec)
                 # self.problem.dreduced_displacement.vector()[:] = numpy.linalg.solve(
                 #     self.jac_mat.array(),
                 #     -self.res_vec.get_local())
                 # self.printer.print_var("dreduced_displacement",self.problem.dreduced_displacement.vector().get_local())
-            timer = time.time() - timer
-            self.printer.print_str(" "+str(timer)+" s",tab=False)
-        except:
-            self.printer.print_str("Warning! Linear solver failed!",tab=False)
-            return False
+                timer = time.time() - timer
+                self.printer.print_str(" "+str(timer)+" s",tab=False)
+            except:
+                self.printer.print_str("Warning! Linear solver failed!",tab=False)
+                return False
+        else:
+            try:
+                self.printer.print_str("BFGS Solve…",newline=False)
+                timer = time.time()
+                if (type(self.problem) is dwarp.FullKinematicsWarpingProblem):
+                    self.compute_bfgs_search_direction(self.res_vec, self.problem.dU.vector(), self.linear_solver)
+                elif (type(self.problem) is dwarp.ReducedKinematicsWarpingProblem):
+                    self.compute_bfgs_search_direction(self.res_vec, self.problem.dreduced_displacement.vector(), self.linear_solver)
+                timer = time.time() - timer
+                self.printer.print_str(" "+str(timer)+" s",tab=False)
+            except:
+                self.printer.print_str("Warning! BFGS solver failed!",tab=False)
+                return False
 
         self.printer.inc()
 
