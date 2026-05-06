@@ -69,19 +69,31 @@ class '''+name+''' : public dolfin::Expression
 {
 public:
 
-    static constexpr unsigned int n_dim = '''+str(im_dim)+''';
+    static constexpr unsigned int n_dim = '''+str(im_dim)+''';'''+('''
+
+    double                                     Z;''')*(im_dim==2)+'''
 
     vtkSmartPointer<vtkXMLImageDataReader>     measured_reader = vtkSmartPointer<vtkXMLImageDataReader>::New();
     vtkSmartPointer<vtkImageData>              measured_image = nullptr;
     double                                     measured_image_origin[3];
     double                                     measured_image_spacing[3];
     int                                        measured_image_dimensions[3];
+    vtkSmartPointer<vtkImageInterpolator>      measured_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
     vtkSmartPointer<vtkImageFFT>               measured_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
     vtkSmartPointer<vtkImageData>              measured_fft_image = nullptr;
     vtkSmartPointer<vtkImageGradient>          measured_gradient_filter = vtkSmartPointer<vtkImageGradient>::New();
     vtkSmartPointer<vtkImageData>              measured_gradient_image = nullptr;
     vtkSmartPointer<vtkImageInterpolator>      measured_gradient_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
 
+    std::shared_ptr<dolfin::Mesh>              mesh = nullptr;
+    std::shared_ptr<dolfin::Function>          U = nullptr;
+    vtkSmartPointer<vtkUnstructuredGrid>       ugrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkWarpVector>             warp_filter = vtkSmartPointer<vtkWarpVector>::New();
+    vtkSmartPointer<vtkUnstructuredGrid>       warp_ugrid = nullptr;
+    vtkSmartPointer<vtkProbeFilter>            probe_filter = vtkSmartPointer<vtkProbeFilter>::New();'''+('''
+    Eigen::Matrix<double, n_dim, 1>            X0;
+    double                                     s;''')*(im_texture=="tagging")+'''
+    
     double                                     resampling_factor;
     double                                     effective_resampling_factors[3];
     double                                     effective_resampling_factor;
@@ -89,21 +101,6 @@ public:
     double                                     generated_upsampled_image_origin[3];
     double                                     generated_upsampled_image_spacing[3];
     int                                        generated_upsampled_image_dimensions[3];
-    
-    std::shared_ptr<dolfin::Mesh>              mesh = nullptr;
-    std::shared_ptr<dolfin::Function>          U = nullptr;
-    vtkSmartPointer<vtkUnstructuredGrid>       ugrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-    vtkSmartPointer<vtkWarpVector>             warp_filter = vtkSmartPointer<vtkWarpVector>::New();
-    vtkSmartPointer<vtkUnstructuredGrid>       warp_ugrid = nullptr;
-    
-    mutable Eigen::Matrix<double, 3, 1>        X_3D;
-    mutable Eigen::Matrix<double, 3, 1>        x_3D;
-    Eigen::Matrix<double, 3, 1>                ux_3D;
-    
-    vtkSmartPointer<vtkProbeFilter>            probe_filter = vtkSmartPointer<vtkProbeFilter>::New();'''+('''
-    Eigen::Matrix<double, n_dim, 1>            X0;
-    double                                     s;''')*(im_texture=="tagging")+'''
-    
     vtkSmartPointer<vtkImageFFT>               generated_upsampled_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
     vtkSmartPointer<vtkImageData>              generated_upsampled_fft_image = nullptr;
     vtkSmartPointer<vtkImageData>              generated_fft_image = vtkSmartPointer<vtkImageData>::New();
@@ -111,12 +108,12 @@ public:
     vtkSmartPointer<vtkImageExtractComponents> generated_extract_filter = vtkSmartPointer<vtkImageExtractComponents>::New();
     vtkSmartPointer<vtkImageData>              generated_image = nullptr;
     vtkSmartPointer<vtkImageInterpolator>      generated_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
-    
-    mutable Eigen::Matrix<double, n_dim, 1>    UX;
+    vtkSmartPointer<vtkImageGradient>          generated_gradient_filter = vtkSmartPointer<vtkImageGradient>::New();
+    vtkSmartPointer<vtkImageData>              generated_gradient_image = nullptr;
+    vtkSmartPointer<vtkImageInterpolator>      generated_gradient_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
     
     vtkSmartPointer<vtkImageMathematics>       residual_subtract_filter = vtkSmartPointer<vtkImageMathematics>::New();
     vtkSmartPointer<vtkImageData>              residual_image = nullptr;
-    vtkSmartPointer<vtkImageInterpolator>      residual_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
     vtkSmartPointer<vtkImageFFT>               residual_fft_filter = vtkSmartPointer<vtkImageFFT>::New();
     vtkSmartPointer<vtkImageData>              residual_fft_image = nullptr;
 
@@ -125,20 +122,26 @@ public:
     vtkSmartPointer<vtkImageExtractComponents> upsampled_residual_extract_filter = vtkSmartPointer<vtkImageExtractComponents>::New();
     vtkSmartPointer<vtkImageData>              upsampled_residual_image = nullptr;
     vtkSmartPointer<vtkImageInterpolator>      upsampled_residual_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
+    vtkSmartPointer<vtkImageGradient>          upsampled_residual_gradient_filter = vtkSmartPointer<vtkImageGradient>::New();
+    vtkSmartPointer<vtkImageData>              upsampled_residual_gradient_image = nullptr;
+    vtkSmartPointer<vtkImageInterpolator>      upsampled_residual_gradient_interpolator = vtkSmartPointer<vtkImageInterpolator>::New();
 
     '''+name+'''
     ('''+('''
-        const double &Z=0.,''')*(im_dim==2)+('''
+        const double &Z_=0.,''')*(im_dim==2)+('''
         const double &X0_=0.,
         const double &Y0_=0.,'''+('''
         const double &Z0_=0.,''')*(im_dim==3)+'''
         const double &s_=0.1,''')*(im_texture=="tagging")+'''
         const char* image_interpol_mode="linear",
+        const char* gradient_interpol_mode="linear",
         const double &image_interpol_out_value=0.
     ) :
-        dolfin::Expression(4 + 2*n_dim)
+        dolfin::Expression(4*(1+n_dim))
     {'''+('''
-        std::cout << "constructor" << std::endl;''')*(verbose)+'''
+        std::cout << "constructor" << std::endl;''')*(verbose)+('''
+
+        Z = Z_;''')*(im_dim==2)+'''
 
         measured_reader->UpdateDataObject();
         measured_image = measured_reader->GetOutput();
@@ -155,10 +158,7 @@ public:
 
         warp_filter->SetInputDataObject(ugrid);
         warp_filter->UpdateDataObject();
-        warp_ugrid = warp_filter->GetUnstructuredGridOutput();'''+('''
-
-        X_3D[2] = Z;
-        x_3D[2] = Z;''')*(im_dim==2)+'''
+        warp_ugrid = warp_filter->GetUnstructuredGridOutput();
 
         probe_filter->SetInputDataObject(generated_upsampled_image);
         probe_filter->SetSourceData(warp_ugrid);
@@ -181,8 +181,12 @@ public:
         generated_extract_filter->SetInputDataObject(generated_rfft_filter->GetOutput());
         generated_extract_filter->SetComponents(0);
         generated_extract_filter->UpdateDataObject();
-
         generated_image = generated_extract_filter->GetOutput();
+
+        generated_gradient_filter->SetDimensionality(n_dim);
+        generated_gradient_filter->SetInputDataObject(generated_image);
+        generated_gradient_filter->UpdateDataObject();
+        generated_gradient_image = generated_gradient_filter->GetOutput();
 
         residual_subtract_filter->SetOperationToSubtract();
         residual_subtract_filter->SetInput1Data(generated_image);
@@ -202,25 +206,27 @@ public:
         upsampled_residual_extract_filter->UpdateDataObject();
         upsampled_residual_image = upsampled_residual_extract_filter->GetOutput();
 
+        upsampled_residual_gradient_filter->SetDimensionality(n_dim);
+        upsampled_residual_gradient_filter->SetInputDataObject(upsampled_residual_image);
+        upsampled_residual_gradient_filter->UpdateDataObject();
+        upsampled_residual_gradient_image = upsampled_residual_gradient_filter->GetOutput();
+
         if (strcmp(image_interpol_mode, "nearest") == 0)
         {
-            measured_gradient_interpolator->SetInterpolationModeToNearest();
+            measured_interpolator->SetInterpolationModeToNearest();
             generated_interpolator->SetInterpolationModeToNearest();
-            residual_interpolator->SetInterpolationModeToNearest();
             upsampled_residual_interpolator->SetInterpolationModeToNearest();
         }
         else if (strcmp(image_interpol_mode, "linear") == 0)
         {
-            measured_gradient_interpolator->SetInterpolationModeToLinear();
+            measured_interpolator->SetInterpolationModeToLinear();
             generated_interpolator->SetInterpolationModeToLinear();
-            residual_interpolator->SetInterpolationModeToLinear();
             upsampled_residual_interpolator->SetInterpolationModeToLinear();
         }
         else if (strcmp(image_interpol_mode, "cubic") == 0)
         {
-            measured_gradient_interpolator->SetInterpolationModeToCubic();
+            measured_interpolator->SetInterpolationModeToCubic();
             generated_interpolator->SetInterpolationModeToCubic();
-            residual_interpolator->SetInterpolationModeToCubic();
             upsampled_residual_interpolator->SetInterpolationModeToCubic();
         }
         else
@@ -228,10 +234,35 @@ public:
             std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
             std::exit(0);
         }
-        measured_gradient_interpolator->SetOutValue(0.0);
+        if (strcmp(gradient_interpol_mode, "nearest") == 0)
+        {
+            measured_gradient_interpolator->SetInterpolationModeToNearest();
+            generated_gradient_interpolator->SetInterpolationModeToNearest();
+            upsampled_residual_gradient_interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(gradient_interpol_mode, "linear") == 0)
+        {
+            measured_gradient_interpolator->SetInterpolationModeToLinear();
+            generated_gradient_interpolator->SetInterpolationModeToLinear();
+            upsampled_residual_gradient_interpolator->SetInterpolationModeToLinear();
+        }
+        else if (strcmp(gradient_interpol_mode, "cubic") == 0)
+        {
+            measured_gradient_interpolator->SetInterpolationModeToCubic();
+            generated_gradient_interpolator->SetInterpolationModeToCubic();
+            upsampled_residual_gradient_interpolator->SetInterpolationModeToCubic();
+        }
+        else
+        {
+            std::cout << "Interpolator gradient_interpol_mode (" << gradient_interpol_mode << ") must be \\"nearest\\", \\"linear\\" or \\"cubic\\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        measured_interpolator->SetOutValue(image_interpol_out_value);
+        measured_gradient_interpolator->SetOutValue(image_interpol_out_value);
         generated_interpolator->SetOutValue(image_interpol_out_value);
-        residual_interpolator->SetOutValue(0.0);
-        upsampled_residual_interpolator->SetOutValue(0.0);
+        generated_gradient_interpolator->SetOutValue(image_interpol_out_value);
+        upsampled_residual_interpolator->SetOutValue(image_interpol_out_value);
+        upsampled_residual_gradient_interpolator->SetOutValue(image_interpol_out_value);
     }
 
     void init_images
@@ -244,6 +275,7 @@ public:
 
         measured_reader->SetFileName(filename);
         measured_reader->Update();
+        measured_interpolator->Initialize(measured_image);
 
         measured_fft_filter->Update();
 
@@ -299,6 +331,7 @@ public:
 
         measured_reader->SetFileName(filename);
         measured_reader->Update();
+        measured_interpolator->Initialize(measured_image);
 
         measured_fft_filter->Update();
 
@@ -335,7 +368,7 @@ public:
                 k_point,
                 dofs_coordinates[4*k_point  ],
                 dofs_coordinates[4*k_point+1],
-                0.);''')*(im_dim==2)+('''
+                Z);''')*(im_dim==2)+('''
             ugrid_points->SetPoint(
                 k_point,
                 dofs_coordinates[9*k_point  ],
@@ -438,8 +471,8 @@ public:
         return 1.0;''')*(im_texture=="no")+('''
         double val = 1.0;
         for (unsigned int d=0;
-                         d<n_dim;
-                       ++d)
+                          d<n_dim;
+                        ++d)
         {
             val *= std::abs(sin(M_PI*(X[d]-X0[d])/s));
         }
@@ -462,8 +495,8 @@ public:
         double eps = 1e-12;
         
         for (unsigned int d=0;
-                         d<n_dim;
-                       ++d)
+                          d<n_dim;
+                        ++d)
         {
             double u = M_PI * (X[d] - X0[d]) / s;
             
@@ -493,6 +526,7 @@ public:
         unsigned int n_points = generated_upsampled_image->GetNumberOfPoints();
         
         double m[1], I[1];
+        Eigen::Matrix<double, 3, 1> x, ux, X;
         for (unsigned int k_point=0;
                           k_point<n_points;
                         ++k_point)
@@ -504,10 +538,10 @@ public:
             }
             else
             {
-                generated_upsampled_image->GetPoint(k_point, x_3D.data());
-                probe_filter_disp->GetTuple(k_point, ux_3D.data());
-                X_3D = x_3D - ux_3D;
-                I[0] = get_pure_image(X_3D.data());
+                generated_upsampled_image->GetPoint(k_point, x.data());
+                probe_filter_disp->GetTuple(k_point, ux.data());
+                X = x - ux;
+                I[0] = get_pure_image(X.data());
             }
             generated_upsampled_scalars->SetTuple(k_point, I);
         }
@@ -594,14 +628,11 @@ public:
     {'''+('''
         std::cout << "compute_upsampled_residual" << std::endl;''')*(verbose)+'''
 
+        residual_fft_filter->Update();
+
         // Computes the global Fourier adjoint swap (R -> R_tilde)
-        int n_tuples_fine_fft = upsampled_residual_fft_image->GetPointData()->GetScalars()->GetNumberOfTuples();
         vtkDataArray* up_fft_ptr = upsampled_residual_fft_image->GetPointData()->GetScalars();
-        for (int i = 0; i < n_tuples_fine_fft; ++i)
-        {
-            up_fft_ptr->SetComponent(i, 0, 0.0);
-            up_fft_ptr->SetComponent(i, 1, 0.0);
-        }
+        up_fft_ptr->Fill(0.);
 
         int N_lx = measured_image_dimensions[0];
         int N_ly = measured_image_dimensions[1];
@@ -634,6 +665,7 @@ public:
                     int alias_k_x = (N_hx - base_k_x) % N_hx;
                     int x_indices[2] = {base_k_x, alias_k_x};
                     int x_count = is_nyq_x ? 2 : 1;
+
                     double r = residual_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0) / effective_resampling_factor;
                     double i = residual_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1) / effective_resampling_factor;
                     for (int iz = 0; iz < z_count; ++iz)
@@ -663,15 +695,17 @@ public:
 
         generate_upsampled_image();
         compute_downsampled_image();
-
-        residual_subtract_filter->Update();
-        residual_fft_filter->Update();
-
-        compute_upsampled_residual();
-        
         generated_interpolator->Initialize(generated_image);
-        residual_interpolator->Initialize(residual_image);
-        upsampled_residual_interpolator->Initialize(upsampled_residual_image);
+
+        generated_gradient_filter->Update();
+        generated_gradient_interpolator->Initialize(generated_gradient_image);
+
+        // residual_subtract_filter->Update();
+        // compute_upsampled_residual();
+        // upsampled_residual_interpolator->Initialize(upsampled_residual_image);
+
+        // upsampled_residual_gradient_filter->Update();
+        // upsampled_residual_gradient_interpolator->Initialize(upsampled_residual_gradient_image);
     }
 
     vtkSmartPointer<vtkImageData> get_image_from_name
@@ -950,34 +984,48 @@ public:
         Eigen::Ref<      Eigen::VectorXd> expr,
         Eigen::Ref<const Eigen::VectorXd> X
     ) const override
-    {'''+('''
-        // std::cout << "X = " << X << std::endl;''')*(verbose)+'''
-        U->eval(UX, X);'''+('''
-        // std::cout << "UX = " << UX << std::endl;''')*(verbose)+('''
+    {
+        Eigen::Matrix<double, n_dim, 1> UX;
+        U->eval(UX, X);
 
-        x_3D.head<n_dim>() = X + UX;''')*(im_dim==2)+('''
-        x_3D               = X + UX;''')*(im_dim==3)+('''
-        // std::cout << "x_3D = " << x_3D << std::endl;''')*(verbose)+'''
+        Eigen::Matrix<double, 3, 1> x_3D;
+        if (n_dim == 2) { x_3D.head<2>() = X + UX; x_3D[2] = Z; }
+        else            { x_3D           = X + UX;              }
 
-        // Output Layout: [ I_gen(x(X)), R(x(X)), R_tilde(x(X)), I_gen0(X), Grad_Igen0(X), grad_Imes(x(X)) ]
-        generated_interpolator->Interpolate(x_3D.data(), &expr[0]);
-        residual_interpolator->Interpolate(x_3D.data(), &expr[1]);
-        upsampled_residual_interpolator->Interpolate(x_3D.data(), &expr[2]);
+        int offset = 0;
+        
+        generated_interpolator->Interpolate(x_3D.data(), &expr[offset]); offset += 1;
+        
+        double grad_Igen[3];
+        generated_gradient_interpolator->Interpolate(x_3D.data(), grad_Igen);
+        for (unsigned int d=0; d<n_dim; ++d) expr[offset + d] = grad_Igen[d]; 
+        offset += n_dim;
 
-        expr[3] = get_pure_image(X.data());
-        get_pure_image_grad(X.data(), &expr[4]);
+        measured_interpolator->Interpolate(x_3D.data(), &expr[offset]); offset += 1;
         
         double grad_Imes[3];
         measured_gradient_interpolator->Interpolate(x_3D.data(), grad_Imes);
-        for(unsigned int d=0; d<n_dim; ++d) expr[4 + n_dim + d] = grad_Imes[d];'''+('''
-        std::cout << "expr = " << expr << std::endl;''')*(verbose)+'''
+        for (unsigned int d=0; d<n_dim; ++d) expr[offset + d] = grad_Imes[d]; 
+        offset += n_dim;
+
+        // upsampled_residual_interpolator->Interpolate(x_3D.data(), &expr[offset]);
+        expr[offset] = 0.0;
+        offset += 1;
+
+        // double grad_R_tilde[3];
+        // upsampled_residual_gradient_interpolator->Interpolate(x_3D.data(), grad_R_tilde);
+        for (unsigned int d=0; d<n_dim; ++d) expr[offset + d] = 0.0;
+        offset += n_dim;
+
+        expr[offset] = get_pure_image(X.data()); offset += 1;
+        get_pure_image_grad(X.data(), &expr[offset]); offset += n_dim;
     }
 };
 
 PYBIND11_MODULE(SIGNATURE, m)
 {
     pybind11::class_<'''+name+''', std::shared_ptr<'''+name+'''>, dolfin::Expression>(m, "'''+name+'''")
-    .def(pybind11::init<'''+('''const double&, ''')*(im_dim==2)+('''const double&, const double&, '''+('''const double&, ''')*(im_dim==3)+'''const double&, ''')*(im_texture=="tagging")+'''const char*, const double&>(), '''+('''pybind11::arg("Z") = 0., ''')*(im_dim==2)+('''pybind11::arg("X0") = 0., pybind11::arg("Y0") = 0., '''+('''pybind11::arg("Z0") = 0., ''')*(im_dim==3)+'''pybind11::arg("s") = 0.1, ''')*(im_texture=="tagging")+'''pybind11::arg("image_interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.)
+    .def(pybind11::init<'''+('''const double&, ''')*(im_dim==2)+('''const double&, const double&, '''+('''const double&, ''')*(im_dim==3)+'''const double&, ''')*(im_texture=="tagging")+'''const char*, const char*, const double&>(), '''+('''pybind11::arg("Z") = 0., ''')*(im_dim==2)+('''pybind11::arg("X0") = 0., pybind11::arg("Y0") = 0., '''+('''pybind11::arg("Z0") = 0., ''')*(im_dim==3)+'''pybind11::arg("s") = 0.1, ''')*(im_texture=="tagging")+'''pybind11::arg("image_interpol_mode") = "linear", pybind11::arg("gradient_interpol_mode") = "linear", pybind11::arg("interpol_out_value") = 0.)
     .def("init_images", &'''+name+'''::init_images, pybind11::arg("filename"), pybind11::arg("resampling_factor_") = 1.)
     .def("update_measured_image", &'''+name+'''::update_measured_image, pybind11::arg("filename"))
     .def("init_mesh_and_disp", &'''+name+'''::init_mesh_and_disp, pybind11::arg("mesh_"), pybind11::arg("U_"))

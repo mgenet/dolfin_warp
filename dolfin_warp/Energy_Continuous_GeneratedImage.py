@@ -54,7 +54,7 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
             family="Quadrature",
             cell=self.problem.mesh.ufl_cell(),
             degree=self.quadrature_degree,
-            dim=4+2*self.image_series.dimension)
+            dim=4*(1+self.image_series.dimension))
         self.ve_im_grad._quad_scheme = "default"           # should not be needed
         for sub_element in self.ve_im_grad.sub_elements(): # should not be needed
             sub_element._quad_scheme = "default"           # should not be needed
@@ -75,7 +75,7 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
         module = dolfin.compile_cpp_code(cpp)
         expr = getattr(module, name)
         self.IDIgen = dolfin.CompiledExpression(
-            expr(),
+            expr(image_interpol_mode="linear", gradient_interpol_mode="linear"),
             element=self.ve_im_grad)
         self.IDIgen.init_images(
             filename=self.ref_image_filename,
@@ -91,19 +91,25 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
         #     image_name="generated_gradient",
         #     filename="run_gimic_DIgen.vti")
 
-        ### C++ Layout: [ I_gen(x(X)), R(x(X)), R_tilde(x(X)), I_gen0(X), Grad_Igen0(X), grad_Imes(x(X)) ]
-        self.Igen       = self.IDIgen[0]
-        self.R          = self.IDIgen[1]
-        self.R_tilde    = self.IDIgen[2]
-        self.Igen0      = self.IDIgen[3]
-        self.Grad_Igen0 = dolfin.as_vector([self.IDIgen[i] for i in range(4, 4+self.image_series.dimension)])
-        self.grad_Imes  = dolfin.as_vector([self.IDIgen[i] for i in range(4+self.image_series.dimension, 4+2*self.image_series.dimension)])
+        dim = self.image_series.dimension
+        offset = 0
+        self.Igen         = self.IDIgen[offset]                                                   ; offset +=  1
+        self.grad_Igen    = dolfin.as_vector([self.IDIgen[i] for i in range(offset, offset+dim)]) ; offset += dim
+        self.Imes         = self.IDIgen[offset]                                                   ; offset +=  1
+        self.grad_Imes    = dolfin.as_vector([self.IDIgen[i] for i in range(offset, offset+dim)]) ; offset += dim
+        self.R_tilde      = self.IDIgen[offset]                                                   ; offset +=  1
+        self.grad_R_tilde = dolfin.as_vector([self.IDIgen[i] for i in range(offset, offset+dim)]) ; offset += dim
+        self.Igen0        = self.IDIgen[offset]                                                   ; offset +=  1
+        self.Grad_Igen0   = dolfin.as_vector([self.IDIgen[i] for i in range(offset, offset+dim)]) ; offset += dim
 
         self.Igen_int0 = dolfin.assemble(self.Igen * self.dV)/self.problem.mesh_V0
         self.printer.print_sci("Igen_int0",self.Igen_int0)
 
         self.Igen_norm0 = (dolfin.assemble(self.Igen**2 * self.dV)/self.problem.mesh_V0)**(1./2)
         self.printer.print_sci("Igen_norm0",self.Igen_norm0)
+
+        self.R      = self.Igen - self.Imes
+        self.grad_R = self.grad_Igen - self.grad_Imes
 
         self.printer.dec()
 
@@ -146,28 +152,45 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
         self.printer.inc()
 
         ### Psi_c
-        self.Psi_c = (1./2) * (self.R**2)
+        self.Psi_c = self.R**2/2 * self.problem.J 
 
-        ### DPsi_c
-        grad_Igen0 = dolfin.dot(dolfin.inv(self.problem.F).T, self.Grad_Igen0)
-        f_vol = (self.R_tilde * grad_Igen0) - (self.R * self.grad_Imes)
-        self.DPsi_c = dolfin.inner(f_vol, self.problem.dU_test)
+        ### DPsi_c (simplified gradient without convolutions)
+        # self.DPsi_c  = self.R * dolfin.inner(self.grad_R, self.problem.dU_test) * self.problem.J
+        # self.DPsi_c += self.R**2/2 * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
 
-        scalar_stress = (1./2) * (self.R**2) + (self.R_tilde * self.Igen0)
-        tensor_stress = scalar_stress * dolfin.inv(self.problem.F).T
-        self.DPsi_c += dolfin.inner(tensor_stress, dolfin.grad(self.problem.dU_test))
+        ### DPsi_c (total gradient)
+        # f_vol  = self.Igen0 * self.grad_R_tilde
+        # f_vol += self.R * self.grad_R
+        # self.DPsi_c = dolfin.inner(f_vol, self.problem.dU_test) * self.problem.J
 
-        # f_vol = - self.R_tilde * dolfin.dot(dolfin.inv(self.problem.F).T, self.Grad_Igen0)
-        # self.DPsi_c_vol = dolfin.inner(f_vol, self.problem.dU_test)
+        # f_vol  = self.Igen0 * self.R_tilde
+        # f_vol += self.R**2/2
+        # self.DPsi_c += f_vol * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
 
-        # p  = (1./2) * (self.R**2)
-        # p += (self.R_tilde * self.Igen0)
-        # f_surf = p * dolfin.dot(dolfin.inv(self.problem.F).T, self.problem.N)
-        # self.DPsi_c_surf = dolfin.inner(f_surf, self.problem.dU_test)
+        ### DPsi_c (total gradient, with raw residual instead of filtered residual)
+        self.DPsi_c  = (self.Igen0 + self.R  )          * dolfin.inner(           self.grad_R      ,             self.problem.dU_test ) * self.problem.J
+        self.DPsi_c += (self.Igen0 + self.R/2) * self.R * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
 
-        ### DDPsi_c
-        self.DDPsi_c = dolfin.inner(self.Grad_Igen0, self.problem.dU_trial) * \
-                       dolfin.inner(self.Grad_Igen0, self.problem.dU_test )
+        ### DDPsi_c (simplified jacobian without second-order terms and convolutions)
+        self.DDPsi_c  = dolfin.inner(self.grad_R, self.problem.dU_trial) * dolfin.inner(self.grad_R, self.problem.dU_test) * self.problem.J
+        self.DDPsi_c += (self.Igen0 + self.R) * dolfin.inner(self.grad_R, self.problem.dU_test) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial)) * self.problem.J
+        self.DDPsi_c += (self.Igen0 + self.R) * dolfin.inner(self.grad_R, self.problem.dU_trial) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
+        self.DDPsi_c += (self.Igen0 + self.R/2) * self.R * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial)) * self.problem.J
+
+        ### DDPsi_c (same but with grad_Igen instead of grad_R to make sure the Jacobian is positive definite)
+        # self.DDPsi_c  = dolfin.inner(self.grad_Igen, self.problem.dU_trial) * dolfin.inner(self.grad_Igen, self.problem.dU_test) * self.problem.J
+        # self.DDPsi_c = (self.Igen0 + self.R) * dolfin.inner(self.grad_R, self.problem.dU_test) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial)) * self.problem.J
+        # self.DDPsi_c += (self.Igen0 + self.R) * dolfin.inner(self.grad_R, self.problem.dU_trial) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
+        # self.DDPsi_c += (self.Igen0 + self.R/2) * self.R * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial)) * self.problem.J
+
+        # DDPsi_c (convexyfing the Jacobian)
+        # V_test  = dolfin.inner(self.grad_R, self.problem.dU_test ) + (self.R + self.Igen0)/2 * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test ))
+        # V_trial = dolfin.inner(self.grad_R, self.problem.dU_trial) + (self.R + self.Igen0)/2 * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial))
+        # self.DDPsi_c = V_trial * V_test * self.problem.J
+        
+        # DDPsi_c (Pseudo-Hessian: diagonal, properly scaled, strictly positive definite)
+        # self.DDPsi_c  = (self.Igen0 + self.R  ) * dolfin.inner(self.grad_Igen, self.problem.dU_trial) * dolfin.inner(self.grad_Igen, self.problem.dU_test) * self.problem.J
+        # self.DDPsi_c += (self.Igen0 + self.R/2) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_trial)) * dolfin.inner(dolfin.inv(self.problem.F).T, dolfin.grad(self.problem.dU_test)) * self.problem.J
 
         if (self.w_char_func):
             self.Psi_c   *= self.Phi_def * self.Phi_ref
@@ -175,9 +198,9 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
             self.DDPsi_c *= self.Phi_def * self.Phi_ref
 
         # forms
-        self.ener_form = self.Psi_c   * self.problem.J * self.dV
-        self.res_form  = self.DPsi_c  * self.problem.J * self.dV
-        self.jac_form  = self.DDPsi_c * self.problem.J * self.dV
+        self.ener_form = self.Psi_c   * self.dV
+        self.res_form  = self.DPsi_c  * self.dV
+        self.jac_form  = self.DDPsi_c * self.dV
 
         self.printer.dec()
         self.printer.dec()
