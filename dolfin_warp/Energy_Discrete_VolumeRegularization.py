@@ -154,6 +154,7 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         self.R_vec = self.problem.U.vector().copy()
         self.MR_vec = self.problem.U.vector().copy()
         self.dRMR_vec = self.problem.U.vector().copy()
+        self.res_vec = self.dRMR_vec
 
         self.dR_mat = dolfin.PETScMatrix()
 
@@ -181,8 +182,7 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
+    def update_ener(self):
 
         # print (dolfin.assemble(Psi))
 
@@ -198,24 +198,11 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         ener /= 2
         # print(ener)
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
 
-    def assemble_res(self,
-            res_vec,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
+    def update_res(self):
 
         dolfin.assemble(
             form=self.Wint_form,
@@ -234,27 +221,12 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         self.bc.zero(self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
-        # print(self.dRMR_vec.get_local())
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        res_vec.axpy(w, self.dRMR_vec)
+        self.dR_mat.transpmult(self.MR_vec, self.res_vec)
+        # print(self.res_vec.get_local())
 
 
 
-    def assemble_jac(self,
-            jac_mat,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
+    def update_jac(self):
 
         dolfin.assemble(
             form=self.dWint_form,
@@ -266,17 +238,6 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
             self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
             self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+            self.jac_mat = self.K_mat
         else:
             self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())
-
-        # self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat()) # MG20250209: This should be done inplace, right?
-        # self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        jac_mat.axpy(w, self.K_mat, False) # MG20220107: cannot provide same_nonzero_pattern as kwarg

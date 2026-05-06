@@ -17,16 +17,16 @@ import dolfin_warp as dwarp
 ################################################################################
 
 def compute_displacement_error_with_fenics(
-        working_folder          : str                       ,
-        working_basename        : str                       ,
-        ref_folder              : str                       ,
-        ref_basename            : str                       ,
-        working_ext             : str  = "vtu"              ,
-        ref_ext                 : str  = "vtu"              ,
-        working_disp_array_name : str  = "displacement"     ,
-        ref_disp_array_name     : str  = "displacement"     ,
-        suffix                  : str = "displacement_error",
-        verbose                 : bool = True               ):
+        working_folder          : str                         ,
+        working_basename        : str                         ,
+        ref_folder              : str                         ,
+        ref_basename            : str                         ,
+        working_ext             : str  = "vtu"                ,
+        ref_ext                 : str  = "vtu"                ,
+        working_disp_array_name : str  = "displacement"       ,
+        ref_disp_array_name     : str  = "displacement"       ,
+        suffix                  : str  = "displacement_error" ,
+        verbose                 : bool = True                 ):
 
     working_series = dwarp.MeshSeries(
         folder   = working_folder  ,

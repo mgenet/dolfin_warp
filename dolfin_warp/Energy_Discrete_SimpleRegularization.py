@@ -106,61 +106,25 @@ class SimpleRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             self.K_mat_mat = petsc4py.PETSc.Mat.transposeMatMult(self.K_mat_mat, self.K_mat_mat)
             self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
 
+        self.res_vec = self.KU_vec
+        self.jac_mat = self.K_mat
+
         self.printer.dec()
 
 
-
-    def assemble_ener(self,
-            w_weight=True):
-
+    def update_ener(self):
         self.K_mat.mult(self.U_vec, self.KU_vec)
         ener  = self.U_vec.inner(self.KU_vec)
         ener /= 2
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
 
-    def assemble_res(self,
-            res_vec,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
+    def update_res(self):
         self.K_mat.mult(self.U_vec, self.KU_vec)
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        res_vec.axpy(w, self.KU_vec)
 
 
-    def assemble_jac(self,
-            jac_mat,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        jac_mat.axpy(w, self.K_mat, False)
+    def update_jac(self):
+        pass

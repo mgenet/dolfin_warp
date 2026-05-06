@@ -238,7 +238,7 @@ class GeneratedImageContinuousEnergy(Energy, ContinuousEnergyMixin, ImageEnergyM
 
     def get_qoi_values(self):
 
-        self.ener = self.assemble_ener(w_weight=0)
+        self.ener = self.assemble_ener(w_weight=False)
         assert (self.ener >= 0.),\
             "ener (="+str(self.ener)+") should be non negative. Aborting."
         self.ener /= self.problem.mesh_V0

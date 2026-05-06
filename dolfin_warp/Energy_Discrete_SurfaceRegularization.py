@@ -159,6 +159,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         self.MR_vec = self.MR.vector()
         self.dR_mat = dolfin.PETScMatrix()
         self.dRMR_vec = self.problem.U.vector().copy()
+        self.res_vec = self.dRMR_vec
 
         self.R_tria = dolfin.TrialFunction(self.R_fs)
         self.R_test = dolfin.TestFunction(self.R_fs)
@@ -331,8 +332,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
+    def update_ener(self):
 
         # dolfin.plot(self.Fn) # "Don't know how to plot given object"
 
@@ -407,30 +407,11 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
         ener  = self.R_vec.inner(self.MR_vec)
         ener /= 2
-        # print(ener)
 
-        # self.k_frame += 1
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
-
-    def assemble_res(self,
-            res_vec,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
-        # print(res_vec.get_local())
+    def update_res(self):
 
         dolfin.assemble(
             form=self.R_form,
@@ -448,39 +429,18 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
         # print(self.dRMR_vec.get_local())
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        res_vec.axpy(w, self.dRMR_vec)
-        # print(res_vec.get_local())
 
 
-
-    def assemble_jac(self,
-            jac_mat,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
+    def update_jac(self):
 
         dolfin.assemble(
             form=self.dR_form,
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
-        self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
+        if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
+            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
+            self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+            self.jac_mat = self.K_mat
         else:
-            w = 1.
-
-        jac_mat.axpy(w, self.K_mat, False) # MG20220107: cannot provide same_nonzero_pattern as kwarg
+            self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())

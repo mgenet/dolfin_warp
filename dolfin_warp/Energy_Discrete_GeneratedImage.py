@@ -141,12 +141,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
-
-        # ener = numpy.sum(numpy.square(numpy.subtract(self.Igen_fft, self.Idef_fft))) # MG20240523: This is slower than line below
-        # ener = numpy.linalg.norm(self.Igen.fft - self.Idef.fft)**2                   # MG20240523: This is faster than line above
-        # ener /= 2
+    def update_ener(self):
 
         if (self.ener_type == "image"):
             # ener = self.Igen.compute_fourier_energy()
@@ -162,14 +157,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
             assert (0),\
                 "ener_type (="+str(self.ener_type)+") should be \"image\" or \"fourier\". Aborting."
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
 
@@ -198,7 +186,7 @@ class GeneratedImageDiscreteEnergy(Energy, DiscreteEnergyMixin, ImageEnergyMixin
 
     def get_qoi_values(self):
 
-        self.ener  = self.assemble_ener(w_weight=0)
+        self.ener = self.update_ener()
         assert (self.ener >= 0.),\
             "ener (="+str(self.ener)+") should be non negative. Aborting."
         self.printer.print_sci(self.name+"_ener", self.ener)
