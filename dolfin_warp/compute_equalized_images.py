@@ -7,7 +7,7 @@
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2025                                              ###
+### And Martin Genet, 2016-2026                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -29,13 +29,13 @@ def compute_equalized_images(
         suffix=None,
         verbose=0):
 
-    images_series = dwarp.ImagesSeries(
+    image_series = dwarp.ImageSeries(
         folder=images_folder,
         basename=images_basename,
         ext=images_ext)
 
-    for k_frame in range(images_series.n_frames):
-        image = images_series.get_image(k_frame=k_frame)
+    for k_frame in range(image_series.n_frames):
+        image = image_series.get_image(k_frame=k_frame)
         scalars = image.GetPointData().GetArray(array_name)
         n_points = scalars.GetNumberOfTuples()
 
@@ -58,4 +58,4 @@ def compute_equalized_images(
 
         myvtk.writeImage(
             image=image,
-            filename=images_series.get_image_filename(k_frame=k_frame, suffix=suffix))
+            filename=image_series.get_image_filename(k_frame=k_frame, suffix=suffix))

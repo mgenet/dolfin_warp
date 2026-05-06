@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -12,29 +12,30 @@ import dolfin
 import petsc4py
 import typing
 
-from .Energy_Discrete import DiscreteEnergy
-from .Problem         import Problem
+from .Energy               import Energy
+from .EnergyMixin_Discrete import DiscreteEnergyMixin
+from .Problem              import Problem
 
 ################################################################################
 
-class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
+class SimpleRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
     def __init__(self,
-            problem: Problem,
-            name: str = "reg",
-            w: float = 1.,
-            type: str = "equilibrated",
-            model: str = "hooke",
-            young: float = 1.,
-            poisson: float = 0.,
-            b_fin: typing.Optional["list[float]"] = None,
-            volume_subdomain_data = None,
-            volume_subdomain_id = None,
-            surface_subdomain_data = None,
-            surface_subdomain_id = None,
-            quadrature_degree: typing.Optional[int] = None): # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            problem                : Problem                                        ,
+            name                   : str                            = "reg"         ,
+            w                      : float                          = 1.            ,
+            type                   : str                            = "equilibrated",
+            model                  : str                            = "hooke"       ,
+            young                  : float                          = 1.            ,
+            poisson                : float                          = 0.            ,
+            b_fin                  : typing.Optional["list[float]"] = None          ,
+            quadrature_degree      : typing.Optional[int]           = None          , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            volume_subdomain_data                                   = None          ,
+            volume_subdomain_id                                     = None          ,
+            surface_subdomain_data                                  = None          ,
+            surface_subdomain_id                                    = None          ):
 
         self.problem = problem
         self.printer = problem.printer
@@ -105,80 +106,25 @@ class SimpleRegularizationDiscreteEnergy(DiscreteEnergy):
             self.K_mat_mat = petsc4py.PETSc.Mat.transposeMatMult(self.K_mat_mat, self.K_mat_mat)
             self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
 
+        self.res_vec = self.KU_vec
+        self.jac_mat = self.K_mat
+
         self.printer.dec()
 
 
-
-    def assemble_ener(self,
-            w_weight=True):
-
+    def update_ener(self):
         self.K_mat.mult(self.U_vec, self.KU_vec)
         ener  = self.U_vec.inner(self.KU_vec)
         ener /= 2
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
 
-    def assemble_res(self,
-            res_vec,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
+    def update_res(self):
         self.K_mat.mult(self.U_vec, self.KU_vec)
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        res_vec.axpy(w, self.KU_vec)
 
 
-    def assemble_jac(self,
-            jac_mat,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        jac_mat.axpy(w, self.K_mat, False)
-
-
-
-    def get_qoi_names(self):
-
-        return [self.name+"_ener"]
-
-
-
-    def get_qoi_values(self):
-
-        self.ener  = self.assemble_ener(w_weight=0)
-        self.ener /= self.problem.mesh_V0
-        assert (self.ener >= 0.),\
-            "ener (="+str(self.ener)+") should be non negative. Aborting."
-        self.ener  = self.ener**(1./2)
-        self.printer.print_sci(self.name+"_ener",self.ener)
-
-        return [self.ener]
+    def update_jac(self):
+        pass

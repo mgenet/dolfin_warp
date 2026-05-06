@@ -275,7 +275,7 @@ if (do_run_warp):
 
         relax_type                                  = "backtracking"
         normalize_energies                          = 1
-        tol_dU                                      = 1e-2
+        tol_dU_rel_U                                      = 1e-2
         n_iter_max                                  = 100
         continue_after_fail                         = 1
         write_VTU_files                             = 1
@@ -296,7 +296,7 @@ if (do_run_warp):
             command_lst += ["--regul_poisson"                              , str(regul_poisson)                              ]
             command_lst += ["--relax_type"                                 , relax_type                                      ]
             command_lst += ["--normalize_energies"                         , str(normalize_energies)                         ]
-            command_lst += ["--tol_dU"                                     , str(tol_dU)                                     ]
+            command_lst += ["--tol_dU_rel_U"                                     , str(tol_dU_rel_U)                                     ]
             command_lst += ["--n_iter_max"                                 , str(n_iter_max)                                 ]
             command_lst += ["--continue_after_fail"                        , str(continue_after_fail)                        ]
             command_lst += ["--write_VTU_files"                            , str(write_VTU_files)                            ]
@@ -325,7 +325,7 @@ if (do_run_warp):
                 regul_poisson                               = regul_poisson                              ,
                 relax_type                                  = relax_type                                 ,
                 normalize_energies                          = normalize_energies                         ,
-                tol_dU                                      = tol_dU                                     ,
+                tol_dU_rel_U                                      = tol_dU_rel_U                                     ,
                 n_iter_max                                  = n_iter_max                                 ,
                 continue_after_fail                         = continue_after_fail                        ,
                 write_VTU_files                             = write_VTU_files                            ,

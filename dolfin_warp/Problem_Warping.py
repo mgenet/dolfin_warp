@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -10,10 +10,10 @@
 
 import dolfin
 import os
+import sys
 
+import dolfin_warp     as dwarp
 import myPythonLibrary as mypy
-
-import dolfin_warp as dwarp
 
 from .Problem import Problem
 
@@ -26,6 +26,28 @@ class WarpingProblem(Problem):
     def close(self):
 
         self.printer.close()
+
+
+
+    def set_printer(self,
+            print_out=None,
+            working_folder=None,
+            working_basename=None):
+
+        if (print_out == True):
+            print_filename = working_folder+"/"+working_basename+".out"
+
+        if (type(print_out) is str):
+            if (print_out=="stdout"):
+                print_filename = None
+            elif (print_out=="argv"):
+                print_filename = sys.argv[0][:-3]+".out"
+            else:
+                print_filename = print_out+".out"
+
+        self.printer = mypy.Printer(
+            filename=print_filename,
+            silent=not(print_out))
 
 
 
@@ -78,6 +100,7 @@ class WarpingProblem(Problem):
         self.mesh_h0 = dolfin.Constant(self.mesh_h0)
 
         self.X = dolfin.SpatialCoordinate(self.mesh)
+        self.N = dolfin.FacetNormal(self.mesh)
 
         self.printer.dec()
 
@@ -88,10 +111,10 @@ class WarpingProblem(Problem):
 
         if (hasattr(self, "images_n_frames")
         and hasattr(self, "images_ref_frame")):
-            assert (energy.images_series.n_frames  == self.images_n_frames)
+            assert (energy.image_series.n_frames  == self.images_n_frames)
             assert (energy.ref_frame == self.images_ref_frame)
         else:
-            self.images_n_frames = energy.images_series.n_frames
+            self.images_n_frames = energy.image_series.n_frames
             self.images_ref_frame = energy.ref_frame
 
         self.energies += [energy]
@@ -103,9 +126,9 @@ class WarpingProblem(Problem):
             order_by_type: bool = True):
 
         if (order_by_type):
-            if isinstance(energy, dwarp.ContinuousEnergy):
+            if isinstance(energy, dwarp.ContinuousEnergyMixin):
                 self.energies.insert(0, energy)
-            elif isinstance(energy, dwarp.DiscreteEnergy):
+            elif isinstance(energy, dwarp.DiscreteEnergyMixin):
                 self.energies.append(energy)
             else:
                 assert (0), "Wrong energy type \""+str(type(energy))+"\". Aborting."
@@ -150,7 +173,8 @@ class WarpingProblem(Problem):
             ener_ = energy.assemble_ener(w_weight=1)
             self.printer.print_sci("ener_"+energy.name,ener_)
             ener += ener_
-        self.printer.print_sci("ener",ener)
+        if (len(self.energies) > 1):
+            self.printer.print_sci("ener",ener)
         return ener
 
 

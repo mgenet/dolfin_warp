@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2012-2025                                       ###
+### Created by Martin Genet, 2012-2026                                       ###
 ###                                                                          ###
 ### University of California at San Francisco (UCSF), USA                    ###
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
@@ -38,6 +38,9 @@ def compute_warped_mesh(
         verbose=0):
 
     mypy.my_print(verbose, "*** compute_warped_mesh ***")
+
+    if not os.path.exists(working_folder):
+            os.mkdir(working_folder)
 
     assert ((mesh is not None) or ((mesh_folder is not None) and (mesh_basename is not None) and (mesh_ext is not None))),\
         "Must provide a mesh (mesh = "+str(mesh)+") or a mesh file (mesh_folder = "+str(mesh_folder)+", mesh_basename = "+str(mesh_basename)+", mesh_ext = "+str(mesh_ext)+"). Aborting."

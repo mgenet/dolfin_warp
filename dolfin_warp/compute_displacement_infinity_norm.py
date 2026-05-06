@@ -7,7 +7,7 @@
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2025                                              ###
+### And Martin Genet, 2016-2026                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -26,7 +26,7 @@ def compute_displacement_infinity_norm(
         working_ext="vtk",
         disp_array_name="displacement"):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

@@ -7,7 +7,7 @@
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2025                                              ###
+### And Martin Genet, 2016-2026                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -34,20 +34,20 @@ def compute_selective_image_gradient(
         suffix=None,
         verbose=0):
 
-    images_series = dwarp.ImagesSeries(
+    image_series = dwarp.ImageSeries(
         folder=images_folder,
         basename=images_basename,
         ext=images_ext)
-    masks_series = dwarp.ImagesSeries(
+    masks_series = dwarp.ImageSeries(
         folder=masks_folder,
         basename=masks_basename,
         ext=masks_ext)
 
-    assert (images_series.n_frames == masks_series.n_frames),\
-        "Number of masks ("+str(masks_series.n_frames)+") and images ("+str(images_series.n_frames)+") are not the same. Aborting."
+    assert (image_series.n_frames == masks_series.n_frames),\
+        "Number of masks ("+str(masks_series.n_frames)+") and images ("+str(image_series.n_frames)+") are not the same. Aborting."
 
-    for k_frame in range(images_series.n_frames):
-        image = images_series.get_image(k_frame=k_frame)
+    for k_frame in range(image_series.n_frames):
+        image = image_series.get_image(k_frame=k_frame)
         n_points = image.GetNumberOfPoints()
         intensity_field = image.GetPointData().GetArray(images_field_name)
         intensity_tuple = numpy.empty(1)
@@ -136,5 +136,5 @@ def compute_selective_image_gradient(
 
         myvtk.writeImage(
             image=image,
-            filename=images_series.get_image_filename(k_frame=k_frame, suffix=suffix),
+            filename=image_series.get_image_filename(k_frame=k_frame, suffix=suffix),
             verbose=verbose-1)

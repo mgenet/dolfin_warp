@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -25,7 +25,7 @@ def compute_displacements_from_ref(
         suffix=None,
         verbose=0):
 
-    working_series = dwarp.MeshesSeries(
+    working_series = dwarp.MeshSeries(
         folder=working_folder,
         basename=working_basename,
         ext=working_ext)

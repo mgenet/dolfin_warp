@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -14,31 +14,34 @@ import typing
 
 import dolfin_mech as dmech
 
-from .Energy_Discrete import DiscreteEnergy
-from .Problem         import Problem
+from .Energy               import Energy
+from .EnergyMixin_Discrete import DiscreteEnergyMixin
+from .Problem              import Problem
 
 ################################################################################
 
-class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
+class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
 
 
     def __init__(self,
-            problem: Problem,
-            name: str = "reg",
-            w: float = 1.,
-            type: str = "tractions",
-            model: str = "ogdenciarletgeymonatneohookean",
-            young: float = 1.,
-            poisson: float = 0.,
-            b_fin: typing.Optional["list[float]"] = None,
-            ds_or_dS = "ds",
-            surface_subdomain_data = None,
-            surface_subdomain_id = None,
-            volume_subdomain_data = None,
-            volume_subdomain_id = None,
-            quadrature_degree: typing.Optional[int] = None, # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
-            scalar_formulation_in_2D: bool = 1):
+            problem                  : Problem                                                          ,
+            name                     : str                            = "reg"                           ,
+            w                        : float                          = 1.                              ,
+            type                     : str                            = "tractions"                     ,
+            model                    : str                            = "ogdenciarletgeymonatneohookean",
+            young                    : float                          = 1.                              ,
+            poisson                  : float                          = 0.                              ,
+            b_fin                    : typing.Optional["list[float]"] = None                            ,
+            quadrature_degree        : typing.Optional[int]           = None                            , # MG20220815: This can be written "int | None" starting with python 3.10, but it is not readily available on the gitlab runners (Ubuntu 20.04)
+            ds_or_dS                 : str                            = "ds"                            ,
+            volume_subdomain_data                                     = None                            ,
+            volume_subdomain_id                                       = None                            ,
+            surface_subdomain_data                                    = None                            ,
+            surface_subdomain_id                                      = None                            ,
+            scalar_formulation_in_2D : bool                           = True                            ):
+
+
 
         self.problem = problem
         self.printer = problem.printer
@@ -112,18 +115,17 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
             self.Sigma = self.material.Sigma
             self.P     = self.material.P
 
-        self.N = dolfin.FacetNormal(self.problem.mesh)
-        self.F = dolfin.dot(self.P, self.N)
-        self.Fn = dolfin.inner(self.N, self.F)
+        self.F = dolfin.dot(self.P, self.problem.N)
+        self.Fn = dolfin.inner(self.problem.N, self.F)
 
         if (self.dim == 2):
             ez = dolfin.as_vector([0, 0, 1])
-            N3D = dolfin.as_vector([self.N[0], self.N[1], 0])
+            N3D = dolfin.as_vector([self.problem.N[0], self.problem.N[1], 0])
             T3D = dolfin.cross(ez, N3D)
             self.T = dolfin.as_vector([T3D[0], T3D[1]])
             self.Ft = dolfin.inner(self.T, self.F)
         elif (self.dim == 3):
-            self.Ft = self.F - self.Fn * self.N
+            self.Ft = self.F - self.Fn * self.problem.N
             self.Ft = dolfin.inner(self.Ft, self.Ft)
             self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.) # MG20221013: To bypass the derivative singularity at 0
             # self.Ft = dolfin.sqrt(self.Ft)
@@ -157,10 +159,11 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.MR_vec = self.MR.vector()
         self.dR_mat = dolfin.PETScMatrix()
         self.dRMR_vec = self.problem.U.vector().copy()
+        self.res_vec = self.dRMR_vec
 
         self.R_tria = dolfin.TrialFunction(self.R_fs)
         self.R_test = dolfin.TestFunction(self.R_fs)
-        self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.N, self.N)
+        self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.problem.N, self.problem.N)
 
         if (self.type == "tractions"):
             # vi = self.R_test[0,:]
@@ -329,8 +332,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
 
 
-    def assemble_ener(self,
-            w_weight=True):
+    def update_ener(self):
 
         # dolfin.plot(self.Fn) # "Don't know how to plot given object"
 
@@ -370,7 +372,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         # print(self.R_vec.norm("l2"))
         # dmech.write_VTU_file("R", self.R, self.k_frame)
 
-        # l = dolfin.inner(dolfin.inner(self.N, self.R), self.v_sca) * self.problem.dS
+        # l = dolfin.inner(dolfin.inner(self.problem.N, self.R), self.v_sca) * self.problem.dS
         # L = dolfin.assemble(l)
         # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
         # print(self.f_Fn.vector().norm("l2"))
@@ -391,7 +393,7 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         # print(self.MR_vec.norm("l2"))
         # dmech.write_VTU_file("MR", self.MR, self.k_frame)
 
-        # l = dolfin.inner(dolfin.inner(self.N, self.MR), self.v_sca) * self.problem.dS
+        # l = dolfin.inner(dolfin.inner(self.problem.N, self.MR), self.v_sca) * self.problem.dS
         # L = dolfin.assemble(l)
         # dolfin.solve(self.A_sca, self.f_Fn.vector(), L)
         # print(self.f_Fn.vector().norm("l2"))
@@ -405,30 +407,11 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
 
         ener  = self.R_vec.inner(self.MR_vec)
         ener /= 2
-        # print(ener)
 
-        # self.k_frame += 1
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        return w*ener
+        return ener
 
 
-
-    def assemble_res(self,
-            res_vec,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
-
-        # print(res_vec.get_local())
+    def update_res(self):
 
         dolfin.assemble(
             form=self.R_form,
@@ -446,58 +429,18 @@ class SurfaceRegularizationDiscreteEnergy(DiscreteEnergy):
         self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
         # print(self.dRMR_vec.get_local())
 
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
-        else:
-            w = 1.
-
-        res_vec.axpy(w, self.dRMR_vec)
-        # print(res_vec.get_local())
 
 
-
-    def assemble_jac(self,
-            jac_mat,
-            add_values=True,
-            finalize_tensor=True,
-            w_weight=True):
-
-        assert (add_values == True)
+    def update_jac(self):
 
         dolfin.assemble(
             form=self.dR_form,
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
-        self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
-
-        if (w_weight):
-            w = self.w
-            if hasattr(self, "ener0"):
-                w /= self.ener0
+        if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
+            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
+            self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
+            self.jac_mat = self.K_mat
         else:
-            w = 1.
-
-        jac_mat.axpy(w, self.K_mat, False) # MG20220107: cannot provide same_nonzero_pattern as kwarg
-
-
-
-    def get_qoi_names(self):
-
-        return [self.name+"_ener"]
-
-
-
-    def get_qoi_values(self):
-
-        self.ener  = self.assemble_ener(w_weight=0)
-        self.ener /= self.problem.mesh_V0
-        assert (self.ener >= 0.),\
-            "ener (="+str(self.ener)+") should be non negative. Aborting."
-        self.ener  = self.ener**(1./2)
-        self.printer.print_sci(self.name+"_ener",self.ener)
-
-        return [self.ener]
+            self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())

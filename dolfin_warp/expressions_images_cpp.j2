@@ -1,0 +1,369 @@
+#include <string.h>
+
+#include <dolfin/function/Expression.h>
+#include <dolfin/function/Function.h>
+
+#include <vtkImageData.h>
+#include <vtkImageGradient.h>
+#include <vtkImageInterpolator.h>
+#include <vtkPolyData.h>
+#include <vtkPointData.h>
+#include <vtkProbeFilter.h>
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
+
+#include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
+
+{{ static_scaling_cpp }}
+
+class {{ name }} : public dolfin::Expression
+{
+public:
+
+    static constexpr unsigned int n_dim = {{ im_dim }};
+
+    vtkSmartPointer<vtkXMLImageDataReader>        reader                = vtkSmartPointer<vtkXMLImageDataReader>::New()       ;
+    vtkSmartPointer<vtkImageData>                 image                 = nullptr                                             ;
+    double                                        static_scaling                                                              ;
+{% if im_is_def %}
+{% if dynamic_scaling %}
+    std::unique_ptr<Eigen::Ref<Eigen::Vector2d>>  dynamic_scaling                                                             ;
+{% endif %}
+{% if u_type == "dolfin" %}
+    std::shared_ptr<dolfin::Function>             U                     = nullptr                                             ;
+{% endif %}
+{% if u_type == "vtk" %}
+    vtkSmartPointer<vtkXMLUnstructuredGridReader> ugrid_reader          = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+    vtkSmartPointer<vtkUnstructuredGrid>          ugrid                 = nullptr                                             ;
+    vtkSmartPointer<vtkPoints>                    probe_points          = vtkSmartPointer<vtkPoints>::New()                   ;
+    vtkSmartPointer<vtkPolyData>                  probe_polydata        = vtkSmartPointer<vtkPolyData>::New()                 ;
+    vtkSmartPointer<vtkProbeFilter>               probe_filter          = vtkSmartPointer<vtkProbeFilter>::New()              ;
+{% endif %}
+    mutable Eigen::Vector3d                       x_3D                                                                        ;
+{% else %}
+{% if im_dim == 2 %}
+    mutable Eigen::Vector3d                       X_3D                                                                        ;
+{% endif %}
+{% endif %}
+{% if im_type in ["grad", "im+grad"] %}
+    vtkSmartPointer<vtkImageGradient>             gradient_filter       = vtkSmartPointer<vtkImageGradient>::New()            ;
+    vtkSmartPointer<vtkImageData>                 gradient_image        = nullptr                                             ;
+{% endif %}
+    vtkSmartPointer<vtkImageInterpolator>         interpolator          = vtkSmartPointer<vtkImageInterpolator>::New()        ;
+{% if im_type == "im+grad" %}
+    vtkSmartPointer<vtkImageInterpolator>         gradient_interpolator = vtkSmartPointer<vtkImageInterpolator>::New()        ;
+{% endif %}
+{% if im_is_def %}
+    mutable Eigen::Matrix<double, n_dim, 1>       UX                                                                          ;
+{% endif %}
+
+    {{ name }}(
+        const char* image_interpol_mode="{% if im_type in ["im", "im+grad"] %}linear{% else %}linear{% endif %}",
+        const double &image_interpol_out_value=0.
+{%- if im_type == "im+grad" -%}
+        ,
+        const char* gradient_interpol_mode="linear",
+        const double &gradient_interpol_out_value=0.
+{%- endif -%}
+{%- if im_dim == 2 -%}
+        ,
+        const double &Z=0.
+{%- endif -%}
+    ) :
+        dolfin::Expression({{ im_dim if im_type in ["grad", "grad_direct"] else (1 + im_dim if im_type == "im+grad" else "") }})
+    {
+{% if verbose %}
+        std::cout << "constructor" << std::endl;
+{% endif %}
+
+        reader->UpdateDataObject();
+        image = reader->GetOutput();
+
+{% if im_dim == 2 %}
+{% if not im_is_def %}
+        X_3D[2] = Z;
+{% else %}
+        x_3D[2] = Z;
+{% endif %}
+{% endif %}
+
+{% if im_type in ["grad", "im+grad"] %}
+        gradient_filter->SetDimensionality(n_dim);
+        gradient_filter->SetInputDataObject(image);
+        gradient_filter->UpdateDataObject();
+        gradient_image = gradient_filter->GetOutput();
+{% endif %}
+
+        if (strcmp(image_interpol_mode, "nearest") == 0)
+        {
+            interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(image_interpol_mode, "linear") == 0)
+        {
+            interpolator->SetInterpolationModeToLinear();
+        }
+        else if (strcmp(image_interpol_mode, "cubic") == 0)
+        {
+            interpolator->SetInterpolationModeToCubic();
+        }
+        else
+        {
+            std::cout << "Interpolator image_interpol_mode (" << image_interpol_mode << ") must be \"nearest\", \"linear\" or \"cubic\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        interpolator->SetOutValue(image_interpol_out_value);
+{% if im_type in ["im", "grad", "grad_direct", "im+grad"] %}
+        // interpolator->Initialize({{ "image" if im_type == "im" else "gradient_image" if im_type == "grad" else "image" }}); // MG20240524: Possible here? Nope! Apparently, after modifying the image content, the interpolator must be initialized again…
+{% endif %}
+
+{% if im_type == "im+grad" %}
+        if (strcmp(gradient_interpol_mode, "nearest") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToNearest();
+        }
+        else if (strcmp(gradient_interpol_mode, "linear") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToLinear();
+           }
+        else if (strcmp(gradient_interpol_mode, "cubic") == 0)
+        {
+            gradient_interpolator->SetInterpolationModeToCubic();
+        }
+        else
+        {
+            std::cout << "Interpolator gradient_interpol_mode (" << gradient_interpol_mode << ") must be \"nearest\", \"linear\" or \"cubic\". Aborting." << std::endl;
+            std::exit(0);
+        }
+        gradient_interpolator->SetOutValue(gradient_interpol_out_value);
+{% endif %}
+    }
+
+    void init_image
+    (
+        const char* filename
+    )
+    {
+{% if verbose %}
+        std::cout << "init_image" << std::endl;
+{% endif %}
+
+        reader->SetFileName(filename);
+        reader->Update();
+
+{% if not static_scaling_factor %}
+        static_scaling = getStaticScalingFactor(image->GetScalarTypeAsString());
+{% else %}
+        static_scaling = {{ static_scaling_factor }};
+{% endif %}
+
+{% if im_type in ["grad", "im+grad"] %}
+        gradient_filter->Update();
+{% endif %}
+
+        interpolator->Initialize({{ "image" if im_type in ["im", "grad_direct", "im+grad"] else "gradient_image" }});
+{% if im_type == "im+grad" %}
+        gradient_interpolator->Initialize(gradient_image);
+{% endif %}
+    }
+
+    void update_image
+    (
+        const char* filename
+    )
+    {
+{% if verbose %}
+        std::cout << "update_image" << std::endl;
+{% endif %}
+
+        reader->SetFileName(filename);
+        reader->Update();
+
+{% if im_type in ["grad", "im+grad"] %}
+        gradient_filter->Update();
+{% endif %}
+
+        interpolator->Initialize({{ "image" if im_type in ["im", "grad_direct", "im+grad"] else "gradient_image" }});
+{% if im_type == "im+grad" %}
+        gradient_interpolator->Initialize(gradient_image);
+{% endif %}
+    }
+
+{% if dynamic_scaling %}
+    void init_dynamic_scaling
+    (
+        Eigen::Ref<Eigen::Vector2d> dynamic_scaling_
+    )
+    {
+{% if verbose %}
+        std::cout << "init_dynamic_scaling" << std::endl;
+{% endif %}
+
+        dynamic_scaling.reset(new Eigen::Ref<Eigen::Vector2d>(dynamic_scaling_));
+    }
+{% endif %}
+
+{% if im_is_def %}
+{% if u_type == "dolfin" %}
+    void init_disp
+    (
+        std::shared_ptr<dolfin::Function> U_
+    )
+    {
+{% if verbose %}
+        std::cout << "init_disp" << std::endl;
+{% endif %}
+
+        U = U_;
+    }
+{% endif %}
+
+{% if u_type == "vtk" %}
+    void init_disp
+    (
+        const char* ugrid_filename
+    )
+    {
+{% if verbose %}
+        std::cout << "init_disp" << std::endl;
+{% endif %}
+
+        ugrid_reader->SetFileName(ugrid_filename);
+        ugrid_reader->Update();
+        ugrid = ugrid_reader->GetOutput();
+
+        probe_points->SetNumberOfPoints(1);
+        probe_polydata->SetPoints(probe_points);
+        probe_filter->SetInputData(probe_polydata);
+        probe_filter->SetSourceData(ugrid);
+    }
+{% endif %}
+{% endif %}
+
+    void eval
+    (
+        Eigen::Ref<      Eigen::VectorXd> expr,
+        Eigen::Ref<const Eigen::VectorXd> X
+    ) const
+    {
+{% if verbose %}
+        // std::cout << "X = " << X << std::endl;
+{% endif %}
+
+{% if not im_is_def %}
+{% if im_dim == 2 %}
+        X_3D.head<n_dim>() = X;
+{% if verbose %}
+        // std::cout << "X_3D = " << X_3D << std::endl;
+{% endif %}
+
+        interpolator->Interpolate(X_3D.data(), expr.data());
+{% if im_type == "im+grad" %}
+        gradient_interpolator->Interpolate(X_3D.data(), expr.data()+1);
+{% endif %}
+{% endif %}
+
+{% if im_dim == 3 %}
+        interpolator->Interpolate(X.data(), expr.data());
+{% if im_type == "im+grad" %}
+        gradient_interpolator->Interpolate(X.data(), expr.data()+1);
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if im_is_def %}
+{% if u_type == "dolfin" %}
+        U->eval(UX, X);
+{% endif %}
+
+{% if u_type == "vtk" %}
+        probe_points->SetPoint(0,X.data());
+        probe_filter->Update();
+        probe_filter->GetOutput()->GetPointData()->GetArray("U")->GetTuple(0, UX.data());
+{% endif %}
+
+{% if verbose %}
+        // std::cout << "UX = " << UX << std::endl;
+{% endif %}
+
+{% if im_dim == 2 %}
+        x_3D.head<n_dim>() = X + UX;
+{% endif %}
+{% if im_dim == 3 %}
+        x_3D               = X + UX;
+{% endif %}
+{% if verbose %}
+        // std::cout << "x_3D = " << x_3D << std::endl;
+{% endif %}
+
+        interpolator->Interpolate(x_3D.data(), expr.data());
+{% if im_type == "im+grad" %}
+        gradient_interpolator->Interpolate(x_3D.data(), expr.data()+1);
+{% endif %}
+{% endif %}
+
+{% if verbose %}
+        // std::cout << "expr = " << expr << std::endl;
+{% endif %}
+
+        expr /= static_scaling;
+
+{% if verbose %}
+        // std::cout << "expr = " << expr << std::endl;
+{% endif %}
+
+{% if dynamic_scaling and im_is_def %}
+{% if im_type == "im" %}
+        expr *= (*dynamic_scaling)[0];
+        expr += (*dynamic_scaling)[1];
+{% endif %}
+
+{% if im_type in ["grad", "grad_direct"] %}
+        expr *= (*dynamic_scaling)[0];
+{% endif %}
+
+{% if im_type == "im+grad" %}
+        expr    *= (*dynamic_scaling)[0];
+        expr[0] += (*dynamic_scaling)[1];
+{% endif %}
+
+{% if verbose %}
+        // std::cout << "expr = " << expr << std::endl;
+{% endif %}
+{% endif %}
+    }
+};
+
+PYBIND11_MODULE(SIGNATURE, m)
+{
+    pybind11::class_<{{ name }}, std::shared_ptr<{{ name }}>, dolfin::Expression>(m, "{{ name }}")
+    .def(pybind11::init<const char*, const double&
+{%- if im_type == "im+grad" -%}
+    , const char*, const double&
+{%- endif -%}
+{%- if im_dim == 2 -%}
+    , const double&
+{%- endif -%}
+    >(), pybind11::arg("image_interpol_mode") = "{{ "linear" if im_type in ["im","im+grad"] else "linear" }}", pybind11::arg("image_interpol_out_value") = 0.
+{%- if im_type == "im+grad" -%}
+    , pybind11::arg("gradient_interpol_mode") = "linear", pybind11::arg("gradient_interpol_out_value") = 0.
+{%- endif -%}
+{%- if im_dim == 2 -%}
+    , pybind11::arg("Z") = 0.
+{%- endif -%}
+    )
+    .def("init_image", &{{ name }}::init_image, pybind11::arg("filename"))
+    .def("update_image", &{{ name }}::update_image, pybind11::arg("filename"))
+{%- if im_is_def and dynamic_scaling -%}
+    .def("init_dynamic_scaling", &{{ name }}::init_dynamic_scaling, pybind11::arg("dynamic_scaling_"))
+{%- endif -%}
+{%- if im_is_def and u_type == "dolfin" -%}
+    .def("init_disp", &{{ name }}::init_disp, pybind11::arg("U_"))
+{%- endif -%}
+{%- if im_is_def and u_type == "vtk" -%}
+    .def("init_disp", &{{ name }}::init_disp, pybind11::arg("ugrid_filename"))
+{%- endif -%}
+    ;
+}

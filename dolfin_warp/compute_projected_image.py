@@ -7,7 +7,7 @@
 ### Swiss Federal Institute of Technology (ETH), Zurich, Switzerland         ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2025                                              ###
+### And Martin Genet, 2016-2026                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -17,69 +17,7 @@ import dolfin
 
 ################################################################################
 
-def get_ExprProbedGrid_swig(
-    image_dim=3,
-    image_field_name="displacement"):
-
-    assert (ProbedGridExpr <= 3)
-
-    cpp = '''
-#include <vtkPolyData.h>
-#include <vtkProbeFilter.h>
-#include <vtkSmartPointer.h>
-#include <vtkStructuredGrid.h>
-#include <vtkStructuredGridReader.h>
-
-namespace dolfin
-{
-
-class MyExpr : public Expression
-{
-    vtkSmartPointer<vtkStructuredGrid> sgrid;
-    vtkSmartPointer<vtkPoints> probe_points;
-    vtkSmartPointer<vtkPolyData> probe_polydata;
-    vtkSmartPointer<vtkProbeFilter> probe_filter;
-
-public:
-
-    MyExpr():
-        Expression('''+str(image_dim)+''')
-    {
-        sgrid = vtkSmartPointer<vtkStructuredGrid>::New();
-        probe_points = vtkSmartPointer<vtkPoints>::New();
-        probe_polydata = vtkSmartPointer<vtkPolyData>::New();
-        probe_filter = vtkSmartPointer<vtkProbeFilter>::New();
-    }
-
-    void init_image(
-        const char* image_filename)
-    {
-        vtkSmartPointer<vtkStructuredGridReader> reader = vtkSmartPointer<vtkStructuredGridReader>::New();
-        reader->SetFileName(image_filename);
-        reader->Update();
-        sgrid = reader->GetOutput();
-        probe_filter->SetSourceData(sgrid);
-    }
-
-    void eval(
-        dolfin::Array<double>& expr,
-        const dolfin::Array<double>& X) const
-    {
-        probe_points->SetNumberOfPoints(1);
-        probe_points->SetPoint(0, X.data());
-        probe_polydata->SetPoints(probe_points);
-        probe_filter->SetInputData(probe_polydata);
-        probe_filter->Update();
-        probe_filter->GetOutput()->GetPointData()->GetArray("'''+image_field_name+'''")->GetTuple(0, expr.data());
-    }
-};
-
-}
-'''
-
-    return cpp
-
-def get_ExprProbedGrid_pybind(
+def get_ExprProbedGrid(
         image_dim=3,
         image_field_name="displacement"):
 
@@ -151,7 +89,7 @@ PYBIND11_MODULE(SIGNATURE, m)
 
     return cpp
 
-def get_ExprImageData_pybind(
+def get_ExprImageData(
         image_field_name="porosity"):
 
     cpp = '''
@@ -240,6 +178,9 @@ def compute_projected_image(
             cell=mesh.ufl_cell(),
             degree=image_quadrature,
             quad_scheme="default")
+        fe._quad_scheme = "default"              # should not be needed
+        for sub_element in fe.sub_elements():    # should not be needed
+            sub_element._quad_scheme = "default" # should not be needed
 
         fs = dolfin.FunctionSpace(
             mesh,
@@ -251,6 +192,9 @@ def compute_projected_image(
             cell=mesh.ufl_cell(),
             degree=image_quadrature,
             quad_scheme="default")
+        fe._quad_scheme = "default"              # should not be needed
+        for sub_element in fe.sub_elements():    # should not be needed
+            sub_element._quad_scheme = "default" # should not be needed
 
         fs = dolfin.VectorFunctionSpace(
             mesh=mesh,
@@ -265,27 +209,20 @@ def compute_projected_image(
     V = dolfin.TestFunction(
         fs)
 
-    if (int(dolfin.__version__.split('.')[0]) >= 2018):
-        if (image_field_dim == 1): # CL 03/2021: not a good conditional statement here
-            cpp = get_ExprImageData_pybind(
-                image_field_name=image_field_name)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, "ImageDataExpr")
-        else:
-            cpp = get_ExprProbedGrid_pybind(
-                image_dim=3,
-                image_field_name=image_field_name)
-            module = dolfin.compile_cpp_code(cpp)
-            expr = getattr(module, "ProbedGridExpr")
-        source_expr = dolfin.CompiledExpression(
-            expr(),
-            element=fe)
+    if (image_field_dim == 1): # CL 03/2021: not a good conditional statement here
+        cpp = get_ExprImageData(
+            image_field_name=image_field_name)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, "ImageDataExpr")
     else:
-        source_expr = dolfin.Expression(
-            cppcode=get_ExprProbedGrid_swig(
-                image_dim=3,
-                image_field_name=image_field_name),
-            element=fe)
+        cpp = get_ExprProbedGrid(
+            image_dim=3,
+            image_field_name=image_field_name)
+        module = dolfin.compile_cpp_code(cpp)
+        expr = getattr(module, "ProbedGridExpr")
+    source_expr = dolfin.CompiledExpression(
+        expr(),
+        element=fe)
     source_expr.init_image(
         image_filename)
 

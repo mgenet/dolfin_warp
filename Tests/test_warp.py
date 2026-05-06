@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -127,12 +127,14 @@ for n_dim in n_dim_lst:
             images_folder=res_folder,
             images_basename=images_basename,
             mesh=mesh,
+            warped_image_energy_is_combined=0,
             regul_type=regul_type,
             regul_model=regul_model,
             regul_level=regul_level,
             normalize_energies=1,
-            relax_type="backtracking",
-            tol_dU=1e-2,
+            nonlinear_solver_options={
+                "relax_type":"backtracking",
+                "tol_dU_rel_U":1e-2},
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(

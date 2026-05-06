@@ -2,11 +2,12 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Felipe Álvarez Barrientos, 2020                               ###
+### Created by Felipe Álvarez Barrientos, 2020-2026                          ###
 ###                                                                          ###
 ### Pontificia Universidad Católica de Chile, Santiago, Chile                ###
+### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
-### And Martin Genet, 2016-2025                                              ###
+### And Martin Genet, 2016-2026                                              ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -121,7 +122,7 @@ class ModalAnalysis():
             #     U_=self.eigen_modes[mode_n].cpp_object())
             #
             # Igen.update_disp()
-            # Igen.generate_image()
+            # Igen.update_generated_image()
             # Igen.write_image(folder_modes+"mode_"+str(mode_n)+".vti")
 
             file_mode << (self.eigen_modes[mode_n], float(mode_n))

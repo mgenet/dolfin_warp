@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -13,11 +13,11 @@ import glob
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
 
-from .FilesSeries import FilesSeries
+from .FileSeries import FileSeries
 
 ################################################################################
 
-class ImagesSeries(FilesSeries):
+class ImageSeries(FileSeries):
 
 
 

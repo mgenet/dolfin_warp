@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -121,8 +121,9 @@ for n_dim in n_dim_lst:
             regul_level=regul_level,
             regul_poisson=regul_poisson,
             normalize_energies=1,
-            relax_type="backtracking",
-            tol_dU=1e-2,
+            nonlinear_solver_options={
+                "relax_type":"backtracking",
+                "tol_dU_rel_U":1e-2},
             continue_after_fail=1,
             write_qois_limited_precision=1)
 
@@ -176,8 +177,9 @@ for n_dim in n_dim_lst:
             regul_level=regul_level,
             regul_poisson=regul_poisson,
             normalize_energies=1,
-            relax_type="backtracking",
-            tol_dU=1e-2,
+            nonlinear_solver_options={
+                "relax_type":"backtracking",
+                "tol_dU_rel_U":1e-2},
             continue_after_fail=1,
             write_qois_limited_precision=1)
                 

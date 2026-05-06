@@ -24,19 +24,21 @@ The library has notably been used in:
 * [[Genet (2023). Finite strain formulation of the discrete equilibrium gap principle: application to mechanically consistent regularization for large motion tracking. Comptes Rendus Mécanique.](https://doi.org/10.5802/crmeca.228)]
 * [[Škardová, Hussain, Genet & Chabiniok (2023). Effect of Spatial and Temporal Resolution on the Accuracy of Motion Tracking Using 2D and 3D Cine Cardiac Magnetic Resonance Imaging Data. Functional Imaging and Modeling of the Heart (FIMH) Cham: Springer Nature Switzerland.](https://doi.org/10.1007/978-3-031-35302-4_24)]
 * [[Peyraut & Genet (2024). Finite strain formulation of the discrete equilibrium gap principle: application to direct parameter estimation from large full-fields measurements. Comptes Rendus Mécanique.](https://doi.org/10.5802/crmeca.279)]
+* [[Peyraut & Genet (2025). Inverse Uncertainty Quantification for Personalized Biomechanical Modeling: Application to Pulmonary Poromechanical Digital Twins. Journal of Biomechanical Engineering.](https://doi.org/10.1115/1.4068578)]
+* [[Álvarez-Barrientos, Škardová & Genet (2025). Motion Tracking with Finite Elements Meshes and Image Models. Functional Imaging and Modeling of the Heart. Springer Nature Switzerland.](https://doi.org/10.1007/978-3-031-94559-5_33)]
 
 (If you use it for your own work please let me know!)
 
 ### Tutorials
 
-Interactive tutorials can be found at [https://mgenet.gitlabpages.inria.fr/dolfin_warp-tutorials](https://mgenet.gitlabpages.inria.fr/dolfin_warp-tutorials).
+Interactive tutorials can be found at [https://mgenet.github.io/dolfin_warp-tutorials](https://mgenet.github.io/dolfin_warp-tutorials).
 
 ### Installation
 
 A working installation of [FEniCS](https://fenicsproject.org) (version 2019.1.0; including the dolfin python interface) & [VTK](https://vtk.org) (also including python interface) is required to run `dolfin_warp`.
-To setup a system, the simplest is to use [conda](https://conda.io): first install [miniconda](https://docs.conda.io/projects/miniconda/en/latest) (note that for Microsoft Windows machines you first need to install WSL, the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install), and then install miniconda for linux inside the WSL; for Apple MacOS machines with Apple Silicon CPUs, you still need to install the MacOS Intel x86_64 version of miniconda), and then install the necessary packages:
+To setup a system, the simplest is to use [conda](https://conda.io): first install [miniconda](https://docs.conda.io/projects/miniconda/en/latest) (note that for Microsoft Windows machines you first need to install WSL, the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install), and then install miniconda for linux inside the WSL), and then install the necessary packages:
 ```
-conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23.5 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2
+conda create -y -c conda-forge -n dolfin_warp expat=2.5 fenics=2019.1.0 gnuplot=5.4 jinja2=3.1 matplotlib=3.5 meshio=5.3 mpi4py=3.1.3 numpy=1.23 pandas=1.3 pip python=3.10 scipy=1.9 vtk=9.2
 conda activate dolfin_warp
 conda env config vars set CPATH=$CONDA_PREFIX/include/vtk-9.2
 conda activate dolfin_warp

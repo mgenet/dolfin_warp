@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -74,6 +74,9 @@ def compute_quadrature_degree_from_points_count(
                 cell=mesh.ufl_cell(),
                 degree=degree,
                 quad_scheme="default")
+            finite_element._quad_scheme = "default"           # should not be needed
+            for sub_element in finite_element.sub_elements(): # should not be needed
+                sub_element._quad_scheme = "default"          # should not be needed
             function_space = dolfin.FunctionSpace(
                 mesh,
                 finite_element)
@@ -126,6 +129,9 @@ def compute_quadrature_degree_from_integral(
             cell=mesh.ufl_cell(),
             degree=degree,
             quad_scheme="default")
+        fe._quad_scheme = "default"              # should not be needed
+        for sub_element in fe.sub_elements():    # should not be needed
+            sub_element._quad_scheme = "default" # should not be needed
         if   (image_dimension == 2):
             I0 = dwarp.ExprIm2(
                 filename=image_filename,

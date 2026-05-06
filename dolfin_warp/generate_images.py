@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -140,7 +140,7 @@ def generate_images(
         mapping.init_t(t)
         for k_point in range(n_points_upsampled):
             vtk_image.GetPoint(k_point, x)
-            #print("x0 = "+str(x))
+            #print("x = "+str(x))
             mapping.X(x, X, Finv)
             #print("X = "+str(X))
             set_I(image, X, I, vtk_scalars, k_point, G, Finv, vtk_vectors)
@@ -160,10 +160,7 @@ def generate_images(
     # mypy.my_print(verbose, "global_min = "+str(global_min))
     # mypy.my_print(verbose, "global_max = "+str(global_max))
 
-    if (images["upsampling_factors"] == [1]*images["n_dim"]):
-        downsampling = False
-    else:
-        downsampling = True
+    if (images["upsampling_factors"] != [1]*images["n_dim"]):
 
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):
@@ -178,10 +175,7 @@ def generate_images(
             keep_resolution=0,
             verbose=verbose)
 
-    if (images["downsampling_factors"] == [1]*images["n_dim"]):
-        downsampling = False
-    else:
-        downsampling = True
+    if (images["downsampling_factors"] != [1]*images["n_dim"]):
 
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):
@@ -197,9 +191,8 @@ def generate_images(
             verbose=verbose)
 
     if (images["data_type"] in ("float")):
-        normalizing = False
+        pass
     elif (images["data_type"] in ("unsigned char", "unsigned short", "unsigned int", "unsigned long", "unsigned float", "uint8", "uint16", "uint32", "uint64", "ufloat")):
-        normalizing = True
 
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):

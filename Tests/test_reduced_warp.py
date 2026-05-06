@@ -2,7 +2,7 @@
 
 ################################################################################
 ###                                                                          ###
-### Created by Martin Genet, 2016-2025                                       ###
+### Created by Martin Genet, 2016-2026                                       ###
 ###                                                                          ###
 ### École Polytechnique, Palaiseau, France                                   ###
 ###                                                                          ###
@@ -112,7 +112,6 @@ for n_dim in n_dim_lst:
 
         print (n_dim)
         print (deformation_type)
-        print (deformation_type)
 
         if (1): dwarp.warp(
             working_folder=res_folder,
@@ -123,8 +122,9 @@ for n_dim in n_dim_lst:
             kinematics_type="reduced",
             reduced_kinematics_model=deformation_type,
             normalize_energies=1,
-            relax_type="backtracking",
-            tol_dU=1e-2,
+            nonlinear_solver_options={
+                "relax_type":"backtracking",
+                "tol_dU_rel_U":1e-2},
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(
@@ -150,8 +150,9 @@ for n_dim in n_dim_lst:
             kinematics_type="reduced",
             reduced_kinematics_model="translation+rotation+scaling+shear",
             normalize_energies=1,
-            relax_type="backtracking",
-            tol_dU=1e-2,
+            nonlinear_solver_options={
+                "relax_type":"backtracking",
+                "tol_dU_rel_U":1e-2},
             write_qois_limited_precision=1)
 
         if (1): dwarp.compute_strains(

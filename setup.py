@@ -15,11 +15,13 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/mgenet/dolfin_warp",
     packages=["dolfin_warp"],
+    package_data={"dolfin_warp": ["*.j2"]},
     license="GPLv3",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=["gnuplot==5.4", "matplotlib==3.5", "meshio==5.3", "numpy==1.23.5", "pandas==1.3", "scipy==1.9", "vtk==9.2", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
+    # install_requires=["jinja2", "matplotlib", "meshio", "numpy", "pandas", "scipy", "vtk", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
+    install_requires=["jinja2~=3.1", "matplotlib~=3.5", "meshio~=5.3", "numpy~=1.23", "pandas~=1.3", "scipy~=1.9", "vtk~=9.2", "myPythonLibrary", "myVTKPythonLibrary", "dolfin_mech"],
 )
