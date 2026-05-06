@@ -21,24 +21,25 @@ class RelaxationNonlinearSolverMixin():
     def init_relax(self,
             parameters={}):
 
-        self.relax_type = parameters["relax_type"] if ("relax_type" in parameters) and (parameters["relax_type"] is not None) else "backtracking"
+        self.relax_type = parameters.get("relax_type", "backtracking")
 
         if (self.relax_type == "constant"):
             self.compute_relax = self.compute_relax_constant
-            self.relax_val = parameters["relax"] if ("relax" in parameters) and (parameters["relax"] is not None) else 1.
+            self.relax_val = parameters.get("relax", 1.)
         elif (self.relax_type == "aitken"):
             self.compute_relax = self.compute_relax_aitken
         elif (self.relax_type == "backtracking"):
             self.compute_relax = self.compute_relax_backtracking
-            self.relax_init                = parameters["relax_init"]                if ("relax_init"                in parameters) and (parameters["relax_init"]                is not None) else 1.
-            self.relax_backtracking_factor = parameters["relax_backtracking_factor"] if ("relax_backtracking_factor" in parameters) and (parameters["relax_backtracking_factor"] is not None) else 2.
-            self.relax_n_iter_max          = parameters["relax_n_iter_max"]          if ("relax_n_iter_max"          in parameters) and (parameters["relax_n_iter_max"]          is not None) else 8
+            self.relax_init                = parameters.get("relax_init"               , 1.  )
+            self.relax_backtracking_factor = parameters.get("relax_backtracking_factor", 2.  )
+            self.relax_n_iter_max          = parameters.get("relax_n_iter_max"         , 8.  )
+            self.relax_max_dU_inf          = parameters.get("relax_max_dU_inf"         , None)
         elif (self.relax_type == "gss"):
             self.compute_relax = self.compute_relax_gss
-            self.relax_init               = parameters["relax_init"]               if ("relax_init"               in parameters) and (parameters["relax_init"]               is not None) else 1.
-            self.relax_init_with_previous = parameters["relax_init_with_previous"] if ("relax_init_with_previous" in parameters) and (parameters["relax_init_with_previous"] is not None) else False
-            self.relax_n_iter_max         = parameters["relax_n_iter_max"]         if ("relax_n_iter_max"         in parameters) and (parameters["relax_n_iter_max"]         is not None) else 16
-            self.relax_tol                = parameters["relax_tol"]                if ("relax_tol"                in parameters) and (parameters["relax_tol"]                is not None) else 1e-2
+            self.relax_init               = parameters.get("relax_init"              , 1.   )
+            self.relax_init_with_previous = parameters.get("relax_init_with_previous", False)
+            self.relax_n_iter_max         = parameters.get("relax_n_iter_max"        , 16   )
+            self.relax_tol                = parameters.get("relax_tol"               , 1e-2 )
 
 
 
@@ -64,11 +65,21 @@ class RelaxationNonlinearSolverMixin():
         relax = 0.; relax_cur = relax
         ener0 = self.problem.assemble_ener()
         self.printer.print_sci("ener0",ener0)
+        
+        relax_init_effective = self.relax_init
+        if (self.relax_max_dU_inf is not None):
+            dU_inf = self.problem.dU.vector().norm("linf")
+            if (dU_inf > 0.):
+                max_relax = self.relax_max_dU_inf / dU_inf
+                if (max_relax < relax_init_effective):
+                    relax_init_effective = max_relax
+                    self.printer.print_sci("relax_init_effective (capped by max_dU_inf)", relax_init_effective)
+
         self.printer.inc()
         k_relax = 1
         while (True):
             self.printer.print_var("k_relax",k_relax,-1)
-            relax = self.relax_init/self.relax_backtracking_factor**(k_relax-1)
+            relax = relax_init_effective/self.relax_backtracking_factor**(k_relax-1)
             self.printer.print_sci("relax",relax)
             self.problem.update_displacement(relax=relax-relax_cur); relax_cur = relax
             ener = self.problem.assemble_ener()
