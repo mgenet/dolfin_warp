@@ -43,6 +43,7 @@ from .compute_selective_image_gradient import *
 from .compute_strain_error import *
 from .compute_strains import *
 from .compute_unwarped_images import *
+from .compute_upsampled_images import *
 from .compute_warped_images import *
 from .compute_warped_mesh import *
 from .expressions_char_func_cpp import *

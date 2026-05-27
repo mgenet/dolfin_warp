@@ -20,14 +20,14 @@ import dolfin_warp as dwarp
 ################################################################################
 
 def compute_downsampled_images(
-        images_folder,
-        images_basename,
-        downsampling_factors,
-        images_ext="vti",
-        keep_resolution=0,
-        write_temp_images=0,
-        suffix=None,
-        verbose=0):
+        images_folder                ,
+        images_basename              ,
+        downsampling_factors         ,
+        images_ext           = "vti" ,
+        keep_resolution      = 0     ,
+        write_temp_images    = 0     ,
+        suffix               = None  ,
+        verbose              = 0     ):
 
     mypy.my_print(verbose, "*** compute_downsampled_images ***")
 
@@ -81,6 +81,7 @@ def compute_downsampled_images(
     fft_filter.SetInputData(image)
     fft_filter.UpdateDataObject()
     image_fft = fft_filter.GetOutput()
+
     if (write_temp_images):
         writer_fft = writer_type()
         writer_fft.SetInputData(image_fft)
@@ -187,12 +188,12 @@ def compute_downsampled_images(
                         # Iterate directly over the explicit source indices
                         
                         for source_k_z in source_indices_z:
-                            for source_k_y in source_indices_y:
-                                for source_k_x in source_indices_x:
+                         for source_k_y in source_indices_y:
+                          for source_k_x in source_indices_x:
 
-                                    # Accumulate Energy
-                                    sum_r += image_fft.GetScalarComponentAsDouble(source_k_x, source_k_y, source_k_z, 0)
-                                    sum_i += image_fft.GetScalarComponentAsDouble(source_k_x, source_k_y, source_k_z, 1)
+                            # Accumulate Energy
+                            sum_r += image_fft.GetScalarComponentAsDouble(source_k_x, source_k_y, source_k_z, 0)
+                            sum_i += image_fft.GetScalarComponentAsDouble(source_k_x, source_k_y, source_k_z, 1)
 
                         # Scale
                         sum_r /= effective_downsampling_factor
@@ -226,3 +227,8 @@ def compute_downsampled_images(
 
         # image_downsampled_scalars_np = vtk.util.numpy_support.vtk_to_numpy(image_downsampled.GetPointData().GetScalars())
         # print("image_downsampled_norm", numpy.linalg.norm(image_downsampled_scalars_np))
+
+if (__name__ == "__main__"):
+    import fire
+    fire.Fire(compute_downsampled_images)
+    
