@@ -25,45 +25,61 @@ def compute_warped_images(
         working_basename,
         working_ext="vtu",
         working_displacement_field_name="displacement",
+        images_origin=None,
+        images_spacing=None,
+        images_extent=None,
         ref_image=None,
         ref_image_folder=None,
         ref_image_basename=None,
         ref_image_ext="vti",
         ref_frame=0,
         ref_image_model=None,
-        noise_params={},
+        noise_params={"type":"no"},
         suffix="warped",
         print_warped_mesh=0,
         verbose=0):
 
-    assert ((ref_image is not None)
+    assert (((images_origin      is not None)
+         and (images_spacing     is not None)
+         and (images_extent      is not None))
+         or ( ref_image          is not None )
          or ((ref_image_folder   is not None)
-         and (ref_image_basename is not None))), "Must provide a ref_image or a ref_image_folder and a ref_image_basename. Aborting."
+         and (ref_image_basename is not None))), "Must provide images_origin and images_spacing and images_extent or ref_image or ref_image_folder and ref_image_basename. Aborting."
 
-    if (ref_image is None):
+    if ((ref_image_folder   is not None)
+    and (ref_image_basename is not None)):
         ref_image_series = dwarp.ImageSeries(
             folder=ref_image_folder,
             basename=ref_image_basename,
             ext=ref_image_ext)
         ref_image = ref_image_series.get_image(k_frame=ref_frame)
 
-    if (ref_image_model is None):
+    if (ref_image is not None):
+        images_origin  = ref_image.GetOrigin()
+        images_spacing = ref_image.GetSpacing()
+        images_extent  = ref_image.GetExtent()
+
+    if (ref_image_model is not None):
+        def update_I(X,I): I[0] = ref_image_model(X)
+    else:
+        assert (ref_image is not None), "If no ref_image_model is provided, must provide a ref_image. Aborting."
         ref_image_interpolator = myvtk.getImageInterpolator(
             image=ref_image)
+        def update_I(X,I): ref_image_interpolator.Interpolate(X,I)
 
     noise = dwarp.Noise(
-        params=noise_params)
+        params = noise_params)
 
     image = myvtk.createImage(
-        origin=ref_image.GetOrigin(),
-        spacing=ref_image.GetSpacing(),
-        extent=ref_image.GetExtent())
+        origin  = images_origin  ,
+        spacing = images_spacing ,
+        extent  = images_extent  )
     scalars = image.GetPointData().GetScalars()
 
     working_series = dwarp.MeshSeries(
-        folder=working_folder,
-        basename=working_basename,
-        ext=working_ext)
+        folder   = working_folder   ,
+        basename = working_basename ,
+        ext      = working_ext      )
 
     if   (working_ext == "vtk"):
         reader = vtk.vtkUnstructuredGridReader()
@@ -125,13 +141,17 @@ def compute_warped_images(
                 image.GetPoint(k_point, x)
                 scalars_U.GetTuple(k_point, U)
                 X = x - U
-                if (ref_image_model is None):
-                    ref_image_interpolator.Interpolate(X, I)
-                else:
-                    I[0] = ref_image_model(X)
+                update_I(X,I)
+                    
             noise.add_noise(I)
             scalars.SetTuple(k_point, I)
 
         myvtk.writeImage(
             image=image,
             filename=working_series.get_mesh_filename(k_frame=k_frame, suffix=suffix, ext="vti"))
+
+################################################################################
+
+if __name__ == "__main__":
+    import fire
+    fire.Fire(compute_warped_images)

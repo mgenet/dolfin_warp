@@ -25,34 +25,31 @@ from .generate_images import *
 ################################################################################
 
 def compute_warped_mesh(
-        working_folder,
-        working_basename,
-        images,
-        structure,
-        deformation,
-        evolution,
-        mesh=None,
-        mesh_folder=None,
-        mesh_basename=None,
-        mesh_ext=None,
-        verbose=0):
+        working_folder       ,
+        working_basename     ,
+        images               ,
+        structure            ,
+        deformation          ,
+        evolution            ,
+        mesh          = None ,
+        mesh_folder   = None ,
+        mesh_basename = None ,
+        mesh_ext      = None ,
+        verbose       = 0    ):
 
     mypy.my_print(verbose, "*** compute_warped_mesh ***")
 
     if not os.path.exists(working_folder):
             os.mkdir(working_folder)
 
-    assert ((mesh is not None) or ((mesh_folder is not None) and (mesh_basename is not None) and (mesh_ext is not None))),\
+    assert ((mesh is not None)
+         or ((mesh_folder is not None) and (mesh_basename is not None) and (mesh_ext is not None))),\
         "Must provide a mesh (mesh = "+str(mesh)+") or a mesh file (mesh_folder = "+str(mesh_folder)+", mesh_basename = "+str(mesh_basename)+", mesh_ext = "+str(mesh_ext)+"). Aborting."
 
     if (mesh is None):
-        mesh_folder       = mesh_folder
-        mesh_basename     = mesh_basename
-        mesh_filebasename = mesh_folder+"/"+mesh_basename
-        mesh_ext          = mesh_ext
-        mesh_filename     = mesh_filebasename+"."+mesh_ext
+        mesh_filename = mesh_folder+"/"+mesh_basename+"."+mesh_ext
         assert (os.path.exists(mesh_filename)),\
-        "No mesh in "+mesh_filename+". Aborting."
+            "No mesh in "+mesh_filename+". Aborting."
         if (mesh_ext == "xml"):
             mesh = dmech.mesh2ugrid(
                 dolfin.Mesh(
@@ -66,7 +63,7 @@ def compute_warped_mesh(
     n_points = mesh.GetNumberOfPoints()
     n_cells = mesh.GetNumberOfCells()
 
-    if (mesh_folder is not None) and (mesh_basename is not None) and  os.path.exists(mesh_folder+"/"+mesh_basename+"-WithLocalBasis.vtk"):
+    if (mesh_folder is not None) and (mesh_basename is not None) and (os.path.exists(mesh_folder+"/"+mesh_basename+"-WithLocalBasis.vtk")):
         ref_mesh = myvtk.readUGrid(
             filename=mesh_folder+"/"+mesh_basename+"-WithLocalBasis.vtk",
             verbose=verbose-1)
@@ -94,16 +91,16 @@ def compute_warped_mesh(
         for k_point in range(n_points):
             mesh.GetPoint(k_point, X)
             mapping.x(X, x)
-            U = x - X
+            U[:] = x - X
             farray_disp.SetTuple(k_point, U)
 
         myvtk.addStrainsFromDisplacements(
-            mesh=mesh,
-            disp_array_name="displacement",
-            mesh_w_local_basis=ref_mesh,
-            verbose=verbose-1)
+            mesh               = mesh           ,
+            disp_array_name    = "displacement" ,
+            mesh_w_local_basis = ref_mesh       ,
+            verbose            = verbose-1      )
 
         myvtk.writeDataSet(
-            dataset=mesh,
-            filename=working_folder+"/"+working_basename+"_"+str(k_frame).zfill(images["zfill"])+".vtu",
-            verbose=verbose-1)
+            dataset  = mesh                                                                               ,
+            filename = working_folder+"/"+working_basename+"_"+str(k_frame).zfill(images["zfill"])+".vtu" ,
+            verbose  = verbose-1                                                                          )
