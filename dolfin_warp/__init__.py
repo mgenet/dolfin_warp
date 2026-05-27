@@ -34,6 +34,7 @@ from .compute_displacements_from_ref import *
 from .compute_downsampled_images import *
 from .compute_energies_normalization import *
 from .compute_equalized_images import *
+from .compute_generated_images import *
 from .compute_normalized_images import *
 from .compute_projected_image import *
 from .compute_quadrature_degree import *
