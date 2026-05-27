@@ -30,9 +30,10 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
         mass           = 0.5  ,
         learning_rate  = 1e-3 ,
         lr_contraction = 2.0  ,
-        lr_expansion   = 1.1  ,
         lr_min         = 1e-9 ,
-        max_disp_inc   = 1e-2 ,
+        lr_expansion   = 1.1  ,
+        lr_max         = None ,
+        max_disp_inc   = None ,
         maxiter        = 1000 ,
         callback       = None ,
         xtol           = None ,
@@ -101,14 +102,16 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
 
         if (learning_rate == learning_rate_old):
             learning_rate *= lr_expansion
+            if (lr_max is not None) and (learning_rate > lr_max):
+                printer.print_str("maximum learning rate reached")
+                learning_rate = lr_max
 
         x_old[:] = x; x = x_new
         f_old = f; f = f_new
         g[:] = jac(x); njev += 1
 
-        # printer.print_sci("numpy.linalg.norm(x - x_old, numpy.inf) = ", numpy.linalg.norm(x - x_old, numpy.inf))
-        # printer.print_sci("xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)) = ", xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)))
-        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+        # printer.print_sci("numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)) = ", numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)))
+        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)) <= xtol):
             printer.print_str("xtol reached")
             success = True; break
             
@@ -117,9 +120,8 @@ def sgd( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19ab
             printer.print_str("xatol reached")
             success = True; break
 
-        # printer.print_sci("abs(f - f_old) = ", abs(f - f_old))
-        # printer.print_sci("ftol * max(1.0, abs(f)) = ", ftol * max(1.0, abs(f)))
-        if (ftol is not None) and (f_old is not None) and (abs(f - f_old) <= ftol * max(1.0, abs(f))):
+        # printer.print_sci("abs(f - f_old)/max(1.0, abs(f_old)) = ", abs(f - f_old)/max(1.0, abs(f_old)))
+        if (ftol is not None) and (f_old is not None) and (abs(f - f_old)/max(1.0, abs(f_old)) <= ftol):
             printer.print_str("ftol reached")
             success = True; break
             
@@ -147,9 +149,10 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
         eps            = 1e-8  ,
         learning_rate  = 1e-3  ,
         lr_contraction = 2.0   ,
-        lr_expansion   = 1.1   ,
         lr_min         = 1e-9  ,
-        max_disp_inc   = 1e-2  ,
+        lr_expansion   = 1.1   ,
+        lr_max         = None  ,
+        max_disp_inc   = None  ,
         maxiter        = 1000  ,
         callback       = None  ,
         xtol           = None  ,
@@ -169,7 +172,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
     x     = x0
     x_old = numpy.zeros_like(x)
     m     = numpy.zeros_like(x)
-    v_adam = numpy.zeros_like(x)
+    v     = numpy.zeros_like(x)
     f     = fun(x); nfev += 1
     f_old = None
     g     = jac(x); njev += 1
@@ -191,10 +194,10 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
             printer.print_str("gtol reached")
             success = True; break
 
-        m[:] = (1 - beta1) * g + beta1 * m  # first moment estimate.
-        v_adam[:] = (1 - beta2) * (g**2) + beta2 * v_adam  # second moment estimate.
+        m[:] = (1 - beta1) *  g     + beta1 * m  # first moment estimate.
+        v[:] = (1 - beta2) * (g**2) + beta2 * v  # second moment estimate.
         mhat = m / (1 - beta1**(nit))  # bias correction.
-        vhat = v_adam / (1 - beta2**(nit))
+        vhat = v / (1 - beta2**(nit))  # bias correction.
         step_dir = - mhat / (numpy.sqrt(vhat) + eps)
         
         learning_rate_old = learning_rate
@@ -211,7 +214,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
                     printer.print_str("Energy did not decrease. Halving learning rate.")
                 if ((max_disp_inc is not None) and (numpy.linalg.norm(x_new - x, numpy.inf) > max_disp_inc)):
                     printer.print_str("Displacement too large. Halving learning rate.")
-                learning_rate /= 2.0
+                learning_rate /= lr_contraction
                 if (learning_rate < lr_min):
                     learning_rate = 0.0
                     break
@@ -223,7 +226,10 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
             success = False; break
                 
         if (learning_rate == learning_rate_old):
-            learning_rate *= 1.1
+            learning_rate *= lr_expansion
+            if (lr_max is not None) and (learning_rate > lr_max):
+                printer.print_str("maximum learning rate reached")
+                learning_rate = lr_max
             
         x_old[:] = x; x = x_new
         f_old = f; f = f_new
@@ -231,7 +237,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
         
         # printer.print_sci("numpy.linalg.norm(x - x_old, numpy.inf) = ", numpy.linalg.norm(x - x_old, numpy.inf))
         # printer.print_sci("xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)) = ", xtol * max(1.0, numpy.linalg.norm(x, numpy.inf)))
-        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)) <= xtol):
             printer.print_str("xtol reached")
             success = True; break
             
@@ -242,7 +248,7 @@ def adam( # from https://gist.github.com/jcmgray/e0ab3458a252114beecb1f4b631e19a
 
         # printer.print_sci("abs(f - f_old) = ", abs(f - f_old))
         # printer.print_sci("ftol * max(1.0, abs(f)) = ", ftol * max(1.0, abs(f)))
-        if (ftol is not None) and (f_old is not None) and (abs(f - f_old) <= ftol * max(1.0, abs(f))):
+        if (ftol is not None) and (f_old is not None) and (abs(f - f_old)/max(1.0, abs(f_old)) <= ftol):
             printer.print_str("ftol reached")
             success = True; break
             
@@ -268,12 +274,13 @@ def ncg(
         args           = ()   ,
         cg_tol         = 1e-3 ,
         cg_maxiter     = 20   ,
-        learning_rate  = 1.0  ,
+        learning_rate  = 1e-3 ,
         lr_contraction = 2.0  ,
-        lr_expansion   = 1.1  ,
         lr_min         = 1e-9 ,
-        max_disp_inc   = 1e-2 ,
-        maxiter        = 100  ,
+        lr_expansion   = 1.1  ,
+        lr_max         = None ,
+        max_disp_inc   = None ,
+        maxiter        = 1000 ,
         callback       = None ,
         gtol           = None ,
         ftol           = None ,
@@ -363,12 +370,15 @@ def ncg(
                 
         if (learning_rate == learning_rate_old):
             learning_rate *= lr_expansion
+            if (lr_max is not None) and (learning_rate > lr_max):
+                printer.print_str("maximum learning rate reached")
+                learning_rate = lr_max
             
         x_old[:] = x; x = x_new
         f_old = f; f = f_new
         g[:] = jac(x); njev += 1
         
-        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+        if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)) <= xtol):
             printer.print_str("xtol reached")
             success = True; break
             
@@ -376,7 +386,7 @@ def ncg(
             printer.print_str("xatol reached")
             success = True; break
 
-        if (ftol is not None) and (f_old is not None) and (abs(f - f_old) <= ftol * max(1.0, abs(f))):
+        if (ftol is not None) and (f_old is not None) and (abs(f - f_old)/max(1.0, abs(f_old)) <= ftol):
             printer.print_str("ftol reached")
             success = True; break
             
@@ -399,8 +409,11 @@ def trust_ncg(
         jac                          ,
         hessp                        ,
         args                 = ()    ,
-        initial_trust_radius = 1e-2  ,
-        max_trust_radius     = 1e-1  ,
+        trust_radius         = 1e-2  ,
+        tr_contraction       = 2.0   ,
+        tr_min               = 1e-4  ,
+        tr_expansion         = 1.1   ,
+        tr_max               = 1e-1  ,
         eta                  = 0.15  ,
         cg_tol               = 1e-3  ,
         cg_maxiter           = 20    ,
@@ -428,7 +441,7 @@ def trust_ncg(
     f_old = None
     g     = jac(x); njev += 1
 
-    trust_radius = initial_trust_radius
+    trust_radius_old = trust_radius
 
     printer.print_sci("f", f)
     
@@ -496,8 +509,8 @@ def trust_ncg(
                 printer.print_str("NaNs detected in energy. Shrinking trust region.")
             if ((max_disp_inc is not None) and (numpy.linalg.norm(step_dir, numpy.inf) > max_disp_inc)):
                 printer.print_str("Displacement too large. Shrinking trust region.")
-            trust_radius *= 0.25
-            if trust_radius < 1e-9:
+            trust_radius /= tr_contraction
+            if (trust_radius < tr_min):
                 printer.print_str("Trust radius reached minimum limit.")
                 success = False; break
             continue
@@ -508,28 +521,32 @@ def trust_ncg(
         actual_reduction = f - f_new
 
         # 5. Bad quadratic model safeguard
-        if pred_reduction <= 0:
+        if (pred_reduction <= 0):
             printer.print_str("Negative predicted reduction. Shrinking trust region.")
-            trust_radius *= 0.25
-            if trust_radius < 1e-9:
+            trust_radius /= tr_contraction
+            if (trust_radius < tr_min):
+                printer.print_str("Trust radius reached minimum limit.")
                 success = False; break
             continue
 
         ratio = actual_reduction / pred_reduction
 
         # 6. Trust-region updates
-        if ratio < 0.25:
-            trust_radius *= 0.25
-        elif ratio > 0.75 and numpy.linalg.norm(step_dir) >= 0.99 * trust_radius:
-            trust_radius = min(2.0 * trust_radius, max_trust_radius)
+        if   (ratio < 0.25):
+            trust_radius /= tr_contraction
+        elif (ratio > 0.75) and (numpy.linalg.norm(step_dir) >= 0.99 * trust_radius):
+            trust_radius *= tr_expansion
+            if (tr_max is not None) and (trust_radius > tr_max):
+                printer.print_str("maximum trust radius reached")
+                trust_radius = tr_max
 
         # 7. Step acceptance
-        if ratio > eta:
+        if (ratio > eta):
             x_old[:] = x; x = x_new
             f_old = f; f = f_new
             g[:] = jac(x); njev += 1
 
-            if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf) <= xtol * max(1.0, numpy.linalg.norm(x, numpy.inf))):
+            if (xtol is not None) and (numpy.linalg.norm(x - x_old, numpy.inf)/max(1.0, numpy.linalg.norm(x_old, numpy.inf)) <= xtol):
                 printer.print_str("xtol reached")
                 success = True; break
                 
@@ -537,7 +554,7 @@ def trust_ncg(
                 printer.print_str("xatol reached")
                 success = True; break
 
-            if (ftol is not None) and (f_old is not None) and (abs(f - f_old) <= ftol * max(1.0, abs(f))):
+            if (ftol is not None) and (f_old is not None) and (abs(f - f_old)/max(1.0, abs(f_old)) <= ftol):
                 printer.print_str("ftol reached")
                 success = True; break
                 
@@ -548,8 +565,8 @@ def trust_ncg(
             if (callback is not None):
                 callback(x)
         else:
-            printer.print_str("Step rejected. Shrinking trust region.")
-            if trust_radius < 1e-9:
+            printer.print_str("Step rejected. Trust region was shrunk.")
+            if (trust_radius < tr_min):
                 success = False; break
 
         if (nit >= maxiter):
@@ -574,36 +591,10 @@ class ScipyNonlinearSolver(NonlinearSolver):
         self.working_folder   = parameters["working_folder"]
         self.working_basename = parameters["working_basename"]
 
-        user_options = parameters.get("options", {})
-        method = user_options.pop("method", "Nelder-Mead")
+        options = parameters.get("options", {}).copy()
+        method = options.pop("method", "Nelder-Mead")
 
-        if   (method == "Nelder-Mead"):
-            default_options = {"xatol":1e-6, "fatol":1e-6, "maxiter":100}
-        elif (method == "CG"):
-            default_options = {"gtol":1e-6, "maxiter":100, "eps":1e-6}
-        elif (method == "BFGS"):
-            default_options = {"gtol":1e-6, "maxiter":100, "eps":1e-6}
-        elif (method == "L-BFGS-B"):
-            default_options = {"ftol":1e-6, "gtol":1e-6, "maxiter":100, "eps":1e-6}
-        elif (method == "Newton-CG"):
-            default_options = {"xtol":1e-6, "maxiter":100, "eps":1e-6}
-        elif (method == "trust-NCG"):
-            default_options = {"initial_trust_radius":1e-2, "max_trust_radius":1e-1, "gtol":1e-6}
-        elif (method == "custom-SGD"):
-            default_options = {"learning_rate":1e-3, "mass":0.0, "gtol":1e-6, "xatol":1e-6, "maxiter":100, "finite_difference_step":1e-6, "finite_difference_dynamic_step":False}
-        elif (method == "custom-ADAM"):
-            default_options = {"learning_rate":1e-3, "beta1":0.9, "beta2":0.999, "eps":1e-6, "gtol":1e-6, "xatol":1e-6, "maxiter":100, "finite_difference_step":1e-6, "finite_difference_dynamic_step":False}
-        elif (method == "custom-NCG"):
-            default_options = {"learning_rate":1.0, "cg_maxiter":20, "cg_tol":1e-3, "gtol":1e-6, "xatol":1e-6, "maxiter":100, "finite_difference_step":1e-6, "finite_difference_dynamic_step":False}
-        elif (method == "custom-trust-NCG"):
-            default_options = {"initial_trust_radius":1e-2, "max_trust_radius":1e-1, "eta":0.15, "cg_maxiter":20, "cg_tol":1e-3, "gtol":1e-6, "xatol":1e-6, "maxiter":100, "finite_difference_step":1e-6, "finite_difference_dynamic_step":False}
-        else:
-            assert (0), "method ("+str(method)+ ") should be Nelder-Mead, CG, BFGS, L-BFGS-B, Newton-CG, trust-NCG, custom-SGD, custom-ADAM, custom-NCG, or custom-trust-NCG. Aborting."
-
-        options = default_options.copy()
-        options.update(user_options)
-
-        if (method in ["custom-SGD", "custom-ADAM", "custom-NCG", "custom-trust-NCG"]):
+        if (method.startswith("custom-")):
             options["printer"] = self.printer
 
         if   (method == "custom-SGD"):
@@ -660,8 +651,7 @@ class ScipyNonlinearSolver(NonlinearSolver):
 
         if (method in first_order_methods + second_order_methods):
             if (use_finite_difference):
-                if (method in ["custom-SGD", "custom-ADAM", "custom-NCG", "custom-trust-NCG"]):
-                    finite_difference_step = options.get("finite_difference_step", None)
+                finite_difference_step = options.get("finite_difference_step", None)
                 self.finite_difference_dynamic_step = options.get("finite_difference_dynamic_step", False)
                 self.scipy_kwargs["jac"] = lambda x: self._jac_numdiff(x, abs_step=finite_difference_step)
                 self.finite_difference_scheme = finite_difference_scheme
@@ -943,7 +933,7 @@ class ScipyNonlinearSolver(NonlinearSolver):
         if hasattr(res, "nfev"   ): self.printer.print_var("nfev"   , res.nfev   )
         if hasattr(res, "njev"   ): self.printer.print_var("njev"   , res.njev   )
         if hasattr(res, "nhev"   ): self.printer.print_var("nhev"   , res.nhev   )
-        if hasattr(res, "x"      ): self.printer.print_var("x"      , res.x      )
+        # if hasattr(res, "x"      ): self.printer.print_var("x"      , res.x      )
         if hasattr(res, "fun"    ): self.printer.print_var("fun"    , res.fun    )
 
         if (res.success):
