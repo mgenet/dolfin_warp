@@ -8,13 +8,12 @@
 ###                                                                          ###
 ################################################################################
 
-from __future__ import annotations # MG20220819: Necessary list[float] type hints in python < 3.10
-
 import random
 
 ################################################################################
 
 class Noise():
+
     def __init__(self,
             params: dict = {}) -> None:
 
@@ -30,8 +29,10 @@ class Noise():
 
     def add_noise_no(self,
             I: list[float]) -> None:
+
         pass
 
     def add_noise_normal(self,
             I: list[float]) -> None:
+
         I[0] += random.normalvariate(self.avg, self.std)
