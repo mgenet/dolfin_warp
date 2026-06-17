@@ -217,7 +217,8 @@ class ImageIterator():
                     print(f"init reduced {init_reduced_displacement[:].shape}") 
                     print(f"k frame is {k_frame}") 
                     self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[:, k_frame]
-                    # self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[k_frame-1, :]
+                    #self.problem.reduced_displacement.vector()[:] = init_reduced_displacement[k_frame, :]
+                    self.problem.update_disp()
 
                 self.problem.call_before_solve(
                     k_frame=k_frame,
