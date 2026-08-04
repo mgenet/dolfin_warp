@@ -208,6 +208,16 @@ class ImageIterator():
                             v=init_U,
                             V=self.problem.U_fs,
                             function=self.problem.U)
+                    elif (self.initialize_U_method == "proj_H1"):
+                        u = dolfin.TrialFunction(self.problem.U_fs)
+                        v = dolfin.TestFunction(self.problem.U_fs)
+                        alpha = dolfin.Constant(1e-2)
+                        a  = dolfin.inner(u, v) * self.problem.dV
+                        a += alpha * dolfin.inner(dolfin.grad(u), dolfin.grad(v)) * self.problem.dV
+                        L  = dolfin.inner(init_U, v) * self.problem.dV
+                        L += alpha * dolfin.inner(dolfin.grad(init_U), dolfin.grad(v)) * self.problem.dV
+                        init_U.set_allow_extrapolation(True)
+                        dolfin.solve(a == L, self.problem.U)
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_reduced_U_from_file):
