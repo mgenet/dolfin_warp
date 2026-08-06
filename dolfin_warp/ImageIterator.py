@@ -224,6 +224,10 @@ class ImageIterator():
                     k_frame=k_frame,
                     n_frames=self.problem.images_n_frames)
 
+                for energy in self.problem.energies:
+                    ener = energy.assemble_ener(w_weight=0)
+                    self.printer.print_sci("ener_"+energy.name,ener)
+
                 self.printer.print_str("Running registration…")
 
                 success, n_iter = self.solver.solve(
