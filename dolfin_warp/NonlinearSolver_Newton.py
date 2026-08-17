@@ -207,7 +207,7 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
             commandline += " set grid;"
             commandline += " set logscale y;"
             commandline += " set yrange [1e-3:1e0];"
-            commandline += " plot '"+self.frame_filebasename+".dat' u 1:7 pt 1 lw 3 title 'err_dU_rel_U', "+str(self.tol_dU_rel_DU_U)+" lt -1 notitle;"
+            commandline += " plot '"+self.frame_filebasename+".dat' u 1:7 pt 1 lw 3 title 'err_dU_rel_U', "+str(self.tol_dU_rel_U)+" lt -1 notitle;"
             commandline += " unset logscale y;"
             commandline += " set yrange [*:*];"
             commandline += " plot '' u 1:4 pt 1 lw 3 title 'relax'\""
