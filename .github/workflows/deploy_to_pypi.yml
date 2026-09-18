@@ -5,7 +5,7 @@ on:
 
 jobs:
   deploy_to_pypi:
-    # if: startsWith(github.ref, 'refs/heads/master')
+    if: github.repository == 'mgenet/dolfin_warp'
 
     runs-on: ubuntu-latest
 

@@ -4,6 +4,8 @@ on:
 
 jobs:
   mirror_to_gitlab:
+    if: github.repository == 'mgenet/dolfin_warp'
+
     runs-on: ubuntu-latest
 
     steps:
