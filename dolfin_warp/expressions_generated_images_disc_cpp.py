@@ -561,7 +561,7 @@ public:
             int alias_k_z = (N_hz - base_k_z) % N_hz;
 
             int z_indices[2] = {base_k_z, alias_k_z};
-            int z_count = is_nyq_z ? 2 : 1;
+            int z_count = (is_nyq_z && (alias_k_z != base_k_z)) ? 2 : 1;
                         
             for (int k_y = 0; k_y < N_ly; ++k_y)
             {
@@ -570,7 +570,7 @@ public:
                 int alias_k_y = (N_hy - base_k_y) % N_hy;
 
                 int y_indices[2] = {base_k_y, alias_k_y};
-                int y_count = is_nyq_y ? 2 : 1;
+                int y_count = (is_nyq_y && (alias_k_y != base_k_y)) ? 2 : 1;
 
                 for (int k_x = 0; k_x < N_lx; ++k_x)
                 {
@@ -579,7 +579,7 @@ public:
                     int alias_k_x = (N_hx - base_k_x) % N_hx;
 
                     int x_indices[2] = {base_k_x, alias_k_x};
-                    int x_count = is_nyq_x ? 2 : 1;
+                    int x_count = (is_nyq_x && (alias_k_x != base_k_x)) ? 2 : 1;
 
                     double sum_r = 0.0;
                     double sum_i = 0.0;

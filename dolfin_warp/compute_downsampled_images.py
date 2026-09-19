@@ -158,8 +158,8 @@ def compute_downsampled_images(
                 base_k_z = k_z if (k_z <= images_downsampled_dimensions[2] // 2) else k_z + (images_dimensions[2] - images_downsampled_dimensions[2])
                 alias_k_z = (images_dimensions[2] - base_k_z) % images_dimensions[2]
                 
-                # If Nyquist: Sum Base + Alias. Else: Just Base.
-                source_indices_z = [base_k_z, alias_k_z] if is_nyq_z else [base_k_z]
+                # If Nyquist and not its own alias (i.e. the dimension is actually reduced): Sum Base + Alias. Else: Just Base.
+                source_indices_z = [base_k_z, alias_k_z] if (is_nyq_z and alias_k_z != base_k_z) else [base_k_z]
 
                 for k_y in range(images_downsampled_dimensions[1]):
                     is_nyq_y = has_nyq_y and (k_y == images_downsampled_dimensions[1] // 2)
@@ -168,8 +168,8 @@ def compute_downsampled_images(
                     base_k_y = k_y if (k_y <= images_downsampled_dimensions[1] // 2) else k_y + (images_dimensions[1] - images_downsampled_dimensions[1])
                     alias_k_y = (images_dimensions[1] - base_k_y) % images_dimensions[1]
                     
-                    # If Nyquist: Sum Base + Alias. Else: Just Base.
-                    source_indices_y = [base_k_y, alias_k_y] if is_nyq_y else [base_k_y]
+                    # If Nyquist and not its own alias (i.e. the dimension is actually reduced): Sum Base + Alias. Else: Just Base.
+                    source_indices_y = [base_k_y, alias_k_y] if (is_nyq_y and alias_k_y != base_k_y) else [base_k_y]
 
                     for k_x in range(images_downsampled_dimensions[0]):
                         is_nyq_x = has_nyq_x and (k_x == images_downsampled_dimensions[0] // 2)
@@ -178,8 +178,8 @@ def compute_downsampled_images(
                         base_k_x = k_x if (k_x <= images_downsampled_dimensions[0] // 2) else k_x + (images_dimensions[0] - images_downsampled_dimensions[0])
                         alias_k_x = (images_dimensions[0] - base_k_x) % images_dimensions[0]
                         
-                        # If Nyquist: Sum Base + Alias. Else: Just Base.
-                        source_indices_x = [base_k_x, alias_k_x] if is_nyq_x else [base_k_x]
+                        # If Nyquist and not its own alias (i.e. the dimension is actually reduced): Sum Base + Alias. Else: Just Base.
+                        source_indices_x = [base_k_x, alias_k_x] if (is_nyq_x and alias_k_x != base_k_x) else [base_k_x]
 
                         sum_r = 0.0
                         sum_i = 0.0

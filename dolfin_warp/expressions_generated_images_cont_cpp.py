@@ -573,7 +573,7 @@ public:
             int base_k_z = (k_z <= N_lz / 2) ? k_z : k_z + (N_hz - N_lz);
             int alias_k_z = (N_hz - base_k_z) % N_hz;
             int z_indices[2] = {base_k_z, alias_k_z};
-            int z_count = is_nyq_z ? 2 : 1;
+            int z_count = (is_nyq_z && (alias_k_z != base_k_z)) ? 2 : 1;
                         
             for (int k_y = 0; k_y < N_ly; ++k_y)
             {
@@ -581,7 +581,7 @@ public:
                 int base_k_y = (k_y <= N_ly / 2) ? k_y : k_y + (N_hy - N_ly);
                 int alias_k_y = (N_hy - base_k_y) % N_hy;
                 int y_indices[2] = {base_k_y, alias_k_y};
-                int y_count = is_nyq_y ? 2 : 1;
+                int y_count = (is_nyq_y && (alias_k_y != base_k_y)) ? 2 : 1;
 
                 for (int k_x = 0; k_x < N_lx; ++k_x)
                 {
@@ -589,7 +589,7 @@ public:
                     int base_k_x = (k_x <= N_lx / 2) ? k_x : k_x + (N_hx - N_lx);
                     int alias_k_x = (N_hx - base_k_x) % N_hx;
                     int x_indices[2] = {base_k_x, alias_k_x};
-                    int x_count = is_nyq_x ? 2 : 1;
+                    int x_count = (is_nyq_x && (alias_k_x != base_k_x)) ? 2 : 1;
 
                     double sum_r = 0.0;
                     double sum_i = 0.0;
@@ -650,21 +650,21 @@ public:
             int base_k_z = (k_z <= N_lz / 2) ? k_z : k_z + (N_hz - N_lz);
             int alias_k_z = (N_hz - base_k_z) % N_hz;
             int z_indices[2] = {base_k_z, alias_k_z};
-            int z_count = is_nyq_z ? 2 : 1;
+            int z_count = (is_nyq_z && (alias_k_z != base_k_z)) ? 2 : 1;
             for (int k_y = 0; k_y < N_ly; ++k_y)
             {
                 bool is_nyq_y = has_nyq_y && (k_y == N_ly / 2);
                 int base_k_y = (k_y <= N_ly / 2) ? k_y : k_y + (N_hy - N_ly);
                 int alias_k_y = (N_hy - base_k_y) % N_hy;
                 int y_indices[2] = {base_k_y, alias_k_y};
-                int y_count = is_nyq_y ? 2 : 1;
+                int y_count = (is_nyq_y && (alias_k_y != base_k_y)) ? 2 : 1;
                 for (int k_x = 0; k_x < N_lx; ++k_x)
                 {
                     bool is_nyq_x = has_nyq_x && (k_x == N_lx / 2);
                     int base_k_x = (k_x <= N_lx / 2) ? k_x : k_x + (N_hx - N_lx);
                     int alias_k_x = (N_hx - base_k_x) % N_hx;
                     int x_indices[2] = {base_k_x, alias_k_x};
-                    int x_count = is_nyq_x ? 2 : 1;
+                    int x_count = (is_nyq_x && (alias_k_x != base_k_x)) ? 2 : 1;
 
                     double r = residual_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 0) / effective_resampling_factor;
                     double i = residual_fft_image->GetScalarComponentAsDouble(k_x, k_y, k_z, 1) / effective_resampling_factor;
