@@ -9,10 +9,10 @@
 ################################################################################
 
 import glob
-import math
 import numpy
 import os
 import shutil
+import vtk
 
 import myPythonLibrary    as mypy
 import myVTKPythonLibrary as myvtk
@@ -24,6 +24,36 @@ from .generate_images_Mapping import Mapping
 
 ################################################################################
 
+def set_I_woGrad(
+        image,
+        X,
+        I,
+        scalars,
+        k_point,
+        G=None,
+        Finv=None,
+        vectors=None):
+
+    image.I0(X, I)
+    scalars.SetTuple(k_point, I)
+
+def set_I_wGrad(
+        image,
+        X,
+        I,
+        scalars,
+        k_point,
+        G,
+        Finv,
+        vectors):
+
+    image.I0_wGrad(X, I, G)
+    scalars.SetTuple(k_point, I)
+    G = numpy.dot(G, Finv)
+    vectors.SetTuple(k_point, G)
+
+################################################################################
+
 def generate_images(
         images,
         structure,
@@ -31,6 +61,7 @@ def generate_images(
         noise,
         deformation,
         evolution,
+        generate_gradient=0,
         keep_temp_images=0,
         verbose=0):
 
@@ -43,15 +74,10 @@ def generate_images(
         images["upsampling_factors"] = [1]*images["n_dim"]
     if ("downsampling_factors" not in images):
         images["downsampling_factors"] = [1]*images["n_dim"]
-    if ("temporal_downsampling_factor" not in images):
-        images["temporal_downsampling_factor"] = 1
     if ("zfill" not in images):
         images["zfill"] = len(str(images["n_frames"]))
     if ("ext" not in images):
         images["ext"] = "vti"
-
-    if ("temporal_window_size" not in images):
-        images["temporal_window_size"] = None # cf. compute_temporally_downsampled_images
 
     if not os.path.exists(images["folder"]):
         os.mkdir(images["folder"])
@@ -59,24 +85,18 @@ def generate_images(
     for filename in glob.glob(images["folder"]+"/"+images["basename"]+"_*.*"):
         os.remove(filename)
 
-    image_series = dwarp.ImageSeries( # the images do not exist yet, so the series is declared, not read
-        folder   = images["folder"]   ,
-        basename = images["basename"] ,
-        n_frames = images["n_frames"] ,
-        zfill    = images["zfill"]    ,
-        ext      = images["ext"]      ,
-        verbose  = 0                  )
-
     image = Image(
         images,
         structure,
         texture,
-        noise)
+        noise,
+        generate_gradient)
     mapping = Mapping(
         images,
         structure,
         deformation,
-        evolution)
+        evolution,
+        generate_gradient)
 
     vtk_image = myvtk.createImageFromSizeAndRes(
         dim  = images["n_dim"],
@@ -86,11 +106,33 @@ def generate_images(
     n_points_upsampled = vtk_image.GetNumberOfPoints()
     vtk_scalars = vtk_image.GetPointData().GetScalars()
 
+    if (generate_gradient):
+        vtk_gradient = vtk.vtkImageData()
+        vtk_gradient.DeepCopy(vtk_image)
+
+        vtk_vectors = myvtk.createFloatArray(
+            name="ImageScalarsGradient",
+            n_components=3,
+            n_tuples=n_points_upsampled,
+            verbose=verbose-1)
+        vtk_gradient.GetPointData().SetScalars(vtk_vectors)
+    else:
+        vtk_gradient = None
+        vtk_vectors  = None
+
     x = numpy.empty(3)
     X = numpy.empty(3)
     I = numpy.empty(1)
     global_min = float("+Inf")
     global_max = float("-Inf")
+    if (generate_gradient):
+        G     = numpy.empty(3)
+        Finv  = numpy.empty((3,3))
+        set_I = set_I_wGrad
+    else:
+        G     = None
+        Finv  = None
+        set_I = set_I_woGrad
 
     for k_frame in range(images["n_frames"]):
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
@@ -99,55 +141,32 @@ def generate_images(
         for k_point in range(n_points_upsampled):
             vtk_image.GetPoint(k_point, x)
             #print("x = "+str(x))
-            mapping.X(x, X)
+            mapping.X(x, X, Finv)
             #print("X = "+str(X))
-            image.I0(X, I)
-            vtk_scalars.SetTuple(k_point, I)
+            set_I(image, X, I, vtk_scalars, k_point, G, Finv, vtk_vectors)
             global_min = min(global_min, I[0])
             global_max = max(global_max, I[0])
         #print(vtk_image)
         myvtk.writeImage(
             image=vtk_image,
-            filename=image_series.get_image_filename(k_frame=k_frame),
+            filename=images["folder"]+"/"+images["basename"]+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
             verbose=verbose-1)
+        if (generate_gradient):
+            #print(vtk_gradient)
+            myvtk.writeImage(
+                image=vtk_gradient,
+                filename=images["folder"]+"/"+images["basename"]+"-grad"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                verbose=verbose-1)
     # mypy.my_print(verbose, "global_min = "+str(global_min))
     # mypy.my_print(verbose, "global_max = "+str(global_max))
-
-    if (images["temporal_downsampling_factor"] != 1) or (images["temporal_window_size"] is not None):
-
-        temporal_suffix = "tdown="+str(images["temporal_downsampling_factor"]) # cf. compute_temporally_downsampled_images
-
-        dwarp.compute_temporally_downsampled_images(
-            images_folder                = images["folder"]                       ,
-            images_basename              = images["basename"]                     ,
-            temporal_downsampling_factor = images["temporal_downsampling_factor"] ,
-            temporal_window_size         = images["temporal_window_size"]         ,
-            images_ext                   = images["ext"]                          ,
-            verbose                      = verbose                                )
-
-        for k_frame in range(images["n_frames"]): # moving away the frames that have been averaged out
-            if (keep_temp_images):
-                os.rename(
-                    src=image_series.get_image_filename(k_frame=k_frame),
-                    dst=image_series.get_image_filename(k_frame=k_frame, suffix="pretemporallydownsampled", sep="_"))
-            else:
-                os.remove(image_series.get_image_filename(k_frame=k_frame))
-
-        images["n_frames"] = math.ceil(images["n_frames"]/images["temporal_downsampling_factor"])
-        image_series.n_frames = images["n_frames"]
-
-        for k_frame in range(images["n_frames"]): # the temporally downsampled frames become the images
-            os.rename(
-                src=image_series.get_image_filename(k_frame=k_frame, suffix=temporal_suffix),
-                dst=image_series.get_image_filename(k_frame=k_frame                        ))
 
     if (images["upsampling_factors"] != [1]*images["n_dim"]):
 
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):
                 shutil.copy(
-                    src=image_series.get_image_filename(k_frame=k_frame),
-                    dst=image_series.get_image_filename(k_frame=k_frame, suffix="upsampled", sep="_"))
+                    src=images["folder"]+"/"+images["basename"]             +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    dst=images["folder"]+"/"+images["basename"]+"_upsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
         dwarp.compute_downsampled_images(
             images_folder=images["folder"],
@@ -161,8 +180,8 @@ def generate_images(
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):
                 shutil.copy(
-                    src=image_series.get_image_filename(k_frame=k_frame),
-                    dst=image_series.get_image_filename(k_frame=k_frame, suffix="predownsampled", sep="_"))
+                    src=images["folder"]+"/"+images["basename"]                  +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    dst=images["folder"]+"/"+images["basename"]+"_predownsampled"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
         dwarp.compute_downsampled_images(
             images_folder=images["folder"],
@@ -178,8 +197,8 @@ def generate_images(
         if (keep_temp_images):
             for k_frame in range(images["n_frames"]):
                 shutil.copy(
-                    src=image_series.get_image_filename(k_frame=k_frame),
-                    dst=image_series.get_image_filename(k_frame=k_frame, suffix="prenormalized", sep="_"))
+                    src=images["folder"]+"/"+images["basename"]                 +"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"],
+                    dst=images["folder"]+"/"+images["basename"]+"_prenormalized"+"_"+str(k_frame).zfill(images["zfill"])+"."+images["ext"])
 
         dwarp.compute_normalized_images(
             images_folder=images["folder"],

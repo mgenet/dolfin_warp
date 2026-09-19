@@ -40,37 +40,43 @@ structure_deformation_type_lst += [["ring", "heart"      ]]
 texture_type_lst  = []
 texture_type_lst += ["no"]
 texture_type_lst += ["tagging"]
-texture_type_lst += ["tagging-addComb"]
-texture_type_lst += ["tagging-diffComb"]
-texture_type_lst += ["tagging-signed"]
-texture_type_lst += ["tagging-signed-addComb"]
-texture_type_lst += ["tagging-signed-diffComb"]
+# texture_type_lst += ["tagging-addComb"]
+# texture_type_lst += ["tagging-diffComb"]
+# texture_type_lst += ["tagging-signed"]
+# texture_type_lst += ["tagging-signed-addComb"]
+# texture_type_lst += ["tagging-signed-diffComb"]
 
 upsampling_factor_lst  = [ ]
 upsampling_factor_lst += [1]
 upsampling_factor_lst += [2]
 
+temporal_downsampling_factor_lst  = [ ]
+temporal_downsampling_factor_lst += [1]
+temporal_downsampling_factor_lst += [2]
+
 noise_level_lst  = []
 noise_level_lst += [0]
 noise_level_lst += [0.1]
 
-for n_dim                            in n_dim_lst                     :
- for structure_type, deformation_type in structure_deformation_type_lst:
-  for texture_type                     in texture_type_lst              :
-   for upsampling_factor                in upsampling_factor_lst         :
-    for noise_level                      in noise_level_lst               :
+for n_dim                            in n_dim_lst                        :
+ for structure_type, deformation_type in structure_deformation_type_lst   :
+  for texture_type                     in texture_type_lst                 :
+   for upsampling_factor                in upsampling_factor_lst            :
+    for noise_level                      in noise_level_lst                  :
+     for temporal_downsampling_factor     in temporal_downsampling_factor_lst :
 
         images = {
-            "n_dim":n_dim,
-            "L":[1.]*n_dim,
-            "n_voxels": [10]*n_dim,
-            "upsampling_factors": [upsampling_factor]*n_dim,
-            "T":1.,
-            "n_frames":3,
-            "data_type":"float",
-            "folder":res_folder}
+            "n_dim"                        : n_dim                        ,
+            "L"                            : [1.]*n_dim                   ,
+            "n_voxels"                     : [10]*n_dim                   ,
+            "upsampling_factors"           : [upsampling_factor]*n_dim    ,
+            "T"                            : 1.                           ,
+            "n_frames"                     : 3                            ,
+            "temporal_downsampling_factor" : temporal_downsampling_factor ,
+            "data_type"                    : "float"                      ,
+            "folder"                       : res_folder                   }
 
-        images_basename = str(n_dim)+"D"
+        images_basename  = str(n_dim)+"D"
         images_basename += "-"+structure_type
         images_basename += "-"+deformation_type
         images_basename += "-"+texture_type

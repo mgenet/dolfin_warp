@@ -20,8 +20,7 @@ class Mapping():
             images,
             structure,
             deformation,
-            evolution,
-            generate_image_gradient=0):
+            evolution):
 
         self.deformation = deformation
         if (self.deformation["type"] == "no"):

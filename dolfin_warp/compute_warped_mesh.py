@@ -84,6 +84,15 @@ def compute_warped_mesh(
     U = numpy.empty(3)
     if ("zfill" not in images.keys()):
         images["zfill"] = len(str(images["n_frames"]))
+
+    working_series = dwarp.MeshSeries( # the meshes do not exist yet, so the series is declared, not read
+        folder   = working_folder    ,
+        basename = working_basename  ,
+        n_frames = images["n_frames"],
+        zfill    = images["zfill"]   ,
+        ext      = "vtu"             ,
+        verbose  = 0                 )
+
     for k_frame in range(images["n_frames"]):
         t = images["T"]*float(k_frame)/(images["n_frames"]-1) if (images["n_frames"]>1) else 0.
         mapping.init_t(t)
@@ -101,6 +110,6 @@ def compute_warped_mesh(
             verbose            = verbose-1      )
 
         myvtk.writeDataSet(
-            dataset  = mesh                                                                               ,
-            filename = working_folder+"/"+working_basename+"_"+str(k_frame).zfill(images["zfill"])+".vtu" ,
-            verbose  = verbose-1                                                                          )
+            dataset  = mesh                                            ,
+            filename = working_series.get_mesh_filename(k_frame=k_frame),
+            verbose  = verbose-1                                        )

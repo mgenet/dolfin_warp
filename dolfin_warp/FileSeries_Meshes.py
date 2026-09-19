@@ -23,16 +23,18 @@ class MeshSeries(FileSeries):
 
 
     def __init__(self,
-            folder  : str         ,
-            basename: str         ,
-            n_frames       = None ,
-            ext     : str  = "vtu",
-            verbose : bool = True ,
-            printer        = None ):
+            folder   : str          ,
+            basename : str          ,
+            n_frames : int  = None  ,
+            zfill    : int  = None  ,
+            ext      : str  = "vtu" ,
+            verbose  : bool = True  ,
+            printer         = None  ):
 
         self.folder   = folder
         self.basename = basename
         self.n_frames = n_frames
+        self.zfill    = zfill
         self.ext      = ext
 
         self.verbose = verbose
@@ -41,44 +43,63 @@ class MeshSeries(FileSeries):
         else:
             self.printer = printer
 
-        if (verbose): self.printer.print_str("Reading mesh series…")
-        if (verbose): self.printer.inc()
+        if (self.n_frames is not None) and (self.zfill is not None): # the series is declared, not read, so that the meshes do not need to exist yet
 
-        self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
-        assert (len(self.filenames) >= 1),\
-            "Not enough meshes ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
+            if (verbose): self.printer.print_str("Declaring mesh series…")
+            if (verbose): self.printer.inc()
 
-        if (self.n_frames is None):
-            self.n_frames = len(self.filenames)
+            assert (self.n_frames >= 1),\
+                "n_frames = "+str(self.n_frames)+" < 1. Aborting."
+            if (verbose): self.printer.print_var("n_frames",self.n_frames)
+            if (verbose): self.printer.print_var("zfill",self.zfill)
+
+            self.filenames = [self.get_mesh_filename(k_frame=k_frame) for k_frame in range(self.n_frames)]
+
+            if (verbose): self.printer.dec()
+
         else:
-            assert (self.n_frames <= len(self.filenames))
-        assert (self.n_frames >= 1),\
-            "n_frames = "+str(self.n_frames)+" < 2. Aborting."
-        if (verbose): self.printer.print_var("n_frames",self.n_frames)
 
-        self.zfill = len(self.filenames[0].rsplit("_",1)[-1].split(".",1)[0])
-        if (verbose): self.printer.print_var("zfill",self.zfill)
+            if (verbose): self.printer.print_str("Reading mesh series…")
+            if (verbose): self.printer.inc()
 
-        if (verbose): self.printer.dec()
+            self.filenames = glob.glob(self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext)
+            assert (len(self.filenames) >= 1),\
+                "Not enough meshes ("+self.folder+"/"+self.basename+"_[0-9]*"+"."+self.ext+"). Aborting."
+
+            if (self.n_frames is None):
+                self.n_frames = len(self.filenames)
+            else:
+                assert (self.n_frames <= len(self.filenames))
+            assert (self.n_frames >= 1),\
+                "n_frames = "+str(self.n_frames)+" < 2. Aborting."
+            if (verbose): self.printer.print_var("n_frames",self.n_frames)
+
+            self.zfill = len(self.filenames[0].rsplit("_",1)[-1].split(".",1)[0])
+            if (verbose): self.printer.print_var("zfill",self.zfill)
+
+            if (verbose): self.printer.dec()
 
 
 
     def get_mesh_filebasename(self,
-            k_frame = None,
-            suffix = None):
+            k_frame = None ,
+            suffix  = None ,
+            sep     = "-"  ):
 
-        return self.folder+"/"+self.basename+("-"+suffix if bool(suffix) else "")+("_"+str(k_frame).zfill(self.zfill) if (k_frame is not None) else "")
+        return self.folder+"/"+self.basename+(sep+suffix if bool(suffix) else "")+("_"+str(k_frame).zfill(self.zfill) if (k_frame is not None) else "")
 
 
 
     def get_mesh_filename(self,
-            k_frame = None,
-            suffix = None,
-            ext = None):
+            k_frame = None ,
+            suffix  = None ,
+            sep     = "-"  ,
+            ext     = None ):
 
         return self.get_mesh_filebasename(
             k_frame=k_frame,
-            suffix=suffix)+"."+(ext if bool(ext) else self.ext)
+            suffix=suffix,
+            sep=sep)+"."+(ext if bool(ext) else self.ext)
 
 
 
