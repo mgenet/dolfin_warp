@@ -56,7 +56,8 @@ class Mapping():
             self.L = images["L"]
             self.Ri = structure["Ri"]
             self.Re = structure["Re"]
-            self.R = numpy.empty((3,3))
+            self.Q_ref = numpy.empty((3,3)) # cartesian to polar basis, in the reference configuration
+            self.Q_def = numpy.empty((3,3)) # cartesian to polar basis, in the deformed configuration
         else:
             assert (0), "deformation type must be \"no\", \"translation\", \"rotation\", \"homogeneous\" or \"heart\", not \""+str(self.deformation["type"])+"\". Aborting."
 
@@ -135,7 +136,7 @@ class Mapping():
 
     def init_t_heart(self, t):
         self.dRi = self.deformation["dRi"]*self.phi(t) if ("dRi" in self.deformation) else 0.
-        self.dRe = self.deformation["dRi"]*self.phi(t) if ("dRi" in self.deformation) else 0.
+        self.dRe = self.deformation["dRe"]*self.phi(t) if ("dRe" in self.deformation) else 0.
         self.dTi = self.deformation["dTi"]*self.phi(t) if ("dTi" in self.deformation) else 0.
         self.dTe = self.deformation["dTe"]*self.phi(t) if ("dTe" in self.deformation) else 0.
         self.A = numpy.array([[1.-(self.dRi-self.dRe)/(self.Re-self.Ri), 0.],
@@ -144,13 +145,24 @@ class Mapping():
         self.B = numpy.array([(1.+self.Ri/(self.Re-self.Ri))*self.dRi-self.Ri/(self.Re-self.Ri)*self.dRe,
                               (1.+self.Ri/(self.Re-self.Ri))*self.dTi-self.Ri/(self.Re-self.Ri)*self.dTe])
 
+    def get_polar_basis(self, angle, Q):
+        Q[0,0] = +math.cos(angle)
+        Q[0,1] = +math.sin(angle)
+        Q[0,2] = 0.
+        Q[1,0] = -math.sin(angle)
+        Q[1,1] = +math.cos(angle)
+        Q[1,2] = 0.
+        Q[2,0] = 0.
+        Q[2,1] = 0.
+        Q[2,2] = 1.
+
     def X_no(self, x, X, Finv=None):
         X[:] = x
-        if (Finv is not None): Finv[:,:] = numpy.identity(numpy.sqrt(numpy.size(Finv)))
+        if (Finv is not None): Finv[:,:] = numpy.identity(int(numpy.sqrt(numpy.size(Finv))))
 
     def X_translation(self, x, X, Finv=None):
         X[:] = x - self.D
-        if (Finv is not None): Finv[:,:] = numpy.identity(numpy.sqrt(numpy.size(Finv)))
+        if (Finv is not None): Finv[:,:] = numpy.identity(int(numpy.sqrt(numpy.size(Finv))))
 
     def X_rotation(self, x, X, Finv=None):
         X[:] = numpy.dot(self.Rinv, x - self.C) + self.C
@@ -187,26 +199,20 @@ class Mapping():
             #print("F = "+str(Finv))
             Finv[:,:] = numpy.linalg.inv(Finv)
             #print("Finv = "+str(Finv))
-            self.R[0,0] = +math.cos(self.RT[1])
-            self.R[0,1] = +math.sin(self.RT[1])
-            self.R[0,2] = 0.
-            self.R[1,0] = -math.sin(self.RT[1])
-            self.R[1,1] = +math.cos(self.RT[1])
-            self.R[1,2] = 0.
-            self.R[2,0] = 0.
-            self.R[2,1] = 0.
-            self.R[2,2] = 1.
-            #print("R = "+str(self.R))
-            Finv[:] = numpy.dot(numpy.transpose(self.R), numpy.dot(Finv, self.R))
+            # Finv is expressed in the polar bases, i.e., it maps deformed polar components onto reference
+            # polar components, so each side must be rotated with the angle of its own configuration.
+            self.get_polar_basis(self.RT[1], self.Q_ref)
+            self.get_polar_basis(self.rt[1], self.Q_def)
+            Finv[:] = numpy.dot(numpy.transpose(self.Q_ref), numpy.dot(Finv, self.Q_def))
             #print("Finv = "+str(Finv))
 
     def x_no(self, X, x, F=None):
         x[:] = X
-        if (F is not None): F[:,:] = numpy.identity(numpy.sqrt(numpy.size(F)))
+        if (F is not None): F[:,:] = numpy.identity(int(numpy.sqrt(numpy.size(F))))
 
     def x_translation(self, X, x, F=None):
         x[:] = X + self.D
-        if (F is not None): F[:,:] = numpy.identity(numpy.sqrt(numpy.size(F)))
+        if (F is not None): F[:,:] = numpy.identity(int(numpy.sqrt(numpy.size(F))))
 
     def x_rotation(self, X, x, F=None):
         x[:] = numpy.dot(self.R, X - self.C) + self.C
@@ -241,14 +247,9 @@ class Mapping():
             F[2,1] = 0.
             F[2,2] = 1.
             #print("F = "+str(F))
-            self.R[0,0] = +math.cos(self.RT[1])
-            self.R[0,1] = +math.sin(self.RT[1])
-            self.R[0,2] = 0.
-            self.R[1,0] = -math.sin(self.RT[1])
-            self.R[1,1] = +math.cos(self.RT[1])
-            self.R[1,2] = 0.
-            self.R[2,0] = 0.
-            self.R[2,1] = 0.
-            self.R[2,2] = 1.
-            F[:] = numpy.dot(numpy.transpose(self.R), numpy.dot(F, self.R))
+            # F is expressed in the polar bases, i.e., it maps reference polar components onto deformed
+            # polar components, so each side must be rotated with the angle of its own configuration.
+            self.get_polar_basis(self.RT[1], self.Q_ref)
+            self.get_polar_basis(self.rt[1], self.Q_def)
+            F[:] = numpy.dot(numpy.transpose(self.Q_def), numpy.dot(F, self.Q_ref))
             #print("F = "+str(F))
