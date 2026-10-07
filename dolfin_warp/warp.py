@@ -9,6 +9,8 @@
 ################################################################################
 
 import dolfin
+import math
+import os
 
 import dolfin_warp as dwarp
 
@@ -57,6 +59,7 @@ def warp(
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
         normalize_energies                          : bool        = False                               ,
+        normalize_energies_wavelength               : float       = None                                , # wavelength of the plane wave used to normalize the energies (default: 20*hmin)
         nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma, scipy
         nonlinear_solver_print_iterations           : bool        = False                               ,
         nonlinear_solver_options                    : dict        = None                                ,
@@ -76,6 +79,8 @@ def warp(
         register_ref_frame                          : bool        = False                               ,
         continue_after_fail                         : bool        = False                               ,
         print_out                                   : bool        = True                                ):
+
+    os.makedirs(working_folder, exist_ok=True)
 
 ################################################################# kinematics ###
 
@@ -133,6 +138,10 @@ def warp(
             assert (0), "\"image_energy_quadrature_from\" (="+str(image_energy_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
         problem.printer.print_var("image_energy_quadrature",image_energy_quadrature)
         problem.printer.dec()
+    dwarp.check_quadrature_degree(
+        degree=image_energy_quadrature,
+        mesh=problem.mesh,
+        printer=problem.printer)
 
 ############################################################### image weight ###
 
@@ -288,6 +297,7 @@ def warp(
     if (normalize_energies):
         dwarp.compute_energies_normalization(
             problem=problem,
+            k=[2*math.pi/normalize_energies_wavelength]*problem.mesh_dimension if (normalize_energies_wavelength is not None) else None,
             verbose=1)
 
 ##################################################################### solver ###
