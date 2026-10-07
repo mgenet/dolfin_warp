@@ -34,9 +34,10 @@ class WarpingProblem(Problem):
             working_folder=None,
             working_basename=None):
 
-        if (print_out == True):
-            print_filename = working_folder+"/"+working_basename+".out"
+        if (working_folder is not None):
+            os.makedirs(working_folder, exist_ok=True)
 
+        print_filename = None
         if (type(print_out) is str):
             if (print_out=="stdout"):
                 print_filename = None
@@ -44,6 +45,8 @@ class WarpingProblem(Problem):
                 print_filename = sys.argv[0][:-3]+".out"
             else:
                 print_filename = print_out+".out"
+        elif (print_out):
+            print_filename = working_folder+"/"+working_basename+".out"
 
         self.printer = mypy.Printer(
             filename=print_filename,

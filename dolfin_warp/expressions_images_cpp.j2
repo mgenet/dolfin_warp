@@ -34,6 +34,7 @@ public:
 {% endif %}
 {% if u_type == "dolfin" %}
     std::shared_ptr<dolfin::Function>             U                     = nullptr                                             ;
+    mutable const ufc::cell*                      current_cell          = nullptr                                             ; // set during assembly, so that U is evaluated in the right cell, without searching for it
 {% endif %}
 {% if u_type == "vtk" %}
     vtkSmartPointer<vtkXMLUnstructuredGridReader> ugrid_reader          = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -242,6 +243,20 @@ public:
 {% endif %}
 {% endif %}
 
+{% if im_is_def and u_type == "dolfin" %}
+    void eval
+    (
+        Eigen::Ref<      Eigen::VectorXd> expr,
+        Eigen::Ref<const Eigen::VectorXd> X,
+        const ufc::cell&                  cell
+    ) const
+    {
+        current_cell = &cell;
+        eval(expr, X);
+        current_cell = nullptr;
+    }
+
+{% endif %}
     void eval
     (
         Eigen::Ref<      Eigen::VectorXd> expr,
@@ -275,7 +290,8 @@ public:
 
 {% if im_is_def %}
 {% if u_type == "dolfin" %}
-        U->eval(UX, X);
+        if (current_cell) U->eval(UX, X, *current_cell); // no point search: robust (quadrature points can lie on the mesh boundary) & faster
+        else              U->eval(UX, X);
 {% endif %}
 
 {% if u_type == "vtk" %}

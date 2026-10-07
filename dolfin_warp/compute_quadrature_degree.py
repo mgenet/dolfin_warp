@@ -157,3 +157,44 @@ def compute_quadrature_degree_from_integral(
             break
 
     return degree
+
+################################################################################
+
+def check_quadrature_degree(
+        degree,
+        mesh,
+        printer=None):
+    """Warn about quadrature rules that are known to be problematic for the
+    image energies: rules with points lying on the cell boundary (e.g.,
+    degrees 4 & 5 on tetrahedra), for which point location of the quadrature
+    points can fail when they lie on the mesh boundary, and rules with negative
+    weights (e.g., degree 3 on tetrahedra), which can make energies negative."""
+
+    import FIAT
+    from FIAT.quadrature_schemes import create_quadrature
+
+    cellname = mesh.ufl_cell().cellname()
+    if   (cellname == "triangle"):
+        ref_cell = FIAT.reference_element.UFCTriangle()
+    elif (cellname == "tetrahedron"):
+        ref_cell = FIAT.reference_element.UFCTetrahedron()
+    else:
+        return
+
+    quadrature = create_quadrature(ref_cell, degree)
+    points  = numpy.array(quadrature.get_points())
+    weights = numpy.array(quadrature.get_weights())
+    barycentric_coordinates = numpy.hstack([1.-points.sum(axis=1, keepdims=True), points])
+
+    messages = []
+    if (barycentric_coordinates.min() < 1e-12):
+        messages.append("some quadrature points lie on the cell boundary: if U is evaluated at these points without the cell information, the point location can fail (\"Unable to evaluate function at point\")")
+    if (weights.min() < 0.):
+        messages.append("some quadrature weights are negative: energies might become negative")
+    for message in messages:
+        message = "Warning! Quadrature degree "+str(degree)+" on "+cellname+": "+message+". Consider using another degree."
+        if (printer is not None):
+            printer.print_str(message)
+        else:
+            print(message)
+
