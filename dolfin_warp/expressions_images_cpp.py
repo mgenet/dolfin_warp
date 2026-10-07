@@ -97,7 +97,8 @@ public:
     vtkSmartPointer<vtkImageData>                 image                 = nullptr                                             ;
     double                                        static_scaling                                                              ;'''+(('''
     std::unique_ptr<Eigen::Ref<Eigen::Vector2d>>  dynamic_scaling                                                             ;''')*(dynamic_scaling)+('''
-    std::shared_ptr<dolfin::Function>             U                     = nullptr                                             ;''')*(u_type=="dolfin")+('''
+    std::shared_ptr<dolfin::Function>             U                     = nullptr                                             ;
+    mutable const ufc::cell*                      current_cell          = nullptr                                             ; // set during assembly, so that U is evaluated in the right cell, without searching for it''')*(u_type=="dolfin")+('''
     vtkSmartPointer<vtkXMLUnstructuredGridReader> ugrid_reader          = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
     vtkSmartPointer<vtkUnstructuredGrid>          ugrid                 = nullptr                                             ;
     vtkSmartPointer<vtkPoints>                    probe_points          = vtkSmartPointer<vtkPoints>::New()                   ;
@@ -245,7 +246,20 @@ public:
         probe_filter->SetSourceData(ugrid);
     }''')*(u_type=="vtk"))*(im_is_def)+'''
 
+'''+('''
     void eval
+    (
+        Eigen::Ref<      Eigen::VectorXd> expr,
+        Eigen::Ref<const Eigen::VectorXd> X,
+        const ufc::cell&                  cell
+    ) const
+    {
+        current_cell = &cell;
+        eval(expr, X);
+        current_cell = nullptr;
+    }
+
+''')*(im_is_def and (u_type=="dolfin"))+'''    void eval
     (
         Eigen::Ref<      Eigen::VectorXd> expr,
         Eigen::Ref<const Eigen::VectorXd> X
@@ -262,7 +276,8 @@ public:
         interpolator->Interpolate(X.data(), expr.data());'''+('''
         gradient_interpolator->Interpolate(X.data(), expr.data()+1);''')*(im_type=="im+grad"))*(im_dim==3))*(not im_is_def)+(('''
 
-        U->eval(UX, X);''')*(u_type=="dolfin")+('''
+        if (current_cell) U->eval(UX, X, *current_cell); // no point search: robust (quadrature points can lie on the mesh boundary) & faster
+        else              U->eval(UX, X);''')*(u_type=="dolfin")+('''
 
         probe_points->SetPoint(0,X.data());
         probe_filter->Update();
