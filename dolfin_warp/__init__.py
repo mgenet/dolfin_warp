@@ -9,6 +9,7 @@ from .Energy_Continuous_MeshVolume import *
 from .Energy_Continuous_Regularization import *
 from .Energy_Continuous_WarpedImage import *
 from .Energy_Discrete_GeneratedImage import *
+from .Energy_Discrete_NodalTractionsRegularization import *
 from .Energy_Discrete_SimpleRegularization import *
 from .Energy_Discrete_SurfaceRegularization import *
 from .Energy_Discrete_VolumeRegularization import *
