@@ -75,6 +75,40 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
         self.tol_res          = options.get("tol_res"         , None)
         self.tol_dres_rel_res = options.get("tol_dres_rel_res", None)
         self.n_iter_max       = options.get("n_iter_max"      , 32  )
+        self.fail_on_line_search_failure = options.get("fail_on_line_search_failure", False)
+
+        # damping (Levenberg-Marquardt-like): the Newton matrix is augmented with
+        # mu*D, where D is a fixed metric (elastic stiffness or mass matrix of the
+        # reference mesh). Since it only acts on the increment, it does not change
+        # the solution, only the path to it. It is useful when the Newton matrix
+        # has a large (near) null space, e.g., with discrete equilibrium gap
+        # regularizations, for which undamped Newton steps can be huge.
+        self.damping_type = options.get("damping_type", None) # None, elastic, mass
+        if (self.damping_type is not None):
+            assert (type(self.problem) is dwarp.FullKinematicsWarpingProblem),\
+                "Damping is only implemented for full kinematics. Aborting."
+            self.damping_init     = options.get("damping_init"    , 1e-2) # relative to the average diagonal of the Newton matrix
+            self.damping_min      = options.get("damping_min"     , 1e-6)
+            self.damping_max      = options.get("damping_max"     , 1e+2)
+            self.damping_increase = options.get("damping_increase", 10. ) # when the line search fails
+            self.damping_decrease = options.get("damping_decrease", 0.5 ) # when the full step is accepted
+            self.damping_tol      = options.get("damping_tol"     , 1e-2) # convergence is only accepted when the damping is below this value
+            damping_poisson       = options.get("damping_poisson" , 0.3 )
+            if (self.damping_type == "elastic"):
+                eps_trial = dolfin.sym(dolfin.grad(self.problem.dU_trial))
+                eps_test  = dolfin.sym(dolfin.grad(self.problem.dU_test ))
+                lmbda = damping_poisson/(1+damping_poisson)/(1-2*damping_poisson)
+                mu    = 1./2/(1+damping_poisson)
+                damping_form = (lmbda * dolfin.tr(eps_trial) * dolfin.tr(eps_test) + 2*mu * dolfin.inner(eps_trial, eps_test)) * dolfin.dx(domain=self.problem.mesh)
+            elif (self.damping_type == "mass"):
+                damping_form = dolfin.inner(self.problem.dU_trial, self.problem.dU_test) * dolfin.dx(domain=self.problem.mesh)
+            else:
+                assert (0), "damping_type (="+str(self.damping_type)+") must be None, \"elastic\" or \"mass\". Aborting."
+            self.damping_mat = dolfin.assemble(damping_form)
+            self.damping_diag_vec = self.problem.U.vector().copy()
+            self.damping_mat.get_diagonal(self.damping_diag_vec)
+            self.damping_diag_avg = self.damping_diag_vec.norm("l1")/self.damping_diag_vec.size()
+            self.jac_diag_vec = self.problem.U.vector().copy()
 
         # write iterations
         self.write_iterations = parameters["write_iterations"] if ("write_iterations" in parameters) and (parameters["write_iterations"] is not None) else False
@@ -110,6 +144,8 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
         self.k_iter = 0
         self.problem.DU.vector().zero()
         self.success = False
+        if (self.damping_type is not None):
+            self.damping = self.damping_init
         self.printer.inc()
         while (True):
             self.k_iter += 1
@@ -122,6 +158,31 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
 
             # relaxation
             self.compute_relax()
+
+            # damping update
+            if (self.damping_type is not None):
+                if (self.relax == 0.) and (self.damping < self.damping_max):
+                    self.damping = min(self.damping*self.damping_increase, self.damping_max)
+                    self.printer.print_sci("Line search failed, increasing damping",self.damping)
+                    continue
+                elif (self.relax == getattr(self, "relax_init", 1.)):
+                    self.damping = max(self.damping*self.damping_decrease, self.damping_min)
+                self.printer.print_sci("damping",self.damping)
+
+            # line search failure: the energy could not be decreased along the
+            # Newton direction (relax = 0), so the update is zero, which used to
+            # be silently reported as convergence. Near the minimum this is
+            # expected (the image energy gradient is only approximate), but it
+            # also happens far from it, e.g., when every step creates inverted
+            # elements. The failure is now reported, and can be treated as a
+            # solver failure with the "fail_on_line_search_failure" option.
+            if (self.relax == 0.):
+                if (self.fail_on_line_search_failure):
+                    self.printer.print_str("Warning! Line search failed: nonlinear solver failed to converge… (k_frame = "+str(self.k_frame)+")")
+                    self.success = False
+                    break
+                else:
+                    self.printer.print_str("Warning! Line search failed: zero update, nonlinear solver will be considered converged… (k_frame = "+str(self.k_frame)+")")
 
             # solution update
             self.problem.update_displacement(relax=self.relax)
@@ -186,6 +247,8 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
             if (self.tol_dU_rel_U     is not None) and (self.problem.err_dU_rel_U  > self.tol_dU_rel_U    ):
                 self.success = False
             if (self.tol_dU_rel_DU    is not None) and (self.problem.err_dU_rel_DU > self.tol_dU_rel_DU   ):
+                self.success = False
+            if (self.damping_type is not None) and (self.damping > self.damping_tol) and (self.relax > 0.): # if the line search failed even with maximal damping, same treatment as without damping (cf. above)
                 self.success = False
 
             # exit
@@ -284,6 +347,10 @@ class NewtonNonlinearSolver(NonlinearSolver, RelaxationNonlinearSolverMixin, BFG
                 jac_mat=self.jac_mat)
             timer = time.time() - timer
             self.printer.print_str(" "+str(timer)+" s",tab=False)
+            if (self.damping_type is not None):
+                self.jac_mat.get_diagonal(self.jac_diag_vec)
+                jac_diag_avg = self.jac_diag_vec.norm("l1")/self.jac_diag_vec.size()
+                self.jac_mat.axpy(self.damping*jac_diag_avg/self.damping_diag_avg, self.damping_mat, False)
             # self.printer.print_var("jac_mat",self.jac_mat.array())
             if self.use_bfgs:
                 self.reset_bfgs_history()

@@ -215,7 +215,7 @@ class ImageIterator():
                         a  = dolfin.inner(u, v) * self.problem.dV
                         a += alpha * dolfin.inner(dolfin.grad(u), dolfin.grad(v)) * self.problem.dV
                         L  = dolfin.inner(init_U, v) * self.problem.dV
-                        L += alpha * dolfin.inner(dolfin.grad(init_U), dolfin.grad(v)) * self.problem.dV
+                        # L += alpha * dolfin.inner(dolfin.grad(init_U), dolfin.grad(v)) * self.problem.dV # MG20260826: Cannot interpolate the gradient of init_U, which lives on another mesh…
                         init_U.set_allow_extrapolation(True)
                         dolfin.solve(a == L, self.problem.U)
                     self.problem.U_norm = self.problem.U.vector().norm("l2")

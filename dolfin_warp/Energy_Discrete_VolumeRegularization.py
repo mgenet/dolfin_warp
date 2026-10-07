@@ -161,6 +161,26 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         sd = dolfin.CompiledSubDomain("on_boundary")
         self.bc = dolfin.DirichletBC(self.problem.U_fs, [0]*self.problem.mesh_dimension, sd)
 
+        # Inverted elements check. The equilibrium gap is only evaluated at
+        # interior nodes, so that an element whose vertices all lie on the
+        # boundary does not contribute to it at all (its contributions are
+        # zeroed with the boundary rows). If such an element has no exterior
+        # facet either, it does not contribute to the surface terms, so that
+        # the "checkJ" safeguard of the constitutive law never fires and the
+        # element can collapse or invert freely (this happens for 27% of the
+        # elements of a coarse LV mesh with a single element through the wall).
+        # Hence the energy is set to NaN whenever any element is inverted, so
+        # that the line search rejects such steps.
+        if (self.model == "hooke"):
+            self.inverted_volume_form = None
+        else:
+            self.inverted_volume_form = dolfin.conditional(
+                dolfin.gt(self.kinematics.J, 0.),
+                dolfin.Constant(0.),
+                dolfin.Constant(1.)) * dolfin.dx(
+                    domain=self.problem.mesh,
+                    metadata={"quadrature_degree":0})
+
         # self.assemble_ener()
         # self.problem.U.vector()[:] = (numpy.random.rand(*self.problem.U.vector().get_local().shape)-0.5)/10
         # self.assemble_ener()
@@ -185,6 +205,9 @@ class VolumeRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
     def update_ener(self):
 
         # print (dolfin.assemble(Psi))
+
+        if (self.inverted_volume_form is not None) and (dolfin.assemble(self.inverted_volume_form) > 0.):
+            return float("nan")
 
         dolfin.assemble(
             form=self.Wint_form,

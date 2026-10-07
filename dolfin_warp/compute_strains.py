@@ -88,9 +88,27 @@ def compute_strains(
     if (verbose): print("n_frames = " + str(working_series.n_frames))
     if (verbose): print("zfill = " + str(working_series.zfill))
 
+    # When the reference mesh carries a local basis, myVTKPythonLibrary
+    # names the strain arrays <strain_array_name>_CAR (cartesian), _CYL (local
+    # radial/circumferential/longitudinal basis eR, eC, eL) and/or _PPS (eRR, eCC,
+    # eLL); the strains written to file are then expressed in the local basis.
+    stats_strain_array_name = strain_array_name
+    comp_names = ["xx", "yy", "zz", "xy", "xz", "yz"]
+    if (ref_mesh is not None):
+        if  (ref_mesh.GetCellData().HasArray("eR"))\
+        and (ref_mesh.GetCellData().HasArray("eC"))\
+        and (ref_mesh.GetCellData().HasArray("eL")):
+            stats_strain_array_name = strain_array_name+"_CYL"
+            comp_names = ["rr", "cc", "ll", "rc", "rl", "cl"]
+        elif (ref_mesh.GetCellData().HasArray("eRR"))\
+         and (ref_mesh.GetCellData().HasArray("eCC"))\
+         and (ref_mesh.GetCellData().HasArray("eLL")):
+            stats_strain_array_name = strain_array_name+"_PPS"
+            comp_names = ["rr", "cc", "ll", "rc", "rl", "cl"]
+
     if (write_strains):
         strain_file = open(working_folder+"/"+working_basename+"-strains.dat", "w")
-        strain_file.write("#k_frame Exx_avg Exx_std Eyy_avg Eyy_std Ezz_avg Ezz_std Exy_avg Exy_std Exz_avg Exz_std Eyz_avg Eyz_std\n")
+        strain_file.write("#k_frame"+"".join([" E"+comp_name+"_avg E"+comp_name+"_std" for comp_name in comp_names])+"\n")
 
     if (ref_frame is not None):
         mesh0 = working_series.get_mesh(k_frame=ref_frame)
@@ -166,7 +184,7 @@ def compute_strains(
             verbose=verbose)
 
         if (write_strains):
-            farray_strain = mesh.GetCellData().GetArray(strain_array_name)
+            farray_strain = mesh.GetCellData().GetArray(stats_strain_array_name)
             if (n_sector_ids in (0,1)):
                 if (n_part_ids == 0):
                     strains_all = [farray_strain.GetTuple(k_cell) for k_cell in range(n_cells)]

@@ -60,7 +60,8 @@ public:
     double xmin, xmax, ymin, ymax, zmin, zmax;'''+('''
 
     mutable Eigen::Vector'''+str(im_dim)+'''d UX, x_3D;
-    std::shared_ptr<dolfin::Function> U;''')*(im_is_def)+('''
+    std::shared_ptr<dolfin::Function> U;
+    mutable const ufc::cell* current_cell = nullptr; // set during assembly, so that U is evaluated in the right cell, without searching for it''')*(im_is_def)+('''
 
     Eigen::Vector3d O, n1, n2, n3, n4;
     mutable double d1, d2, d3, d4;''')*(im_is_cone)+'''
@@ -147,6 +148,19 @@ public:
         U = U_;
     }''')*(im_is_def)+'''
 
+'''+('''
+    void eval
+    (
+        Eigen::Ref<      Eigen::VectorXd> expr,
+        Eigen::Ref<const Eigen::VectorXd> X,
+        const ufc::cell&                  cell
+    ) const
+    {
+        current_cell = &cell;
+        eval(expr, X);
+        current_cell = nullptr;
+    }
+''')*(im_is_def)+'''
     void eval
     (
         Eigen::Ref<      Eigen::VectorXd> expr,
@@ -155,7 +169,8 @@ public:
     {'''+('''
         // std::cout << "X = " << X << std::endl;''')*(verbose)+('''
 
-        U->eval(UX, X);'''+('''
+        if (current_cell) U->eval(UX, X, *current_cell); // no point search: robust (quadrature points can lie on the mesh boundary) & faster
+        else              U->eval(UX, X);'''+('''
         // std::cout << "UX = " << UX << std::endl;''')*(verbose)+('''
 
         x_3D.head<n_dim>() = X + UX;''')*(im_dim==2)+('''

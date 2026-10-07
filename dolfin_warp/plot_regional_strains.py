@@ -97,11 +97,12 @@ def plot_regional_strains(
         for k_l in range(n_sectors_l):
             for k_c in range(n_sectors_c):
                 subplot.bar(
-                    left = k_c * 2*math.pi/n_sectors_c,
+                    x = k_c * 2*math.pi/n_sectors_c, # "left" was renamed "x" in matplotlib 2.0
                     height = 1./n_sectors_l,
                     width = 2*math.pi/n_sectors_c,
                     bottom = 1.-float(k_l+1)/n_sectors_l,
                     color = cmap(float(strains_comp[k_sector]-strains_comp_min)/(strains_comp_max - strains_comp_min)),
+                    align="edge",
                     linewidth=0)
                 #subplot.annotate(
                     #"{:+2.1f}".format(strains_comp[k_sector]),
