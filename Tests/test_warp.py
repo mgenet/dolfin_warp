@@ -105,11 +105,20 @@ for n_dim in n_dim_lst:
     regul_type_lst += ["discrete-equilibrated-tractions-normal"                  ]
     regul_type_lst += ["discrete-equilibrated-tractions-tangential"              ]
     regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential"       ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions-normal-tangential-vector"   ]
+    regul_type_lst += ["discrete-linear-equilibrated-tractions-normal-tangential-covariant"]
+    regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential-vector"          ]
+    regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential-covariant"       ]
+    regul_type_lst += ["discrete-equilibrated-tractions-normal-tangential-covariant+current-normal"] # normal & tangential parts split with the current normal
+    regul_type_lst += ["discrete-equilibrated-nodal-tractions-normal-tangential"           ]
 
     for regul_type in regul_type_lst:
 
         res_basename = images_basename
         res_basename += "-"+regul_type
+
+        regul_tractions_current_normal = regul_type.endswith("+current-normal")
+        regul_type = regul_type.replace("+current-normal", "")
 
         if any([_ in regul_type for _ in ["linear", "simple"]]):
             regul_model = "hooke"
@@ -131,6 +140,7 @@ for n_dim in n_dim_lst:
             regul_type=regul_type,
             regul_model=regul_model,
             regul_level=regul_level,
+            regul_tractions_current_normal=regul_tractions_current_normal,
             normalize_energies=1,
             nonlinear_solver_options={
                 "relax_type":"backtracking",
