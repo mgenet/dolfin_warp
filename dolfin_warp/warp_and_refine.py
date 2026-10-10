@@ -23,6 +23,8 @@ def warp_and_refine(
         mesh_folder         : str         = None ,
         mesh_basenames      : list        = None ,
         continue_after_fail : bool        = False,
+        initialize_U_method : str         = "projection", # dofs_transfer, interpolation, projection, proj_H1 (recommended for non-nested meshes)
+        initialize_U_proj_H1_alpha : float = None        , # see warp
         **kwargs                                 ):
 
     if (meshes is None):
@@ -65,7 +67,8 @@ def warp_and_refine(
             initialize_U_basename   = working_basename_for_init,
             initialize_U_ext        = "vtu"                    ,
             initialize_U_array_name = "displacement"           ,
-            initialize_U_method     = "projection"             ,
+            initialize_U_method     = initialize_U_method      ,
+            initialize_U_proj_H1_alpha = initialize_U_proj_H1_alpha,
             continue_after_fail     = continue_after_fail      ,
             **kwargs                                           )
 

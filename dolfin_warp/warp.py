@@ -70,6 +70,7 @@ def warp(
         initialize_U_ext                            : str         = "vtu"                               ,
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
+        initialize_U_proj_H1_alpha                  : float       = None                                , # weight of the gradient term (length², e.g., mm²) in the "proj_H1" initialization; None: hmin² of the mesh
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
@@ -364,6 +365,7 @@ def warp(
             "initialize_U_ext"                            : initialize_U_ext                            ,
             "initialize_U_array_name"                     : initialize_U_array_name                     ,
             "initialize_U_method"                         : initialize_U_method                         ,
+            "initialize_U_proj_H1_alpha"                  : initialize_U_proj_H1_alpha                  ,
             "write_qois_limited_precision"                : write_qois_limited_precision                ,
             "write_VTU_files"                             : write_VTU_files                             ,
             "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity ,
