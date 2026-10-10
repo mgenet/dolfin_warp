@@ -191,3 +191,69 @@ for n_dim in n_dim_lst:
             verbose=1)
 
         test.test(working_basename)
+
+        # Non-nested meshes (the fine nodes are not nodes of the coarse mesh), with the various schemes to transfer the coarse displacement onto the fine mesh
+        n_cells_lst  = []
+        n_cells_lst += [4]
+        n_cells_lst += [7]
+
+        mesh_basenames = []
+        for n_cells in n_cells_lst:
+            if (n_dim == 2):
+                mesh = dolfin.RectangleMesh(
+                    dolfin.Point(structure_Xmin),
+                    dolfin.Point(structure_Xmax),
+                    n_cells, n_cells,
+                    "crossed")
+            elif (n_dim == 3):
+                mesh = dolfin.BoxMesh(
+                    dolfin.Point(structure_Xmin),
+                    dolfin.Point(structure_Xmax),
+                    n_cells, n_cells, n_cells)
+
+            mesh_basename  = images_basename
+            mesh_basename += "-n_cells="+str(n_cells)
+
+            mesh_filename = res_folder+"/"+mesh_basename+".xml"
+            dolfin.File(mesh_filename) << mesh
+
+            mesh_basenames += [mesh_basename]
+
+        initialize_U_method_lst  = []
+        initialize_U_method_lst += ["interpolation"]
+        initialize_U_method_lst += ["projection"   ]
+        initialize_U_method_lst += ["proj_H1"      ]
+
+        for initialize_U_method in initialize_U_method_lst:
+
+            working_basename  = images_basename
+            working_basename += "-meshes-nonnested"
+            working_basename += "-"+initialize_U_method
+
+            if (1): dwarp.warp_and_refine(
+                working_folder=res_folder,
+                working_basename=working_basename,
+                images_folder=res_folder,
+                images_basename=images_basename,
+                mesh_folder=res_folder,
+                mesh_basenames=mesh_basenames,
+                initialize_U_method=initialize_U_method,
+                regul_type=regul_type,
+                regul_model=regul_model,
+                regul_level=regul_level,
+                regul_poisson=regul_poisson,
+                normalize_energies=1,
+                nonlinear_solver_options={
+                    "relax_type":"backtracking",
+                    "tol_dU_rel_U":1e-2},
+                continue_after_fail=1,
+                write_qois_limited_precision=1)
+
+            working_basename += "-refine=1"
+
+            if (1): dwarp.compute_strains(
+                working_folder=res_folder,
+                working_basename=working_basename,
+                verbose=1)
+
+            test.test(working_basename)
