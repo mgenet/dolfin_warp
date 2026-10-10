@@ -46,6 +46,8 @@ class ImageIterator():
         self.initialize_U_array_name                     = parameters.get("initialize_U_array_name"                    , "displacement")
         self.initialize_U_method                         = parameters.get("initialize_U_method"                        , "dofs_transfer")
         self.initialize_U_proj_H1_alpha                  = parameters.get("initialize_U_proj_H1_alpha"                 , None          )
+        self.initialize_U_proj_H1_alpha_factor           = parameters.get("initialize_U_proj_H1_alpha_factor"          , 2.            )
+        self.initialize_U_proj_H1_n_alpha_max            = parameters.get("initialize_U_proj_H1_n_alpha_max"           , 10            )
         self.write_qois_limited_precision                = parameters.get("write_qois_limited_precision"               , False         )
         self.write_VTU_files                             = parameters.get("write_VTU_files"                            , True          )
         self.write_VTU_files_with_preserved_connectivity = parameters.get("write_VTU_files_with_preserved_connectivity", False         )
@@ -213,14 +215,25 @@ class ImageIterator():
                         u = dolfin.TrialFunction(self.problem.U_fs)
                         v = dolfin.TestFunction(self.problem.U_fs)
                         # MG20261010: The gradient term smooths the transferred displacement over a length sqrt(alpha), which prevents inverted elements when the meshes are not nested (fine nodes outside the coarse mesh, where init_U is extrapolated). alpha has units of length², so the default is relative to the mesh: hmin².
+                        # MG20261010: Adaptive: if the projected displacement still inverts elements (J ≤ 0), alpha is multiplied by initialize_U_proj_H1_alpha_factor, up to initialize_U_proj_H1_n_alpha_max tries.
                         alpha = self.initialize_U_proj_H1_alpha if (self.initialize_U_proj_H1_alpha is not None) else self.problem.mesh.hmin()**2
-                        alpha = dolfin.Constant(alpha)
-                        a  = dolfin.inner(u, v) * self.problem.dV
-                        a += alpha * dolfin.inner(dolfin.grad(u), dolfin.grad(v)) * self.problem.dV
+                        init_U.set_allow_extrapolation(True)
                         L  = dolfin.inner(init_U, v) * self.problem.dV
                         # L += alpha * dolfin.inner(dolfin.grad(init_U), dolfin.grad(v)) * self.problem.dV # MG20260826: Cannot interpolate the gradient of init_U, which lives on another mesh…
-                        init_U.set_allow_extrapolation(True)
-                        dolfin.solve(a == L, self.problem.U)
+                        J_fs = dolfin.FunctionSpace(self.problem.mesh, "DG", 0)
+                        J_expr = dolfin.det(dolfin.Identity(self.problem.mesh_dimension) + dolfin.grad(self.problem.U))
+                        n_alpha_max = 1 if (self.initialize_U_proj_H1_alpha_factor is None) or (self.initialize_U_proj_H1_alpha_factor <= 1.) else self.initialize_U_proj_H1_n_alpha_max
+                        for k_alpha in range(n_alpha_max):
+                            a  = dolfin.inner(u, v) * self.problem.dV
+                            a += dolfin.Constant(alpha) * dolfin.inner(dolfin.grad(u), dolfin.grad(v)) * self.problem.dV
+                            dolfin.solve(a == L, self.problem.U)
+                            J_min = dolfin.MPI.min(self.problem.mesh.mpi_comm(), float(dolfin.project(J_expr, J_fs).vector().get_local().min()))
+                            if (J_min > 0.) or (k_alpha == n_alpha_max-1): break
+                            alpha *= self.initialize_U_proj_H1_alpha_factor
+                        self.printer.print_sci("proj_H1 alpha",alpha)
+                        self.printer.print_sci("proj_H1 J_min",J_min)
+                        if (J_min <= 0.):
+                            self.printer.print_str("Warning! The initial displacement still has inverted elements (J_min = "+str(J_min)+")…")
                     self.problem.U_norm = self.problem.U.vector().norm("l2")
 
                 elif (self.initialize_reduced_U_from_file):

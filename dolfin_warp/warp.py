@@ -71,6 +71,8 @@ def warp(
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
         initialize_U_proj_H1_alpha                  : float       = None                                , # weight of the gradient term (length², e.g., mm²) in the "proj_H1" initialization; None: hmin² of the mesh
+        initialize_U_proj_H1_alpha_factor           : float       = 2.                                  , # "proj_H1": if the initial displacement inverts elements, alpha is multiplied by this factor (≤ 1 or None: no adaptation)…
+        initialize_U_proj_H1_n_alpha_max            : int         = 10                                  , # … up to this number of tries
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
@@ -366,6 +368,8 @@ def warp(
             "initialize_U_array_name"                     : initialize_U_array_name                     ,
             "initialize_U_method"                         : initialize_U_method                         ,
             "initialize_U_proj_H1_alpha"                  : initialize_U_proj_H1_alpha                  ,
+            "initialize_U_proj_H1_alpha_factor"           : initialize_U_proj_H1_alpha_factor           ,
+            "initialize_U_proj_H1_n_alpha_max"            : initialize_U_proj_H1_n_alpha_max            ,
             "write_qois_limited_precision"                : write_qois_limited_precision                ,
             "write_VTU_files"                             : write_VTU_files                             ,
             "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity ,
