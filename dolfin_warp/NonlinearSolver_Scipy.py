@@ -12,6 +12,23 @@ import glob
 import numpy
 import os
 import scipy
+import sys
+
+# MG20261014: dolfin sets the dlopen flags to RTLD_NOW|RTLD_GLOBAL (and does not
+# restore them), so that extension modules loaded after it export their symbols
+# globally. On Linux, scipy.optimize's Fortran modules then bind to each other's
+# symbols: e.g., with scipy 1.9, L-BFGS-B's line search (lnsrlb_ in _lbfgsb)
+# calls the dcsrch_ of _minpack2, which has another signature, and segfaults.
+# (macOS uses two-level namespaces, so it is not affected.) scipy.optimize is
+# therefore loaded with local symbols, whatever the current dlopen flags.
+if ("scipy.optimize" not in sys.modules) and hasattr(sys, "setdlopenflags"):
+    dlopen_flags = sys.getdlopenflags()
+    sys.setdlopenflags(getattr(os, "RTLD_NOW", 2))
+    try:
+        import scipy.optimize
+    finally:
+        sys.setdlopenflags(dlopen_flags)
+import scipy.optimize
 
 import dolfin
 
