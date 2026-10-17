@@ -9,6 +9,7 @@
 ################################################################################
 
 import dolfin
+import numpy
 import petsc4py
 import typing
 
@@ -39,7 +40,8 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             volume_subdomain_id                                       = None                            ,
             surface_subdomain_data                                    = None                            ,
             surface_subdomain_id                                      = None                            ,
-            scalar_formulation_in_2D : bool                           = True                            ):
+            scalar_formulation_in_2D : bool                           = True                            ,
+            current_normal           : bool                           = False                           ):
 
 
 
@@ -50,7 +52,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
         self.w = w
 
-        type_lst = ("tractions", "tractions-normal", "tractions-tangential", "tractions-normal-tangential")
+        type_lst = ("tractions", "tractions-normal", "tractions-tangential", "tractions-normal-tangential", "tractions-tangential-vector", "tractions-tangential-covariant")
         assert (type in type_lst),\
             "\"type\" ("+str(type)+") must be in "+str(type_lst)+". Aborting."
         self.type = type
@@ -115,22 +117,33 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             self.Sigma = self.material.Sigma
             self.P     = self.material.P
 
-        self.F = dolfin.dot(self.P, self.problem.N)
-        self.Fn = dolfin.inner(self.problem.N, self.F)
+        # Normal used to split the traction into normal & tangential parts: the
+        # reference normal N (default), or the current normal n ∝ cof(F)·N, which
+        # is objective, i.e., a rotated pressure loading remains purely normal.
+        if (current_normal):
+            assert (self.model != "hooke"),\
+                "current_normal requires a finite strain model. Aborting."
+            cofF_N = self.kinematics.J * dolfin.dot(dolfin.inv(self.kinematics.F).T, self.problem.N)
+            self.n = cofF_N / dolfin.sqrt(dolfin.inner(cofF_N, cofF_N))
+        else:
+            self.n = self.problem.N
+        self.F = dolfin.dot(self.P, self.problem.N) # nominal traction (current force per unit reference area)
+        self.Fn = dolfin.inner(self.n, self.F)
+        self.Ft_vec = self.F - self.Fn * self.n # Tangential traction vector. Unlike the full traction vector, it vanishes for a pressure loading, so that the surface curvature is not penalized in that case (for nonzero tangential tractions, its surface gradient does contain a curvature term, which is removed by the covariant variant); unlike its norm, it is differentiable at zero traction (e.g., in the reference configuration).
 
         if (self.dim == 2):
             ez = dolfin.as_vector([0, 0, 1])
-            N3D = dolfin.as_vector([self.problem.N[0], self.problem.N[1], 0])
+            N3D = dolfin.as_vector([self.n[0], self.n[1], 0])
             T3D = dolfin.cross(ez, N3D)
             self.T = dolfin.as_vector([T3D[0], T3D[1]])
             self.Ft = dolfin.inner(self.T, self.F)
         elif (self.dim == 3):
-            self.Ft = self.F - self.Fn * self.problem.N
+            self.Ft = self.F - self.Fn * self.n
             self.Ft = dolfin.inner(self.Ft, self.Ft)
             self.Ft = dolfin.conditional(dolfin.gt(self.Ft, 0.), dolfin.sqrt(self.Ft), 0.) # MG20221013: To bypass the derivative singularity at 0
             # self.Ft = dolfin.sqrt(self.Ft)
 
-        if (self.type == "tractions"):
+        if (self.type in ("tractions", "tractions-tangential-vector", "tractions-tangential-covariant")):
             self.R_fe = dolfin.TensorElement(
                 family="Lagrange",
                 cell=self.problem.mesh.ufl_cell(),
@@ -165,7 +178,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         self.R_test = dolfin.TestFunction(self.R_fs)
         self.proj_op = dolfin.Identity(self.dim) - dolfin.outer(self.problem.N, self.problem.N)
 
-        if (self.type == "tractions"):
+        if (self.type in ("tractions", "tractions-tangential-vector", "tractions-tangential-covariant")):
             # vi = self.R_test[0,:]
             # print(vi)
             # grad_vi = dolfin.grad(vi)
@@ -177,14 +190,15 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             divs_R_test = dolfin.as_vector(
                 [dolfin.tr(dolfin.dot(self.proj_op, dolfin.dot(dolfin.grad(self.R_test[i,:]), self.proj_op)))
                  for i in range(self.dim)])
+            F_ = self.F if (self.type == "tractions") else self.Ft_vec
             if (ds_or_dS == "ds"):
                 self.R_form = dolfin.inner(
-                    self.F,
+                    F_,
                     divs_R_test) * self.dS
             else:
                 self.R_form = dolfin.Constant(0) * dolfin.inner(self.R, self.R_test) * self.dV
                 self.R_form += dolfin.inner(
-                    self.F,
+                    F_,
                     divs_R_test)("+") * self.dS
         elif (self.type in ("tractions-normal", "tractions-tangential", "tractions-normal-tangential")):
             if (self.dim == 2) and (scalar_formulation_in_2D):
@@ -328,7 +342,76 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
 
         # self.k_frame = 0
 
+        # Covariant surface gradient: the surface gradient of the tangential
+        # traction vector t contains a curvature term, -N⊗(B·t) (B being the
+        # shape operator), so that a tangential traction of constant magnitude is
+        # penalized on a curved surface. It is removed by projecting the traction
+        # component index of the (nodal) gradient onto the tangent plane, using
+        # nodal reference normals.
+        if (self.type == "tractions-tangential-covariant"):
+            self.build_tangent_projection()
+        else:
+            self.Q_mat = None
+
         self.printer.dec()
+
+
+
+    def build_tangent_projection(self):
+
+        N_fs = dolfin.VectorFunctionSpace(self.problem.mesh, "Lagrange", 1)
+        N_test = dolfin.TestFunction(N_fs)
+        N_vec = dolfin.assemble(
+            dolfin.inner(self.problem.N, N_test) * dolfin.ds(
+                domain=self.problem.mesh,
+                scheme="vertex",
+                metadata={
+                    "degree":1,
+                    "representation":"quadrature"}))
+        n_vertices = self.problem.mesh.num_vertices()
+        N_nodal = N_vec.get_local()[dolfin.vertex_to_dof_map(N_fs)].reshape(n_vertices, self.dim)
+        N_nodal_norm = numpy.linalg.norm(N_nodal, axis=1)
+
+        v2d = dolfin.vertex_to_dof_map(self.R_fs).reshape(n_vertices, self.dim, self.dim) # [vertex, i (traction component), j (gradient component)]
+        n_R = self.R_vec.size()
+        Q = petsc4py.PETSc.Mat().createAIJ([n_R, n_R], nnz=self.dim)
+        Q.setUp()
+        for k_vertex in range(n_vertices):
+            if (N_nodal_norm[k_vertex] > 0.):
+                n = N_nodal[k_vertex]/N_nodal_norm[k_vertex]
+                P = numpy.eye(self.dim) - numpy.outer(n, n)
+            else:
+                P = numpy.eye(self.dim)
+            for j in range(self.dim):
+                for i in range(self.dim):
+                    Q.setValues(
+                        [int(v2d[k_vertex,i,j])],
+                        [int(v2d[k_vertex,k,j]) for k in range(self.dim)],
+                        P[i,:])
+        Q.assemble()
+        self.Q_mat = dolfin.PETScMatrix(Q)
+        self.R_tmp_vec = self.R_vec.copy()
+
+
+
+    def project_R(self):
+
+        if (self.Q_mat is not None):
+            self.R_tmp_vec.zero(); self.R_tmp_vec.axpy(1., self.R_vec)
+            self.Q_mat.mult(self.R_tmp_vec, self.R_vec)
+
+
+
+    def get_dR_mat(self):
+
+        if (self.Q_mat is None):
+            return self.dR_mat
+        else:
+            if not hasattr(self, "QdR_mat"):
+                self.QdR_mat = dolfin.PETScMatrix(self.Q_mat.mat().matMult(self.dR_mat.mat()))
+            else:
+                self.Q_mat.mat().matMult(self.dR_mat.mat(), result=self.QdR_mat.mat())
+            return self.QdR_mat
 
 
 
@@ -368,6 +451,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         dolfin.assemble(
             form=self.R_form,
             tensor=self.R_vec)
+        self.project_R()
         # print(self.R_vec.get_local())
         # print(self.R_vec.norm("l2"))
         # dmech.write_VTU_file("R", self.R, self.k_frame)
@@ -416,6 +500,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
         dolfin.assemble(
             form=self.R_form,
             tensor=self.R_vec)
+        self.project_R()
         # print(self.R_vec.get_local())
 
         self.MR_vec.vec().pointwiseDivide(self.R_vec.vec(), self.M_lumped_vec.vec())
@@ -426,7 +511,7 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
 
-        self.dR_mat.transpmult(self.MR_vec, self.dRMR_vec)
+        self.get_dR_mat().transpmult(self.MR_vec, self.dRMR_vec)
         # print(self.dRMR_vec.get_local())
 
 
@@ -438,9 +523,10 @@ class SurfaceRegularizationDiscreteEnergy(Energy, DiscreteEnergyMixin):
             tensor=self.dR_mat)
         # print(self.dR_mat.array())
 
+        dR_mat = self.get_dR_mat()
         if not hasattr(self, "K_mat"): # MG20250305: Somehow the inplace version fails when the result matrix is empty…
-            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), self.dR_mat.mat())
+            self.K_mat_mat = petsc4py.PETSc.Mat.PtAP(self.M_lumped_inv_mat.mat(), dR_mat.mat())
             self.K_mat = dolfin.PETScMatrix(self.K_mat_mat)
             self.jac_mat = self.K_mat
         else:
-            self.M_lumped_inv_mat.mat().PtAP(P=self.dR_mat.mat(), result=self.K_mat.mat())
+            self.M_lumped_inv_mat.mat().PtAP(P=dR_mat.mat(), result=self.K_mat.mat())

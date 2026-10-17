@@ -9,8 +9,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false # run every OS to the end, even if one fails
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+
+    env:
+      UCX_TLS: "shm,tcp,self"
+      UCX_NET_DEVICES: "none"
 
     defaults:
       run:
@@ -47,6 +52,11 @@ jobs:
       run: |
         conda activate dolfin_warp
         pip install .
+
+    - name: List the Conda environment
+      run: |
+        conda activate dolfin_warp
+        conda list
 
     - name: Run tests
       run: |

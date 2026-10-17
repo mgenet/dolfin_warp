@@ -9,6 +9,8 @@
 ################################################################################
 
 import dolfin
+import math
+import os
 
 import dolfin_warp as dwarp
 
@@ -43,7 +45,7 @@ def warp(
         generated_image_energy_resampling_factor    : int         = 1                                   ,
         generated_image_energy_type                 : str         = "image"                             , # image, fourier
         volume_energy_level                         : float       = None                                ,
-        regul_type                                  : str         = None                                , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-equilibrated-tractions, discrete-linear-equilibrated-tractions-normal, discrete-linear-equilibrated-tractions-tangential, discrete-linear-equilibrated-tractions-normal-tangential, discrete-equilibrated, discrete-equilibrated-tractions, discrete-equilibrated-tractions-normal, discrete-equilibrated-tractions-tangential, discrete-equilibrated-tractions-normal-tangential
+        regul_type                                  : str         = None                                , # continuous-linear-equilibrated, continuous-linear-elastic, continuous-equilibrated, continuous-elastic, continuous-hyperelastic, discrete-simple-equilibrated, discrete-simple-elastic, discrete-linear-equilibrated, discrete-linear-equilibrated-tractions, discrete-linear-equilibrated-tractions-normal, discrete-linear-equilibrated-tractions-tangential, discrete-linear-equilibrated-tractions-normal-tangential, discrete-equilibrated, discrete-equilibrated-tractions, discrete-equilibrated-tractions-normal, discrete-equilibrated-tractions-tangential, discrete-equilibrated-tractions-normal-tangential, discrete-equilibrated-tractions-normal-tangential-vector, discrete-equilibrated-tractions-normal-tangential-covariant, discrete-equilibrated-nodal-tractions-normal-tangential
         regul_types                                 : list        = None                                ,
         regul_model                                 : str         = "ogdenciarletgeymonatneohookean"    , # hooke, kirchhoff, ogdenciarletgeymonatneohookean, ogdenciarletgeymonatneohookeanmooneyrivlin
         regul_models                                : list        = None                                ,
@@ -56,7 +58,9 @@ def warp(
         regul_volume_subdomain_id                                 = None                                ,
         regul_surface_subdomain_data                              = None                                ,
         regul_surface_subdomain_id                                = None                                ,
+        regul_tractions_current_normal              : bool        = False                               , # split surface tractions into normal & tangential parts using the current normal (objective) rather than the reference normal
         normalize_energies                          : bool        = False                               ,
+        normalize_energies_wavelength               : float       = None                                , # wavelength of the plane wave used to normalize the energies (default: 20*hmin)
         nonlinear_solver_type                       : str         = "newton"                            , # None, newton, cma, scipy
         nonlinear_solver_print_iterations           : bool        = False                               ,
         nonlinear_solver_options                    : dict        = None                                ,
@@ -66,6 +70,9 @@ def warp(
         initialize_U_ext                            : str         = "vtu"                               ,
         initialize_U_array_name                     : str         = "displacement"                      ,
         initialize_U_method                         : str         = "dofs_transfer"                     , # dofs_transfer, interpolation, projection
+        initialize_U_proj_H1_alpha                  : float       = None                                , # weight of the gradient term (length², e.g., mm²) in the "proj_H1" initialization; None: hmin² of the mesh
+        initialize_U_proj_H1_alpha_factor           : float       = 2.                                  , # "proj_H1": if the initial displacement inverts elements, alpha is multiplied by this factor (≤ 1 or None: no adaptation)…
+        initialize_U_proj_H1_n_alpha_max            : int         = 10                                  , # … up to this number of tries
         initialize_reduced_U_from_file              : bool        = False                               ,
         initialize_reduced_U_filename               : str         = None                                ,
         write_qois_limited_precision                : bool        = False                               ,
@@ -76,6 +83,8 @@ def warp(
         register_ref_frame                          : bool        = False                               ,
         continue_after_fail                         : bool        = False                               ,
         print_out                                   : bool        = True                                ):
+
+    os.makedirs(working_folder, exist_ok=True)
 
 ################################################################# kinematics ###
 
@@ -133,6 +142,10 @@ def warp(
             assert (0), "\"image_energy_quadrature_from\" (="+str(image_energy_quadrature_from)+") must be \"points_count\" or \"integral\". Aborting."
         problem.printer.print_var("image_energy_quadrature",image_energy_quadrature)
         problem.printer.dec()
+    dwarp.check_quadrature_degree(
+        degree=image_energy_quadrature,
+        mesh=problem.mesh,
+        printer=problem.printer)
 
 ############################################################### image weight ###
 
@@ -157,6 +170,10 @@ def warp(
                     regul_types += ["discrete-linear-tractions-tangential"]
                 elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential"):
                     regul_types += ["discrete-linear-tractions-normal-tangential"]
+                elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential-vector"):
+                    regul_types += ["discrete-linear-tractions-normal", "discrete-linear-tractions-tangential-vector"]
+                elif (regul_type == "discrete-linear-equilibrated-tractions-normal-tangential-covariant"):
+                    regul_types += ["discrete-linear-tractions-normal", "discrete-linear-tractions-tangential-covariant"]
             elif (regul_type.startswith("discrete-equilibrated-")):
                 regul_types = ["discrete-equilibrated"]
                 if (regul_type == "discrete-equilibrated-tractions"):
@@ -167,9 +184,16 @@ def warp(
                     regul_types += ["discrete-tractions-tangential"]
                 elif (regul_type == "discrete-equilibrated-tractions-normal-tangential"):
                     regul_types += ["discrete-tractions-normal-tangential"]
+                elif (regul_type == "discrete-equilibrated-tractions-normal-tangential-vector"):
+                    regul_types += ["discrete-tractions-normal", "discrete-tractions-tangential-vector"]
+                elif (regul_type == "discrete-equilibrated-tractions-normal-tangential-covariant"):
+                    regul_types += ["discrete-tractions-normal", "discrete-tractions-tangential-covariant"]
+                elif (regul_type == "discrete-equilibrated-nodal-tractions-normal-tangential"):
+                    regul_types += ["discrete-nodal-tractions-normal", "discrete-nodal-tractions-tangential"]
             else: assert (0), "Unknown regul_type ("+str(regul_type)+"). Aborting."
-            regul_models = [regul_model  ]*2
-            regul_levels = [regul_level/2]*2
+            assert (len(regul_types) > 1), "Unknown regul_type ("+str(regul_type)+"). Aborting."
+            regul_models = [regul_model]*len(regul_types)
+            regul_levels = [regul_level/2] + [regul_level/2/(len(regul_types)-1)]*(len(regul_types)-1) # half on the volume term, half on the surface term(s)
         else:
             regul_types  = [regul_type ]
             regul_models = [regul_model]
@@ -247,6 +271,7 @@ def warp(
             name_suffix += ("_"+    regul_model )*(len(regul_models)>1)
             name_suffix += ("_"+str(regul_level))*(len(regul_levels)>1)
             regul_body_force_ = None
+            regul_kwargs_ = {}
             if regul_type.startswith("continuous"):
                 regularization_energy_type = dwarp.RegularizationContinuousEnergy
                 if regul_type.startswith("continuous-linear"):
@@ -256,12 +281,16 @@ def warp(
             elif regul_type.startswith("discrete-simple"):
                 regularization_energy_type = dwarp.SimpleRegularizationDiscreteEnergy
                 regul_type_ = regul_type.split("-",2)[2]
+            elif regul_type.startswith("discrete-nodal-tractions"):
+                regularization_energy_type = dwarp.NodalTractionsRegularizationDiscreteEnergy
+                regul_type_ = regul_type.split("-",2)[2]
             elif regul_type.startswith("discrete"):
                 if ("equilibrated" in regul_type):
                     regularization_energy_type = dwarp.VolumeRegularizationDiscreteEnergy
                     regul_body_force_ = regul_body_force
                 elif ("tractions" in regul_type):
                     regularization_energy_type = dwarp.SurfaceRegularizationDiscreteEnergy
+                    regul_kwargs_["current_normal"] = regul_tractions_current_normal
                 else: assert (0), "regul_type (= "+str(regul_type)+") unknown. Aborting."
                 if regul_type.startswith("discrete-linear"):
                     regul_type_ = regul_type.split("-",2)[2]
@@ -280,7 +309,8 @@ def warp(
                 volume_subdomain_id=regul_volume_subdomain_id,
                 surface_subdomain_data=regul_surface_subdomain_data,
                 surface_subdomain_id=regul_surface_subdomain_id,
-                quadrature_degree=regul_quadrature)
+                quadrature_degree=regul_quadrature,
+                **regul_kwargs_)
             problem.add_regul_energy(regularization_energy)
 
 ####################################################### energy normalization ###
@@ -288,6 +318,7 @@ def warp(
     if (normalize_energies):
         dwarp.compute_energies_normalization(
             problem=problem,
+            k=[2*math.pi/normalize_energies_wavelength]*problem.mesh_dimension if (normalize_energies_wavelength is not None) else None,
             verbose=1)
 
 ##################################################################### solver ###
@@ -336,6 +367,9 @@ def warp(
             "initialize_U_ext"                            : initialize_U_ext                            ,
             "initialize_U_array_name"                     : initialize_U_array_name                     ,
             "initialize_U_method"                         : initialize_U_method                         ,
+            "initialize_U_proj_H1_alpha"                  : initialize_U_proj_H1_alpha                  ,
+            "initialize_U_proj_H1_alpha_factor"           : initialize_U_proj_H1_alpha_factor           ,
+            "initialize_U_proj_H1_n_alpha_max"            : initialize_U_proj_H1_n_alpha_max            ,
             "write_qois_limited_precision"                : write_qois_limited_precision                ,
             "write_VTU_files"                             : write_VTU_files                             ,
             "write_VTU_files_with_preserved_connectivity" : write_VTU_files_with_preserved_connectivity ,
